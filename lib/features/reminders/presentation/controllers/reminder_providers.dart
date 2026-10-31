@@ -1,0 +1,122 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../data/repositories/mock_reminder_repository.dart';
+import '../../domain/models/reminder.dart';
+import '../../domain/models/reminder_status.dart';
+import '../../domain/repositories/reminder_repository.dart';
+
+/// Filter selection for reminder list.
+enum ReminderFilter { upcoming, completed, all }
+
+/// Provider for the active [ReminderRepository].
+/// Default is [MockReminderRepository] for Phase 0.
+final reminderRepositoryProvider = Provider<ReminderRepository>((ref) {
+  final repository = MockReminderRepository(preloadSampleData: true);
+  ref.onDispose(repository.dispose);
+  return repository;
+});
+
+/// Reactive stream of reminders from the repository.
+final remindersStreamProvider = StreamProvider<List<Reminder>>((ref) {
+  final repository = ref.watch(reminderRepositoryProvider);
+  return repository.watchReminders();
+});
+
+/// Modern Riverpod 3 Notifier for reminder filter state.
+class ReminderFilterNotifier extends Notifier<ReminderFilter> {
+  @override
+  ReminderFilter build() => ReminderFilter.upcoming;
+
+  void setFilter(ReminderFilter filter) {
+    state = filter;
+  }
+}
+
+/// Current filter selection on the Home screen.
+final reminderFilterProvider =
+    NotifierProvider<ReminderFilterNotifier, ReminderFilter>(
+      ReminderFilterNotifier.new,
+    );
+
+/// Filtered list of reminders according to [reminderFilterProvider].
+final filteredRemindersProvider = Provider<AsyncValue<List<Reminder>>>((ref) {
+  final filter = ref.watch(reminderFilterProvider);
+  final remindersAsync = ref.watch(remindersStreamProvider);
+
+  return remindersAsync.whenData((reminders) {
+    switch (filter) {
+      case ReminderFilter.upcoming:
+        return reminders
+            .where((r) => r.status == ReminderStatus.active)
+            .toList();
+      case ReminderFilter.completed:
+        return reminders
+            .where((r) => r.status == ReminderStatus.completed)
+            .toList();
+      case ReminderFilter.all:
+        return reminders;
+    }
+  });
+});
+
+/// Active reminders occurring today.
+final todayRemindersProvider = Provider<AsyncValue<List<Reminder>>>((ref) {
+  final remindersAsync = ref.watch(remindersStreamProvider);
+
+  return remindersAsync.whenData((reminders) {
+    return reminders.where((r) => r.isActive && r.isToday).toList();
+  });
+});
+
+/// Active reminders occurring after today.
+final upcomingLaterRemindersProvider = Provider<AsyncValue<List<Reminder>>>((
+  ref,
+) {
+  final remindersAsync = ref.watch(remindersStreamProvider);
+
+  return remindersAsync.whenData((reminders) {
+    return reminders.where((r) => r.isActive && !r.isToday).toList();
+  });
+});
+
+/// Completed reminders.
+final completedRemindersProvider = Provider<AsyncValue<List<Reminder>>>((ref) {
+  final remindersAsync = ref.watch(remindersStreamProvider);
+
+  return remindersAsync.whenData((reminders) {
+    return reminders.where((r) => r.isCompleted).toList();
+  });
+});
+
+/// Controller handling reminder user mutations.
+class ReminderActionNotifier {
+  ReminderActionNotifier(this._repository);
+
+  final ReminderRepository _repository;
+
+  Future<void> createOrUpdateReminder(Reminder reminder) async {
+    await _repository.saveReminder(reminder);
+  }
+
+  Future<void> toggleStatus(String id) async {
+    await _repository.toggleReminderStatus(id);
+  }
+
+  Future<void> deleteReminder(String id) async {
+    await _repository.deleteReminder(id);
+  }
+
+  Future<void> resetToSampleData() async {
+    await _repository.resetToSampleData();
+  }
+
+  Future<void> clearAll() async {
+    await _repository.clearAllReminders();
+  }
+}
+
+final reminderActionControllerProvider = Provider<ReminderActionNotifier>((
+  ref,
+) {
+  final repository = ref.watch(reminderRepositoryProvider);
+  return ReminderActionNotifier(repository);
+});
