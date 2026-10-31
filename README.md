@@ -1,4 +1,4 @@
-# Lujayn (لُجَيْن)
+# Lujayn
 
 > **A personal reminder companion that respects your privacy, stays on your device, and helps you remember what matters.**
 
