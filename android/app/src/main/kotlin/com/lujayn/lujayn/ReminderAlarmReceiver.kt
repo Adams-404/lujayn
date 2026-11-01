@@ -8,7 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 
-internal class ReminderAlarmReceiver : BroadcastReceiver() {
+class ReminderAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val id = intent.getStringExtra(EXTRA_ID) ?: return
         val title = intent.getStringExtra(EXTRA_TITLE) ?: "Reminder"
@@ -43,7 +43,13 @@ internal object ReminderNotifications {
         }
     }
 
-    fun show(context: Context, id: String, title: String, description: String) {
+    fun show(
+        context: Context,
+        id: String,
+        title: String,
+        description: String,
+        missed: Boolean = false,
+    ) {
         createChannel(context)
         val openApp = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -60,15 +66,12 @@ internal object ReminderNotifications {
             @Suppress("DEPRECATION")
             Notification.Builder(context)
         }
+        val body = description.ifBlank { "It's time for your reminder." }
         val notification = builder
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-            .setContentTitle(title)
-            .setContentText(description.ifBlank { "It's time for your reminder." })
-            .setStyle(
-                Notification.BigTextStyle().bigText(
-                    description.ifBlank { "It's time for your reminder." },
-                ),
-            )
+            .setContentTitle(if (missed) "Missed: $title" else title)
+            .setContentText(body)
+            .setStyle(Notification.BigTextStyle().bigText(body))
             .setCategory(Notification.CATEGORY_REMINDER)
             .setPriority(Notification.PRIORITY_HIGH)
             .setAutoCancel(true)
@@ -82,7 +85,7 @@ internal object ReminderNotifications {
     }
 }
 
-internal class ReminderRescheduleReceiver : BroadcastReceiver() {
+class ReminderRescheduleReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         ReminderAlarmScheduler.rescheduleStored(context)
     }

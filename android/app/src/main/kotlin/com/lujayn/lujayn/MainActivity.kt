@@ -21,6 +21,11 @@ class MainActivity : FlutterActivity() {
 
     private var notificationPermissionResult: MethodChannel.Result? = null
 
+    override fun onDestroy() {
+        notificationPermissionResult = null
+        super.onDestroy()
+    }
+
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,

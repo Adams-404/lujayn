@@ -77,7 +77,7 @@ class RecurrenceRule {
 
       case RecurrenceType.daily:
         while (!candidate.isAfter(reference)) {
-          candidate = candidate.add(const Duration(days: 1));
+          candidate = _addDays(candidate, 1);
         }
         return candidate;
 
@@ -85,13 +85,13 @@ class RecurrenceRule {
         while (!candidate.isAfter(reference) ||
             candidate.weekday == DateTime.saturday ||
             candidate.weekday == DateTime.sunday) {
-          candidate = candidate.add(const Duration(days: 1));
+          candidate = _addDays(candidate, 1);
         }
         return candidate;
 
       case RecurrenceType.weekly:
         while (!candidate.isAfter(reference)) {
-          candidate = candidate.add(const Duration(days: 7));
+          candidate = _addDays(candidate, 7);
         }
         return candidate;
 
@@ -99,10 +99,28 @@ class RecurrenceRule {
         if (daysOfWeek.isEmpty) return candidate;
         while (!candidate.isAfter(reference) ||
             !daysOfWeek.contains(candidate.weekday)) {
-          candidate = candidate.add(const Duration(days: 1));
+          candidate = _addDays(candidate, 1);
         }
         return candidate;
     }
+  }
+
+  /// Advances by whole calendar days while keeping the local wall-clock time.
+  ///
+  /// Adding a 24-hour [Duration] would drift by an hour across daylight-saving
+  /// changes, so a reminder set for 08:00 could start arriving at 07:00 or
+  /// 09:00. Rebuilding from date components keeps the time the user chose.
+  static DateTime _addDays(DateTime value, int days) {
+    return DateTime(
+      value.year,
+      value.month,
+      value.day + days,
+      value.hour,
+      value.minute,
+      value.second,
+      value.millisecond,
+      value.microsecond,
+    );
   }
 
   RecurrenceRule copyWith({RecurrenceType? type, List<int>? daysOfWeek}) {

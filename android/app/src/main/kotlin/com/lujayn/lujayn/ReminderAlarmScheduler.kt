@@ -11,6 +11,7 @@ import java.util.Calendar
 
 internal object ReminderAlarmScheduler {
     private const val PREFERENCES = "lujayn_reminder_alarms"
+    private const val MISSED_WINDOW_MILLIS = 24L * 60L * 60L * 1000L
 
     fun canScheduleExactAlarms(context: Context): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
@@ -73,6 +74,7 @@ internal object ReminderAlarmScheduler {
             val now = System.currentTimeMillis()
             val next = nextOccurrence(data, now, includeCurrent = true)
             if (next == null) {
+                notifyIfMissed(context, data, now)
                 prefs.edit().remove(id).apply()
             } else {
                 data.put("scheduledAtMillis", next)
@@ -80,6 +82,24 @@ internal object ReminderAlarmScheduler {
                 scheduleStored(context, data)
             }
         }
+    }
+
+    /**
+     * A one-time reminder whose moment passed while the device was off would
+     * otherwise vanish silently. Surface it once, but only when it was missed
+     * recently so a stale record cannot notify days later.
+     */
+    private fun notifyIfMissed(context: Context, data: JSONObject, now: Long) {
+        if (data.optString("recurrenceType", "none") != "none") return
+        val missedAt = data.optLong("scheduledAtMillis", 0L)
+        if (missedAt <= 0L || now - missedAt > MISSED_WINDOW_MILLIS) return
+        ReminderNotifications.show(
+            context,
+            data.optString("id"),
+            data.optString("title"),
+            data.optString("description"),
+            missed = true,
+        )
     }
 
     fun onAlarmDelivered(context: Context, id: String) {

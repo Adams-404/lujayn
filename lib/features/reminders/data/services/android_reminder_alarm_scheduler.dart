@@ -12,8 +12,7 @@ class AndroidReminderAlarmScheduler implements ReminderAlarmScheduler {
 
   @override
   Future<bool> canScheduleExactAlarms() async {
-    return await _channel.invokeMethod<bool>('canScheduleExactAlarms') ??
-        false;
+    return await _channel.invokeMethod<bool>('canScheduleExactAlarms') ?? false;
   }
 
   @override

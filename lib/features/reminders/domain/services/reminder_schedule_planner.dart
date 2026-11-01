@@ -26,10 +26,7 @@ class ReminderSchedule {
 class ReminderSchedulePlanner {
   const ReminderSchedulePlanner();
 
-  ReminderSchedule? plan(
-    Reminder reminder, {
-    required DateTime now,
-  }) {
+  ReminderSchedule? plan(Reminder reminder, {required DateTime now}) {
     if (reminder.status != ReminderStatus.active) return null;
 
     final nextOccurrence = reminder.recurrence.calculateNextOccurrence(

@@ -221,10 +221,7 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
           : (_isEditing ? 'Reminder updated' : 'Reminder saved');
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          behavior: SnackBarBehavior.floating,
-        ),
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
       );
       Navigator.of(context).pop();
     } catch (_) {

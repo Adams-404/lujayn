@@ -29,10 +29,7 @@ void main() {
     test('plans a future one-time reminder unchanged', () {
       final scheduledAt = now.add(const Duration(hours: 2));
 
-      final result = planner.plan(
-        reminder(scheduledAt: scheduledAt),
-        now: now,
-      );
+      final result = planner.plan(reminder(scheduledAt: scheduledAt), now: now);
 
       expect(result, isNotNull);
       expect(result!.scheduledAt, scheduledAt);
@@ -58,9 +55,10 @@ void main() {
       );
 
       expect(result, isNotNull);
-      expect(result!.scheduledAt, DateTime(2026, 11, 1, 10).add(
-        const Duration(days: 1),
-      ));
+      expect(
+        result!.scheduledAt,
+        DateTime(2026, 11, 1, 10).add(const Duration(days: 1)),
+      );
     });
 
     test('advances weekly reminders by one week', () {
@@ -75,6 +73,19 @@ void main() {
       expect(result, isNotNull);
       expect(result!.scheduledAt, DateTime(2026, 11, 8, 8));
       expect(result.recurrence, RecurrenceRule.weekly);
+    });
+
+    test('keeps the chosen wall-clock time across month boundaries', () {
+      final result = planner.plan(
+        reminder(
+          scheduledAt: DateTime(2026, 1, 31, 8),
+          recurrence: RecurrenceRule.daily,
+        ),
+        now: DateTime(2026, 2, 1, 9),
+      );
+
+      expect(result, isNotNull);
+      expect(result!.scheduledAt, DateTime(2026, 2, 2, 8));
     });
 
     test('selects the next configured custom weekday', () {
@@ -108,20 +119,14 @@ void main() {
     });
 
     test('plans only eligible reminders in a collection', () {
-      final result = planner.planAll(
-        [
-          reminder(id: 'future'),
-          reminder(
-            id: 'completed',
-            status: ReminderStatus.completed,
-          ),
-          reminder(
-            id: 'past',
-            scheduledAt: now.subtract(const Duration(minutes: 1)),
-          ),
-        ],
-        now: now,
-      );
+      final result = planner.planAll([
+        reminder(id: 'future'),
+        reminder(id: 'completed', status: ReminderStatus.completed),
+        reminder(
+          id: 'past',
+          scheduledAt: now.subtract(const Duration(minutes: 1)),
+        ),
+      ], now: now);
 
       expect(result.map((schedule) => schedule.reminderId), ['future']);
     });

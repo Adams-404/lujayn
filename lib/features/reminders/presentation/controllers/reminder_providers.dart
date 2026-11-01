@@ -113,11 +113,7 @@ final completedRemindersProvider = Provider<AsyncValue<List<Reminder>>>((ref) {
 
 /// Controller handling reminder user mutations.
 class ReminderActionNotifier {
-  ReminderActionNotifier(
-    this._repository,
-    this._scheduler,
-    this._planner,
-  );
+  ReminderActionNotifier(this._repository, this._scheduler, this._planner);
 
   final ReminderRepository _repository;
   final ReminderAlarmScheduler _scheduler;
