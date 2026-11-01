@@ -401,6 +401,7 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
           ),
         ),
       ),
+      ),
       bottomNavigationBar: SafeArea(
         child: ResponsiveCenter(
           child: Padding(
