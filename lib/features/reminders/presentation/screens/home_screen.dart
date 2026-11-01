@@ -135,6 +135,7 @@ class HomeScreen extends ConsumerWidget {
           title: 'Nothing waiting for you',
           description: 'When you add a reminder, it will appear here.',
           actionLabel: 'Add reminder',
+          onAction: () => _navigateToCreate(context),
         ),
       );
     }
@@ -269,7 +270,6 @@ class _ReminderFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final options = [
       (ReminderFilter.upcoming, 'Upcoming'),
       (ReminderFilter.completed, 'Completed'),
@@ -399,7 +399,7 @@ class _NextReminderPanel extends StatelessWidget {
               Text(
                 reminder.title,
                 style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w650,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               if (reminder.description?.trim().isNotEmpty ?? false) ...[
