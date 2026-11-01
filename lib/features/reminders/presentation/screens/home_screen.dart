@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../app/theme/app_colors.dart';
 import '../../../../core/utilities/date_formatters.dart';
 import '../../../../core/widgets/empty_state_view.dart';
 import '../../../../core/widgets/responsive_center.dart';
@@ -18,7 +17,6 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final currentFilter = ref.watch(reminderFilterProvider);
     final remindersAsync = ref.watch(remindersStreamProvider);
 
@@ -38,9 +36,7 @@ class HomeScreen extends ConsumerWidget {
                       Text(
                         AppDateFormatters.formatFullDate(DateTime.now()),
                         style: theme.textTheme.labelMedium?.copyWith(
-                          color: isDark
-                              ? AppColors.darkTextSecondary
-                              : AppColors.lightTextSecondary,
+                          color: theme.colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.2,
                         ),
