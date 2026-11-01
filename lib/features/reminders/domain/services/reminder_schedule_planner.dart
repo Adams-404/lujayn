@@ -1,5 +1,6 @@
 import '../models/reminder.dart';
 import '../models/reminder_status.dart';
+import '../models/recurrence_rule.dart';
 
 /// A single alarm occurrence derived from a persisted reminder.
 class ReminderSchedule {
@@ -7,12 +8,14 @@ class ReminderSchedule {
     required this.reminderId,
     required this.title,
     this.description,
+    required this.recurrence,
     required this.scheduledAt,
   });
 
   final String reminderId;
   final String title;
   final String? description;
+  final RecurrenceRule recurrence;
   final DateTime scheduledAt;
 }
 
@@ -40,6 +43,7 @@ class ReminderSchedulePlanner {
       reminderId: reminder.id,
       title: reminder.title,
       description: reminder.description,
+      recurrence: reminder.recurrence,
       scheduledAt: nextOccurrence,
     );
   }
