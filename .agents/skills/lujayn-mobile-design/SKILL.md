@@ -49,6 +49,8 @@ Design Lujayn like a considered personal product, not a generic generated dashbo
 
 ## Required design handoff for multi-screen work
 
+Keep the handoff concise and implementation-ready:
+
 - User goal and primary action.
 - Screen hierarchy and navigation behaviour.
 - Relevant states and recovery paths.
