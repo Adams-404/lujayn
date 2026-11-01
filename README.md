@@ -54,7 +54,7 @@ lib/
 │
 ├── core/
 │   ├── database/
-│   │   └── app_database.dart      # Database contract & Drift architecture blueprint
+│   │   └── app_database.dart      # Drift SQLite schema and migrations
 │   ├── utilities/
 │   │   └── date_formatters.dart   # Human-friendly date and time formatters
 │   └── widgets/
@@ -69,7 +69,7 @@ lib/
     │   │   ├── models/            # DTOs and database mapping contracts
     │   │   └── repositories/
     │   │       ├── mock_reminder_repository.dart   # Isolated in-memory reactive repository
-    │   │       └── drift_reminder_repository.dart  # Phase 1 Drift SQLite placeholder
+    │   │       └── drift_reminder_repository.dart  # Production Drift SQLite repository
     │   ├── domain/
     │   │   ├── models/
     │   │   │   ├── recurrence_rule.dart            # Recurrence calculations & schedule rules
@@ -100,19 +100,19 @@ lib/
 
 ---
 
-## Current Implementation Status: Phase 0 (Foundation)
+## Current Implementation Status: Phase 1 (Local foundation)
 
 | Feature / Area | Status | Notes |
 |---|---|---|
 | **Project Setup** | Completed | Flutter project initialized with Android, iOS, and Linux desktop targets |
 | **Architecture** | Completed | Feature-first clean architecture separating domain, data, and presentation |
 | **State Management** | Completed | Riverpod 3 providers for reminders, filters, and persisted theme choice |
-| **Visual Design** | In progress | Five named palettes are implemented; full screen redesign is tracked separately |
+| **Visual Design** | In progress | Five named palettes; distinctive home and reminder flow redesign is tracked separately |
 | **Home Screen** | Completed | Segmented filters (Upcoming, Completed, All), grouped by Today/Later |
 | **Creation & Edit** | Completed | Form with title validation, notes, date picker, quick time presets, recurrence selector |
 | **Sample Data** | Completed | 5 realistic, human sample reminders preloaded into isolated mock repository |
 | **Settings Screen** | In progress | Privacy transparency, five-theme picker, principles modal |
-| **Drift Architecture** | Prepared | Database contracts and repository interfaces ready for Phase 1 code generation |
+| **Local Persistence** | Implemented | Drift SQLite schema, reactive repository, stable enum serialization, and persistence tests |
 | **Native Alarms & Audio**| Out of Scope (Phase 2 & 3)| Not simulated or faked; transparently documented |
 
 ---
@@ -133,9 +133,10 @@ lib/
    cd lujayn
    ```
 
-2. **Install dependencies:**
+2. **Install dependencies and generate the Drift database:**
    ```bash
    flutter pub get
+   dart run build_runner build --delete-conflicting-outputs
    ```
 
 3. **Run static analysis:**
@@ -171,8 +172,9 @@ lib/
 
 ## Road Map
 
-- **Phase 0 (Current):** Project foundation, architecture, theme, navigation, reminder creation, mock repository.
-- **Phase 1:** Drift SQLite database persistence, migrations, and recurrence calculation unit tests.
+- **Phase 0:** Project foundation, navigation, reminder creation, and mock fixtures.
+- **Phase 1 (Current):** Drift SQLite persistence, schema migrations, and repository tests.
+- **UI redesign:** A time-first daily reminder timeline and screen-by-screen visual polish.
 - **Phase 2:** Android native alarm scheduling (`AlarmManager`), exact alarm permissions, and full-screen notification presentation.
 - **Phase 3:** Voice recording, audio playback upon answering, text-to-speech fallback, and sound/vibration customization.
 - **Phase 4:** Missed reminder handling, local encrypted backup & export, lifecycle recovery testing.
