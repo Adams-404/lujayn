@@ -459,7 +459,6 @@ class _DateChoice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return selected
         ? FilledButton.tonal(
             onPressed: onPressed,
