@@ -50,3 +50,13 @@ System appearance may be offered as a separate mode if the theme architecture su
 ## Anti-patterns
 
 Generic stat tiles, fake usage charts, generic gradient hero banners, glass cards, excessive pill buttons, nested rounded rectangles, low-contrast metadata, tiny tap targets, and one-off hardcoded colours are not part of Lujayn's visual language.
+## Research references
+
+These are references for principles, not templates to copy:
+
+- [Things 3 design review](https://www.macstories.net/reviews/things-3-beauty-and-delight-in-a-task-manager/): use whitespace, strong type hierarchy, and small intentional colour accents to make a personal task list feel calm rather than empty.
+- [Structured day planner](https://structured.app/): its time-first daily timeline is a useful interaction reference for scanning what comes next. Lujayn should keep the timeline simpler and focus on reminders rather than become a full calendar planner.
+- [Material 3 design guidance](https://developer.android.com/develop/ui/compose/designsystems/material3): use semantic colour roles, typography hierarchy, and emphasis with restraint.
+- [Android accessibility guidance](https://developer.android.com/guide/topics/ui/accessibility/apps): maintain at least 48dp touch targets and test text contrast (4.5:1 for ordinary text, 3:1 for large text).
+
+The resulting interface should feel like Lujayn, not a reskin of any of these products.
