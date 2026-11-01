@@ -168,6 +168,15 @@ internal object ReminderAlarmScheduler {
             )
             set(Calendar.MILLISECOND, 0)
         }
+        if (recurrence == "none") {
+            val isAfterReference = if (includeCurrent) {
+                candidate.timeInMillis >= afterMillis
+            } else {
+                candidate.timeInMillis > afterMillis
+            }
+            return candidate.timeInMillis.takeIf { isAfterReference }
+        }
+
         val days = data.optJSONArray("daysOfWeek") ?: JSONArray()
         if (recurrence == "customDays" && days.length() == 0) return null
 
