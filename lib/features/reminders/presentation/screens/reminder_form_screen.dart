@@ -171,8 +171,9 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
         title: Text(_isEditing ? 'Edit reminder' : 'New reminder'),
       ),
       body: ResponsiveCenter(
-        child: Form(
-          key: _formKey,
+        child: SizedBox.expand(
+          child: Form(
+            key: _formKey,
           child: ListView(
             padding: const EdgeInsets.fromLTRB(22, 20, 22, 28),
             children: [
@@ -389,6 +390,7 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
               ),
               const SizedBox(height: 12),
             ],
+          ),
           ),
         ),
       ),
