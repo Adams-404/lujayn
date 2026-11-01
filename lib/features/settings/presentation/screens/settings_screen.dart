@@ -122,27 +122,6 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                   const Divider(),
                   ListTile(
-                    leading: const Icon(Icons.restore_rounded),
-                    title: const Text('Reset sample reminders'),
-                    subtitle: const Text(
-                      'Reload the 5 curated sample reminders',
-                    ),
-                    onTap: () async {
-                      await ref
-                          .read(reminderActionControllerProvider)
-                          .resetToSampleData();
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Sample reminders reloaded'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                  const Divider(),
-                  ListTile(
                     leading: Icon(
                       Icons.delete_sweep_outlined,
                       color: theme.colorScheme.error,
