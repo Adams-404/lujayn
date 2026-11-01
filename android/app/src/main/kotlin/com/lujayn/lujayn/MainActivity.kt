@@ -19,6 +19,21 @@ class MainActivity : FlutterActivity() {
         private const val NOTIFICATION_PERMISSION_REQUEST = 4301
     }
 
+    private var notificationPermissionResult: MethodChannel.Result? = null
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray,
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == NOTIFICATION_PERMISSION_REQUEST) {
+            val granted = grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED
+            notificationPermissionResult?.success(granted)
+            notificationPermissionResult = null
+        }
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
@@ -49,11 +64,11 @@ class MainActivity : FlutterActivity() {
                         checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
                             PackageManager.PERMISSION_GRANTED
                     ) {
+                        notificationPermissionResult = result
                         requestPermissions(
                             arrayOf(Manifest.permission.POST_NOTIFICATIONS),
                             NOTIFICATION_PERMISSION_REQUEST,
                         )
-                        result.success(false)
                     } else {
                         result.success(true)
                     }
