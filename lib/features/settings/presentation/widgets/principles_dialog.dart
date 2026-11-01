@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../app/theme/app_colors.dart';
 
 /// Modal dialog presenting Lujayn's 9 core product principles from the product brief.
 class PrinciplesDialog extends StatelessWidget {
@@ -8,7 +7,6 @@ class PrinciplesDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     final principles = [
       (
@@ -61,15 +59,13 @@ class PrinciplesDialog extends StatelessWidget {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.darkSurfaceSubtle
-                          : AppColors.lightSurfaceSubtle,
+                      color: theme.colorScheme.surfaceContainerHighest,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.shield_outlined,
                       size: 20,
-                      color: AppColors.slateTeal,
+                      color: theme.colorScheme.primary,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -105,9 +101,7 @@ class PrinciplesDialog extends StatelessWidget {
                         Text(
                           desc,
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: isDark
-                                ? AppColors.darkTextSecondary
-                                : AppColors.lightTextSecondary,
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
