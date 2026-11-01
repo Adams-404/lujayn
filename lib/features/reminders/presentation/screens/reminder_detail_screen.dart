@@ -265,12 +265,12 @@ class ReminderDetailScreen extends ConsumerWidget {
                       }
                     }
                   },
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.delete_outline_rounded,
                     color: theme.colorScheme.error,
                     size: 20,
                   ),
-                  label: const Text(
+                  label: Text(
                     'Delete Reminder',
                     style: TextStyle(color: theme.colorScheme.error),
                   ),
