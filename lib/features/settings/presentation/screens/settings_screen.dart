@@ -1,21 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lujayn/app/theme/app_theme_choice.dart';
-import 'package:lujayn/core/widgets/lujayn_mark.dart';
-import 'package:lujayn/core/widgets/responsive_center.dart';
-import 'package:lujayn/features/reminders/presentation/controllers/reminder_providers.dart';
-import 'package:lujayn/features/voice/presentation/screens/voice_settings_screen.dart';
+
+import '../../../../app/theme/app_spacing.dart';
+import '../../../../app/theme/app_theme_choice.dart';
+import '../../../../core/widgets/lujayn_mark.dart';
+import '../../../../core/widgets/responsive_center.dart';
+import '../../../reminders/presentation/controllers/reminder_providers.dart';
+import '../../../voice/presentation/screens/voice_settings_screen.dart';
 import '../controllers/settings_providers.dart';
 import '../widgets/principles_dialog.dart';
 import '../widgets/theme_picker.dart';
 
-/// Settings and principles screen for Lujayn.
+/// Settings, privacy information, and appearance controls for Lujayn.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final currentThemeChoice =
         ref.watch(themeChoiceProvider).asData?.value ?? AppThemeChoice.system;
     final spokenAloud =
@@ -25,94 +28,111 @@ class SettingsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Row(
           children: [
-            LujaynMark(size: 24, color: theme.colorScheme.onSurfaceVariant),
-            const SizedBox(width: 10),
+            LujaynMark(size: 24, color: colors.onSurfaceVariant),
+            const SizedBox(width: AppSpacing.sm),
             const Text('Settings'),
           ],
         ),
       ),
       body: ResponsiveCenter(
         child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.gutter,
+            AppSpacing.md,
+            AppSpacing.gutter,
+            AppSpacing.xxxl,
+          ),
           children: [
             // Privacy Promise Banner
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: theme.colorScheme.outline),
+            Material(
+              color: colors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.surface),
+                side: BorderSide(color: colors.outline),
               ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.tertiary.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
+              clipBehavior: Clip.antiAlias,
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: colors.tertiary.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.lock_outline_rounded,
+                        color: colors.tertiary,
+                        size: 22,
+                      ),
                     ),
-                    child: Icon(
-                      Icons.lock_outline_rounded,
-                      color: theme.colorScheme.tertiary,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Privacy by default',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Privacy by default',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Your reminders and data stay entirely on this device. No ads, tracking, or cloud sync.',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            height: 1.4,
+                          const SizedBox(height: AppSpacing.xxs),
+                          Text(
+                            'Your reminders stay entirely on this device. No accounts, ads, tracking, or cloud sync.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colors.onSurfaceVariant,
+                              height: 1.4,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl),
 
-            // Section: Privacy & Data
-            _SectionTitle(title: 'Privacy & Data'),
-            Card(
+            // Data & Privacy Section (Placed directly after Privacy Banner)
+            const _SectionHeading(title: 'DATA & PRIVACY'),
+            Material(
+              color: colors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.surface),
+                side: BorderSide(color: colors.outline),
+              ),
+              clipBehavior: Clip.antiAlias,
               child: Column(
                 children: [
                   ListTile(
+                    minTileHeight: AppSpacing.minTouchTarget,
                     leading: const Icon(Icons.shield_outlined),
                     title: const Text('Product principles'),
                     subtitle: const Text('Read Lujayn’s 9 core principles'),
                     trailing: const Icon(Icons.chevron_right_rounded),
                     onTap: () {
-                      showDialog(
+                      showDialog<void>(
                         context: context,
                         builder: (_) => const PrinciplesDialog(),
                       );
                     },
                   ),
-                  const Divider(),
-                  ListTile(
-                    leading: const Icon(Icons.storage_outlined),
-                    title: const Text('Data persistence'),
-                    subtitle: const Text(
-                      'SQLite on this device. Works offline; no account or cloud storage.',
+                  Divider(height: 1, color: colors.outlineVariant),
+                  const ListTile(
+                    minTileHeight: AppSpacing.minTouchTarget,
+                    leading: Icon(Icons.storage_outlined),
+                    title: Text('Data persistence'),
+                    subtitle: Text(
+                      'SQLite on this device. Works offline; no account or cloud sync.',
                     ),
                   ),
-                  const Divider(),
+                  Divider(height: 1, color: colors.outlineVariant),
                   ListTile(
+                    minTileHeight: AppSpacing.minTouchTarget,
                     leading: const Icon(Icons.download_for_offline_outlined),
                     title: const Text('Encrypted backup & export'),
                     subtitle: const Text(
@@ -124,113 +144,66 @@ class SettingsScreen extends ConsumerWidget {
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest,
+                        color: colors.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text('Phase 4', style: theme.textTheme.labelSmall),
                     ),
                   ),
-                  const Divider(),
+                  Divider(height: 1, color: colors.outlineVariant),
                   ListTile(
+                    minTileHeight: AppSpacing.minTouchTarget,
                     leading: Icon(
                       Icons.delete_sweep_outlined,
-                      color: theme.colorScheme.error,
+                      color: colors.error,
                     ),
                     title: Text(
                       'Clear all reminders',
-                      style: TextStyle(color: theme.colorScheme.error),
+                      style: TextStyle(color: colors.error),
                     ),
-                    subtitle: const Text('Remove all stored reminder records'),
-                    onTap: () async {
-                      final confirmed = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('Clear all reminders?'),
-                          content: const Text(
-                            'This will permanently remove every reminder stored on this device.',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(ctx).pop(false),
-                              child: const Text('Cancel'),
-                            ),
-                            FilledButton(
-                              onPressed: () => Navigator.of(ctx).pop(true),
-                              style: FilledButton.styleFrom(
-                                backgroundColor: theme.colorScheme.error,
-                              ),
-                              child: const Text('Clear All'),
-                            ),
-                          ],
-                        ),
-                      );
-
-                      if (confirmed == true && context.mounted) {
-                        await ref
-                            .read(reminderActionControllerProvider)
-                            .clearAll();
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('All reminders cleared'),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        }
-                      }
-                    },
+                    subtitle: const Text(
+                      'Remove all stored reminder records from this device',
+                    ),
+                    onTap: () => _confirmClearAll(context, ref),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl),
 
-            // Section: Notifications & Platform
-            _SectionTitle(title: 'Notifications & Permissions'),
-            Card(
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.alarm_on_outlined),
-                    title: const Text('Exact alarms (Android 12+)'),
-                    subtitle: const Text(
-                      'Android delivers a reminder at the exact minute only when '
-                      'this is allowed. Without it Lujayn still reminds you, '
-                      'possibly a few minutes late.',
-                    ),
-                  ),
-                  const Divider(),
-                  ListTile(
-                    leading: const Icon(Icons.ring_volume_outlined),
-                    title: const Text('Call-style presentation'),
-                    subtitle: const Text(
-                      'A due reminder appears as a full-screen call when Android '
-                      'allows it, and as a notification otherwise. Battery '
-                      'restrictions and some manufacturers may limit this.',
-                    ),
-                  ),
-                  const Divider(),
-                  ListTile(
-                    leading: const Icon(Icons.battery_saver_outlined),
-                    title: const Text('Battery optimization handling'),
-                    subtitle: const Text(
-                      'Guidance for manufacturer-specific background restrictions will be provided in onboarding.',
-                    ),
-                  ),
-                ],
+            // Appearance Section
+            const _SectionHeading(title: 'APPEARANCE'),
+            Material(
+              color: colors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.surface),
+                side: BorderSide(color: colors.outline),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: ThemePicker(
+                selected: currentThemeChoice,
+                onSelected: (choice) {
+                  ref.read(themeChoiceProvider.notifier).select(choice);
+                },
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl),
 
-            // Section: Audio
-            _SectionTitle(title: 'Audio'),
-            Card(
+            // Voice & Audio Section
+            const _SectionHeading(title: 'VOICE & AUDIO'),
+            Material(
+              color: colors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.surface),
+                side: BorderSide(color: colors.outline),
+              ),
               clipBehavior: Clip.antiAlias,
               child: Column(
                 children: [
                   ListTile(
+                    minTileHeight: AppSpacing.minTouchTarget,
                     leading: const Icon(Icons.record_voice_over_outlined),
                     title: const Text('Reminder voice'),
                     subtitle: const Text(
@@ -243,13 +216,12 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  const Divider(height: 1),
+                  Divider(height: 1, color: colors.outlineVariant),
                   SwitchListTile(
                     secondary: const Icon(Icons.volume_up_outlined),
                     title: const Text('Read reminders aloud'),
                     subtitle: const Text(
-                      'Speaks the reminder when it arrives. Nothing is sent '
-                      'anywhere.',
+                      'Speaks the reminder when it arrives. Nothing is sent anywhere.',
                     ),
                     value: spokenAloud,
                     onChanged: (value) => ref
@@ -260,46 +232,69 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl),
 
-            // Section: Appearance
-            _SectionTitle(title: 'Appearance'),
-            Card(
+            // Delivery & Permissions Section
+            const _SectionHeading(title: 'DELIVERY & PERMISSIONS'),
+            Material(
+              color: colors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.surface),
+                side: BorderSide(color: colors.outline),
+              ),
               clipBehavior: Clip.antiAlias,
-              child: ThemePicker(
-                selected: currentThemeChoice,
-                onSelected: (choice) {
-                  ref.read(themeChoiceProvider.notifier).select(choice);
-                },
+              child: Column(
+                children: [
+                  const ListTile(
+                    minTileHeight: AppSpacing.minTouchTarget,
+                    leading: Icon(Icons.alarm_on_outlined),
+                    title: Text('Exact alarms (Android 12+)'),
+                    subtitle: Text(
+                      'Delivers reminders at the exact minute when allowed. Without it, reminders may arrive a few minutes late.',
+                    ),
+                  ),
+                  Divider(height: 1, color: colors.outlineVariant),
+                  const ListTile(
+                    minTileHeight: AppSpacing.minTouchTarget,
+                    leading: Icon(Icons.ring_volume_outlined),
+                    title: Text('Call-style presentation'),
+                    subtitle: Text(
+                      'Appears as a full-screen alert when Android allows it, and as a heads-up notification otherwise.',
+                    ),
+                  ),
+                  Divider(height: 1, color: colors.outlineVariant),
+                  const ListTile(
+                    minTileHeight: AppSpacing.minTouchTarget,
+                    leading: Icon(Icons.battery_saver_outlined),
+                    title: Text('Battery optimization'),
+                    subtitle: Text(
+                      'Some device manufacturers restrict background alarms. Keep Lujayn unmonitored if reminders arrive late.',
+                    ),
+                  ),
+                ],
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl),
 
-            // Section: About
-            _SectionTitle(title: 'About'),
-            Card(
+            // About Section
+            const _SectionHeading(title: 'ABOUT'),
+            Material(
+              color: colors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.surface),
+                side: BorderSide(color: colors.outline),
+              ),
+              clipBehavior: Clip.antiAlias,
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(
-                            Icons.alarm_rounded,
-                            color: theme.colorScheme.onPrimary,
-                            size: 18,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
+                        LujaynMark(size: 28, color: colors.primary),
+                        const SizedBox(width: AppSpacing.sm),
                         Text('Lujayn', style: theme.textTheme.headlineSmall),
                         const Spacer(),
                         Container(
@@ -308,22 +303,22 @@ class SettingsScreen extends ConsumerWidget {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest,
+                            color: colors.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            'v1.0.0 (Phase 0)',
+                            'v1.0.0',
                             style: theme.textTheme.labelSmall,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.sm),
                     Text(
                       'A personal reminder companion that respects your privacy, '
                       'stays on your device and helps you remember what matters.',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        fontStyle: FontStyle.italic,
+                        color: colors.onSurfaceVariant,
                         height: 1.45,
                       ),
                     ),
@@ -332,16 +327,65 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
 
-            const SizedBox(height: 40),
+            const SizedBox(height: AppSpacing.xxxl),
           ],
         ),
       ),
     );
   }
+
+  Future<void> _confirmClearAll(BuildContext context, WidgetRef ref) async {
+    final theme = Theme.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Clear all reminders?'),
+        content: const Text(
+          'This will permanently remove every reminder stored on this device. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Keep reminders'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+            ),
+            child: const Text('Clear all'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        await ref.read(reminderActionControllerProvider).clearAll();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('All reminders cleared'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } catch (_) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not clear reminders. Please try again.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    }
+  }
 }
 
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title});
+class _SectionHeading extends StatelessWidget {
+  const _SectionHeading({required this.title});
 
   final String title;
 
@@ -350,11 +394,13 @@ class _SectionTitle extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8),
+      padding: const EdgeInsets.only(left: 4, bottom: AppSpacing.xs),
       child: Text(
         title,
-        style: theme.textTheme.titleSmall?.copyWith(
-          fontWeight: FontWeight.w600,
+        style: theme.textTheme.labelMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.1,
         ),
       ),
     );
