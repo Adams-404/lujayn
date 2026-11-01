@@ -44,6 +44,51 @@ final reminderSchedulePlannerProvider = Provider<ReminderSchedulePlanner>(
   (ref) => const ReminderSchedulePlanner(),
 );
 
+/// Whether the device will actually deliver reminders right now.
+///
+/// Lujayn never claims an alarm is guaranteed. This reports what Android
+/// currently allows so the interface can be honest about degraded delivery
+/// instead of silently failing.
+class DeliveryReadiness {
+  const DeliveryReadiness({
+    required this.notifications,
+    required this.exactAlarms,
+  });
+
+  /// Android is allowed to show reminder notifications.
+  final bool notifications;
+
+  /// Android is allowed to deliver at the exact minute the user chose.
+  final bool exactAlarms;
+
+  bool get isLimited => !notifications || !exactAlarms;
+
+  /// True when the user will probably not see a reminder at all.
+  bool get isBlocked => !notifications;
+}
+
+/// Reads the current delivery permissions. Refresh it after the user returns
+/// from a system settings screen.
+final deliveryReadinessProvider = FutureProvider<DeliveryReadiness>((
+  ref,
+) async {
+  final scheduler = ref.watch(reminderAlarmSchedulerProvider);
+  if (defaultTargetPlatform != TargetPlatform.android) {
+    return const DeliveryReadiness(notifications: true, exactAlarms: true);
+  }
+  try {
+    final notifications = await scheduler.canPostNotifications();
+    final exactAlarms = await scheduler.canScheduleExactAlarms();
+    return DeliveryReadiness(
+      notifications: notifications,
+      exactAlarms: exactAlarms,
+    );
+  } on Object {
+    // Never block the screen on a platform call that cannot answer.
+    return const DeliveryReadiness(notifications: true, exactAlarms: true);
+  }
+});
+
 /// Hand-off of due reminders from the platform to the call-style surface.
 final reminderCallBridgeProvider = Provider<ReminderCallBridge>((ref) {
   if (defaultTargetPlatform == TargetPlatform.android) {

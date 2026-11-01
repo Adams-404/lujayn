@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/utilities/date_formatters.dart';
 import '../../../../core/widgets/empty_state_view.dart';
 import '../../../../core/widgets/lujayn_mark.dart';
@@ -85,28 +86,30 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-              const SliverToBoxAdapter(child: SizedBox(height: 20)),
+              const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
+              const SliverToBoxAdapter(child: _DeliveryNotice()),
               remindersAsync.when(
-                loading: () => const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator()),
-                ),
+                loading: () =>
+                    const SliverFillRemaining(child: _ReminderLoadingState()),
                 error: (_, _) => SliverFillRemaining(
                   hasScrollBody: false,
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Text(
-                        'Your reminders couldn’t be loaded. Please try again.',
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyLarge,
-                      ),
-                    ),
+                  child: EmptyStateView(
+                    icon: Icons.error_outline_rounded,
+                    title: 'Your reminders didn’t load',
+                    description:
+                        'Something went wrong reading them from this device. '
+                        'Nothing has been lost — try again.',
+                    actionLabel: 'Try again',
+                    actionIcon: Icons.refresh_rounded,
+                    onAction: () => ref.invalidate(remindersStreamProvider),
                   ),
                 ),
                 data: (reminders) =>
                     _buildContent(context, ref, reminders, filter),
               ),
-              const SliverToBoxAdapter(child: SizedBox(height: 96)),
+              const SliverToBoxAdapter(
+                child: SizedBox(height: AppSpacing.fabClearance),
+              ),
             ],
           ),
         ),
@@ -291,6 +294,141 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
+/// A quiet, honest notice when Android is currently blocking reminder delivery.
+///
+/// Shown only when something is actually wrong, so it never becomes wallpaper.
+class _DeliveryNotice extends ConsumerWidget {
+  const _DeliveryNotice();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final readiness = ref.watch(deliveryReadinessProvider).asData?.value;
+    if (readiness == null || !readiness.isLimited) {
+      return const SizedBox.shrink();
+    }
+
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final blocked = readiness.isBlocked;
+    final title = blocked
+        ? 'Reminders can’t be shown right now'
+        : 'Reminders may arrive late';
+    final message = blocked
+        ? 'Android is blocking Lujayn’s notifications. Your reminders are still '
+              'saved on this device and will appear here.'
+        : 'Android is limiting exact alarms, so a reminder may arrive a few '
+              'minutes after the time you chose.';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.gutter,
+        0,
+        AppSpacing.gutter,
+        AppSpacing.md,
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: colors.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(AppRadius.surface),
+          border: Border.all(color: colors.outline),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  blocked
+                      ? Icons.notifications_off_outlined
+                      : Icons.schedule_rounded,
+                  size: 20,
+                  color: colors.primary,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              message,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.onSurfaceVariant,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  final scheduler = ref.read(reminderAlarmSchedulerProvider);
+                  if (blocked) {
+                    await scheduler.requestNotificationPermission();
+                  } else {
+                    await scheduler.requestExactAlarmPermission();
+                  }
+                  ref.invalidate(deliveryReadinessProvider);
+                },
+                icon: const Icon(Icons.settings_outlined, size: 18),
+                label: Text(
+                  blocked ? 'Allow notifications' : 'Review settings',
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A quiet placeholder while reminders are read from the device.
+///
+/// A bare spinner on an empty screen reads as a stall. This keeps the page
+/// structure visible so the wait feels short and the app feels alive.
+class _ReminderLoadingState extends StatelessWidget {
+  const _ReminderLoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Semantics(
+        label: 'Loading your reminders',
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.4,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'Reading your reminders…',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ReminderFilters extends StatelessWidget {
   const _ReminderFilters({required this.selected, required this.onSelected});
 
@@ -305,17 +443,21 @@ class _ReminderFilters extends StatelessWidget {
       (ReminderFilter.all, 'All'),
     ];
 
-    return Row(
-      children: [
-        for (var index = 0; index < options.length; index++) ...[
-          if (index > 0) const SizedBox(width: 22),
-          _FilterTab(
-            label: options[index].$2,
-            selected: selected == options[index].$1,
-            onTap: () => onSelected(options[index].$1),
-          ),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      // Large text and narrow screens must not clip the filters.
+      child: Row(
+        children: [
+          for (var index = 0; index < options.length; index++) ...[
+            if (index > 0) const SizedBox(width: AppSpacing.gutter),
+            _FilterTab(
+              label: options[index].$2,
+              selected: selected == options[index].$1,
+              onTap: () => onSelected(options[index].$1),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
