@@ -62,7 +62,7 @@ class PrinciplesDialog extends StatelessWidget {
                       color: theme.colorScheme.surfaceContainerHighest,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.shield_outlined,
                       size: 20,
                       color: theme.colorScheme.primary,
