@@ -1,11 +1,17 @@
+import 'dart:io';
+
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lujayn/app/app.dart';
+import 'package:lujayn/core/database/app_database.dart';
 import 'package:lujayn/features/reminders/data/repositories/mock_reminder_repository.dart';
+import 'package:lujayn/features/reminders/data/repositories/drift_reminder_repository.dart';
 import 'package:lujayn/features/reminders/domain/models/recurrence_rule.dart';
 import 'package:lujayn/features/reminders/domain/models/reminder.dart';
 import 'package:lujayn/features/reminders/domain/models/reminder_status.dart';
+import 'package:lujayn/features/reminders/presentation/controllers/reminder_providers.dart';
 
 void main() {
   group('RecurrenceRule Unit Tests', () {
@@ -60,6 +66,93 @@ void main() {
       );
 
       expect(next, equals(DateTime(2026, 11, 8, 10, 0)));
+    });
+  });
+
+  group('DriftReminderRepository Tests', () {
+    test('persists reminder data after the database is reopened', () async {
+      final directory = await Directory.systemTemp.createTemp('lujayn-db-');
+      final file = File('${directory.path}/reminders.sqlite');
+      final reminder = Reminder(
+        id: 'persistent-reminder',
+        title: 'Take evening medication',
+        description: 'With water after dinner',
+        scheduledDateTime: DateTime(2026, 11, 3, 20, 15),
+        recurrence: RecurrenceRule(
+          type: RecurrenceType.customDays,
+          daysOfWeek: [1, 3, 5],
+        ),
+        status: ReminderStatus.snoozed,
+        createdAt: DateTime(2026, 11, 1, 8),
+        updatedAt: DateTime(2026, 11, 1, 8),
+      );
+
+      final firstDatabase = AppDatabase.forTesting(NativeDatabase(file));
+      final firstRepository = DriftReminderRepository(firstDatabase);
+      await firstRepository.saveReminder(reminder);
+      await firstDatabase.close();
+
+      final reopenedDatabase = AppDatabase.forTesting(NativeDatabase(file));
+      final reopenedRepository = DriftReminderRepository(reopenedDatabase);
+      final restored = await reopenedRepository.getReminderById(
+        'persistent-reminder',
+      );
+
+      expect(restored, equals(reminder));
+      await reopenedDatabase.close();
+      await directory.delete(recursive: true);
+    });
+
+    test('orders active reminders before completed reminders', () async {
+      final database = AppDatabase.forTesting(NativeDatabase.memory());
+      final repository = DriftReminderRepository(database);
+      final now = DateTime(2026, 11, 1, 10);
+      final completed = Reminder(
+        id: 'completed',
+        title: 'Already done',
+        scheduledDateTime: now.subtract(const Duration(hours: 1)),
+        status: ReminderStatus.completed,
+        createdAt: now,
+        updatedAt: now,
+        completedAt: now,
+      );
+      final active = Reminder(
+        id: 'active',
+        title: 'Still to do',
+        scheduledDateTime: now.add(const Duration(hours: 1)),
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      await repository.saveReminder(completed);
+      await repository.saveReminder(active);
+      final reminders = await repository.getReminders();
+
+      expect(reminders.map((item) => item.id), ['active', 'completed']);
+      await database.close();
+    });
+
+    test('toggles completion and deletes a reminder', () async {
+      final database = AppDatabase.forTesting(NativeDatabase.memory());
+      final repository = DriftReminderRepository(database);
+      final now = DateTime(2026, 11, 1, 9);
+      final reminder = Reminder(
+        id: 'toggle-me',
+        title: 'Water the plants',
+        scheduledDateTime: now,
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      await repository.saveReminder(reminder);
+      await repository.toggleReminderStatus(reminder.id);
+      final completed = await repository.getReminderById(reminder.id);
+      expect(completed?.status, ReminderStatus.completed);
+      expect(completed?.completedAt, isNotNull);
+
+      await repository.deleteReminder(reminder.id);
+      expect(await repository.getReminderById(reminder.id), isNull);
+      await database.close();
     });
   });
 
@@ -144,7 +237,16 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      await tester.pumpWidget(const ProviderScope(child: LujaynApp()));
+      await tester.pumpWidget(ProviderScope(
+          overrides: [
+            reminderRepositoryProvider.overrideWith((ref) {
+              final repository = MockReminderRepository(preloadSampleData: true);
+              ref.onDispose(repository.dispose);
+              return repository;
+            }),
+          ],
+          child: const LujaynApp(),
+        ));
       await tester.pumpAndSettle();
 
       // Check header and titles
@@ -175,7 +277,16 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      await tester.pumpWidget(const ProviderScope(child: LujaynApp()));
+      await tester.pumpWidget(ProviderScope(
+          overrides: [
+            reminderRepositoryProvider.overrideWith((ref) {
+              final repository = MockReminderRepository(preloadSampleData: true);
+              ref.onDispose(repository.dispose);
+              return repository;
+            }),
+          ],
+          child: const LujaynApp(),
+        ));
       await tester.pumpAndSettle();
 
       // Tap Settings navigation tab
@@ -213,7 +324,16 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      await tester.pumpWidget(const ProviderScope(child: LujaynApp()));
+      await tester.pumpWidget(ProviderScope(
+          overrides: [
+            reminderRepositoryProvider.overrideWith((ref) {
+              final repository = MockReminderRepository(preloadSampleData: true);
+              ref.onDispose(repository.dispose);
+              return repository;
+            }),
+          ],
+          child: const LujaynApp(),
+        ));
       await tester.pumpAndSettle();
 
       // Tap FAB
