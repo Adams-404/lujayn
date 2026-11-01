@@ -8,11 +8,11 @@ Read this first, then `AGENTS.md`, then `lujayn-project-brief.md`.
 
 ## 1. Where things stand in one paragraph
 
-`main` is at `e16ea00`, 93 tests pass, and the working tree is clean. Issue #5
-(alarm engine) is merged, #3 (visual identity) is partly done, #18 (iOS) is
-**closed as deferred**, and #6 (audio) now has two real slices: reading a
-reminder aloud with the device engine, and a downloadable offline voice system
-that installs Kokoro or Kitten Nano. **No one has run the app on a real phone
+`main` is at `0c27c55`, 104 tests pass, and the working tree is clean. Issue #5
+(alarm engine) is merged, **#3 (visual identity) is completed and closed**,
+#18 (iOS) is **closed as deferred**, and #6 (audio) has two real slices:
+reading a reminder aloud with the device engine, and a downloadable offline
+voice system that installs Kokoro or Kitten Nano. **No one has run the app on a real phone
 yet** — that is the one honest gap in the delivery work, and it now covers the
 voices too. `docs/android-device-test-matrix.md` is the checklist.
 
@@ -20,8 +20,8 @@ What is left: the sherpa-onnx engine adapter that actually speaks with a
 downloaded pack (#6), voice recording and playback (#6), encrypted backup (#16),
 on-device natural language (#17). #18 is out of scope until Android is settled.
 
-**Milestone 2026-11-01 (later):** text-to-speech landed, then the voice pack
-system — catalog, verified download, atomic install, picker UI, and 31 new tests.
+**Milestone 2026-11-01 (later):** text-to-speech landed, the voice pack system
+landed, and PR #23 redesigned Reminder Detail and Settings, completing #3.
 
 ---
 
@@ -29,18 +29,18 @@ system — catalog, verified download, atomic install, picker UI, and 31 new tes
 
 ```
 branch : main
-HEAD   : e16ea00  feat(voice): offer downloadable offline voices that sound human
-origin : e16ea00  (in sync)
+HEAD   : 0c27c55  feat(ui): redesign reminder detail and settings screens around Lujayn design system (#23)
+origin : 0c27c55  (in sync)
 ```
 
 Recent history:
 
 ```
+0c27c55 feat(ui): redesign reminder detail and settings screens around Lujayn design system (#23)
+53955de docs: add speech and voice-pack cases to the device matrix
+8eaeb5b docs: record the audio and voice-pack milestone in the handover
 e16ea00 feat(voice): offer downloadable offline voices that sound human
 a3a147c feat(audio): read reminders aloud with the device's own speech engine
-bf53bf6 docs: record the #22 merge and the #3 first pass in the handover
-93ff905 feat(ui): give the home screen deliberate loading, error and blocked states
-ca6ddf6 feat(android): add local AlarmManager reminder delivery (#22)
 ```
 
 **Uncommitted:**
@@ -59,11 +59,26 @@ Every item below was checked with the real toolchain, not assumed.
 
 - **`dart format --output=none --set-exit-if-changed lib test`** — clean.
 - **`flutter analyze --fatal-infos`** — no issues.
-- **`flutter test`** — 93 passing at `e16ea00`.
-- **CI** — green on `ca6ddf6` (the #22 merge) and earlier. The pipeline runs
-  `build_runner`, format, analyze, `flutter test` and `flutter build apk --debug`,
-  so the APK step passing is what proves the Kotlin and icon resources compile.
-  `93ff905`, `a3a147c` and `e16ea00` have not had their own run confirmed.
+- **`flutter test`** — 104 passing at `0c27c55`.
+- **CI** — green on `0c27c55` (PR #23 merge) and all earlier merges. The pipeline runs
+  `build_runner`, format, analyze, `flutter test` and `flutter build apk --debug`.
+
+### PR #23 — merged (`0c27c55`)
+
+Redesigned `ReminderDetailScreen` and `SettingsScreen` to bring them in line with
+Lujayn's design system tokens, closing Issue #3:
+- Replaced nested Cards with clean `Material` bordered surfaces (`AppRadius.surface`,
+  `AppSpacing.gutter`, `AppSpacing.md`).
+- Solved Flutter assertion where `ListTile` inside `DecoratedBox` hid ink splashes
+  by converting container wrappers to true `Material` surfaces.
+- Made recurrence and status badges wrap with `Flexible` text, eliminating RenderFlex
+  overflows at 200% text scale.
+- Re-organized Settings to prioritize **DATA & PRIVACY** directly beneath the privacy
+  promise banner.
+- Replaced placeholder icons with `LujaynMark` and cleaned up legacy "Phase 0" tags.
+- Added comprehensive widget test suites (`test/reminder_detail_screen_test.dart`
+  and `test/settings_screen_test.dart`) covering rendering, interactions, dialogs,
+  200% text scale, and all 5 themes. 11 new tests, bringing the total to 104.
 
 ### Voice and speech (`a3a147c`, `e16ea00`)
 
@@ -217,14 +232,9 @@ text on a small screen.
 
 ## 5. Then, in order
 
-1. **Confirm CI is green on `e16ea00`.** `gh run list --branch main --limit 1`.
-   The `Build Android debug APK` step is the one that matters: the new
-   dependencies (`archive`, `crypto`, `path_provider`, `path`) all have Android
-   implementations and this is the first time they are compiled.
-2. **Physical-device verification.** Fill in
-   `docs/android-device-test-matrix.md` on real hardware. Nothing in the alarm
-   path or the voice path may be called "working" until this is done.
-3. **Finish #6.** Two of the four Phase 3 pieces are in (device TTS, voice
+1. **Issue #3 is completed and closed.** (PR #20, PR #21, PR #22, and PR #23
+   redesigned Home, create/edit, call surface, reminder detail, and settings).
+2. **Finish #6.** Two of the four Phase 3 pieces are in (device TTS, voice
    packs). Still to do:
    - **The engine adapter.** Add `sherpa_onnx`, implement an `OfflineVoiceEngine`
      behind `ReminderSpeechService`, and make `reminderSpeechServiceProvider`
@@ -237,10 +247,11 @@ text on a small screen.
    - **Voice recording and playback** for a spoken reminder, which needs
      `RECORD_AUDIO` and the audio-focus rules the brief mentions.
    - **Reminder tones and vibration** configuration.
-4. **Finish #3.** Tokens and Home states are in. Still to review:
-   reminder detail, settings, and the call-style surface; plus a screen-by-screen
-   note or screenshots in a PR, which the issue explicitly asks for.
-5. **Then the remaining issues**, roughly in this order:
+3. **Physical-device verification.** Fill in
+   `docs/android-device-test-matrix.md` on real hardware when an Android device
+   is connected. Nothing in the alarm path or the voice path may be called "working"
+   until this is done.
+4. **Then the remaining issues**, roughly in this order:
    - **#16** — encrypted local backup and restore (local file, user-held key).
      Note the recurrence fix in §4b — restore will feed the app untrusted data.
    - **#17** — on-device natural-language reminder creation. Must stay on-device.
@@ -429,12 +440,9 @@ Last verified state, so you do not have to guess:
 ```bash
 dart format --output=none --set-exit-if-changed lib test   # clean
 flutter analyze --fatal-infos                              # no issues
-flutter test                                               # 93 passing
+flutter test                                               # 104 passing
 ```
 
-`main` is at `e16ea00` and pushed. CI has not run on that commit yet — confirm
-it, and specifically watch the `Build Android debug APK` step, because the new
-dependencies are being compiled for Android for the first time.
-
-Nothing was left half-written. The next action is to confirm CI and then work
-through §5, starting with physical-device verification.
+`main` is at `0c27c55`, merged via PR #23 with green CI. Issue #3 is closed.
+Nothing was left half-written. The next action is to continue with Issue #6
+(voice engine adapter, audio playback, voice recording/playback).
