@@ -195,7 +195,6 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
               const SizedBox(height: 9),
               TextFormField(
                 controller: _titleController,
-                autofocus: !_isEditing,
                 textCapitalization: TextCapitalization.sentences,
                 textInputAction: TextInputAction.next,
                 maxLength: 80,
