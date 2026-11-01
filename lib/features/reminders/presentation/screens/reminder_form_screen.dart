@@ -262,9 +262,7 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
                     label: Text(
                       isDateToday || isDateTomorrow
                           ? 'Choose date'
-                          : AppDateFormatters.formatFullDate(
-                                  _selectedDate,
-                                ),
+                          : AppDateFormatters.formatFullDate(_selectedDate),
                     ),
                   ),
                 ],
@@ -305,13 +303,12 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
                             children: [
                               Text(
                                 _selectedTime.format(context),
-                                style: theme.textTheme.headlineSmall
-                                    ?.copyWith(fontWeight: FontWeight.w600),
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                               Text(
-                                AppDateFormatters.formatFullDate(
-                                  _selectedDate,
-                                ),
+                                AppDateFormatters.formatFullDate(_selectedDate),
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: colors.onSurfaceVariant,
                                 ),
@@ -382,8 +379,7 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
               const SizedBox(height: 12),
               RecurrenceChipSelector(
                 selectedRule: _selectedRecurrence,
-                onChanged: (rule) =>
-                    setState(() => _selectedRecurrence = rule),
+                onChanged: (rule) => setState(() => _selectedRecurrence = rule),
               ),
               const SizedBox(height: 28),
               HonestNoticeCard(
