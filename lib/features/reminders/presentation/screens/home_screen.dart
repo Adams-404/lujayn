@@ -59,9 +59,7 @@ class HomeScreen extends ConsumerWidget {
                                 ? 'No reminders scheduled'
                                 : '$activeCount active ${activeCount == 1 ? 'reminder' : 'reminders'}',
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: isDark
-                                  ? AppColors.darkTextSecondary
-                                  : AppColors.lightTextSecondary,
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           );
                         },
@@ -334,7 +332,6 @@ class _FilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return InkWell(
       onTap: onTap,
@@ -344,23 +341,21 @@ class _FilterChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.slateTeal
-              : (isDark ? AppColors.darkSurface : AppColors.lightSurface),
+              ? theme.colorScheme.primary
+              : theme.colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
-                ? AppColors.slateTeal
-                : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                ? theme.colorScheme.primary
+                : theme.colorScheme.outline,
           ),
         ),
         child: Text(
           label,
           style: theme.textTheme.labelMedium?.copyWith(
             color: isSelected
-                ? Colors.white
-                : (isDark
-                      ? AppColors.darkTextPrimary
-                      : AppColors.lightTextPrimary),
+                ? theme.colorScheme.onPrimary
+                : theme.colorScheme.onSurface,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
           ),
         ),
