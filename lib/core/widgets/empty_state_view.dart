@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Minimal, warm empty state presentation for Lujayn.
+/// A restrained empty state that keeps the next useful action obvious.
 class EmptyStateView extends StatelessWidget {
   const EmptyStateView({
     super.key,
@@ -23,34 +23,33 @@ class EmptyStateView extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: 32, color: theme.colorScheme.primary),
-            ),
-            const SizedBox(height: 20),
+            Icon(icon, size: 30, color: theme.colorScheme.primary),
+            const SizedBox(height: 18),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: theme.textTheme.headlineSmall,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 8),
-            Text(
-              description,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(height: 1.45),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 300),
+              child: Text(
+                description,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  height: 1.5,
+                ),
+              ),
             ),
             if (actionLabel != null && onAction != null) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: 22),
               FilledButton.icon(
                 onPressed: onAction,
                 icon: const Icon(Icons.add_rounded, size: 18),
