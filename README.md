@@ -33,7 +33,7 @@ Every product and architectural decision in Lujayn is governed by these 9 non-ne
 | **State Management** | Riverpod (`flutter_riverpod` 3.x with modern `Notifier` & `NotifierProvider`) |
 | **UI Design System** | Five selectable Material 3 themes (Silver, Paper, Sage, Dusk, AMOLED), plus system appearance and semantic colour roles |
 | **Architecture** | Feature-first layered architecture (Domain, Data, Presentation) |
-| **Planned Persistence** | Drift SQLite (`drift` / `drift_flutter` in Phase 1; clean in-memory mock repository in Phase 0) |
+| **Local Persistence** | Drift SQLite with versioned schema and reactive local repository |
 | **Planned Android Engine** | Native Kotlin integration via `AlarmManager`, `BroadcastReceiver`, and full-screen notifications (Phase 2) |
 | **Planned Audio** | Local voice recording, audio playback, and text-to-speech (Phase 3) |
 
@@ -48,8 +48,8 @@ lib/
 │   ├── shell/
 │   │   └── app_shell.dart         # Adaptive bottom navigation bar (Reminders, Settings)
 │   └── theme/
-│       ├── app_colors.dart        # Semantic design tokens (Slate Teal, Warm Amber, Sage)
-│       ├── app_theme.dart         # Material 3 light and dark theme definitions
+│       ├── app_theme.dart         # Five semantic Material 3 theme palettes
+│       ├── app_theme_choice.dart  # Named theme and system appearance choices
 │       └── app_typography.dart    # Legible typography scale designed for accessibility
 │
 ├── core/
@@ -110,7 +110,7 @@ lib/
 | **Visual Design** | In progress | Five named palettes; distinctive home and reminder flow redesign is tracked separately |
 | **Home Screen** | Completed | Segmented filters (Upcoming, Completed, All), grouped by Today/Later |
 | **Creation & Edit** | Completed | Form with title validation, notes, date picker, quick time presets, recurrence selector |
-| **Sample Data** | Completed | 5 realistic, human sample reminders preloaded into isolated mock repository |
+| **Sample Data** | Test-only | Curated fixtures remain available to tests; production starts with an empty local database |
 | **Settings Screen** | In progress | Privacy transparency, five-theme picker, principles modal |
 | **Local Persistence** | Implemented | Drift SQLite schema, reactive repository, stable enum serialization, and persistence tests |
 | **Native Alarms & Audio**| Out of Scope (Phase 2 & 3)| Not simulated or faked; transparently documented |
