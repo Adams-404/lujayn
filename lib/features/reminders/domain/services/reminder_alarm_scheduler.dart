@@ -8,6 +8,12 @@ abstract interface class ReminderAlarmScheduler {
   /// Opens Android's exact-alarm settings when access is not already granted.
   Future<bool> requestExactAlarmPermission();
 
+  /// Whether the app can currently post reminder notifications.
+  Future<bool> canPostNotifications();
+
+  /// Requests Android's notification runtime permission when required.
+  Future<bool> requestNotificationPermission();
+
   /// Replaces any existing alarm for [schedule.reminderId].
   Future<void> schedule(ReminderSchedule schedule);
 
