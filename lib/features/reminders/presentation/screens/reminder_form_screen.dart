@@ -309,7 +309,9 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
                                       ?.copyWith(fontWeight: FontWeight.w600),
                                 ),
                                 Text(
-                                  AppDateFormatters.formatFullDate(_selectedDate),
+                                  AppDateFormatters.formatFullDate(
+                                    _selectedDate,
+                                  ),
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: colors.onSurfaceVariant,
                                   ),
