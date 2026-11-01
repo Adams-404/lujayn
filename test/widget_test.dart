@@ -6,69 +6,59 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lujayn/app/app.dart';
 import 'package:lujayn/core/database/app_database.dart';
+import 'package:lujayn/app/theme/app_theme.dart';
+import 'package:lujayn/app/theme/app_theme_choice.dart';
 import 'package:lujayn/features/reminders/data/repositories/mock_reminder_repository.dart';
 import 'package:lujayn/features/reminders/data/repositories/drift_reminder_repository.dart';
 import 'package:lujayn/features/reminders/domain/models/recurrence_rule.dart';
 import 'package:lujayn/features/reminders/domain/models/reminder.dart';
 import 'package:lujayn/features/reminders/domain/models/reminder_status.dart';
-import 'package:lujayn/features/reminders/presentation/controllers/reminder_providers.dart';
+import 'package:lujayn/features/settings/presentation/controllers/settings_providers.dart';
 
 void main() {
-  group('RecurrenceRule Unit Tests', () {
-    test('One-time reminder does not change scheduled date', () {
-      final scheduled = DateTime(2026, 11, 1, 9, 0);
-      final next = RecurrenceRule.none.calculateNextOccurrence(scheduled);
-      expect(next, equals(scheduled));
-      expect(RecurrenceRule.none.isRecurring, isFalse);
+  group('Theme selection', () {
+    test('AMOLED uses a true black app background', () {
+      final theme = AppTheme.forChoice(AppThemeChoice.amoled);
+      expect(theme.scaffoldBackgroundColor, const Color(0xFF000000));
+      expect(theme.colorScheme.surface, const Color(0xFF050505));
     });
 
-    test('Daily recurrence advances to the next day after reference', () {
-      final scheduled = DateTime(2026, 11, 1, 8, 0);
-      final reference = DateTime(2026, 11, 1, 12, 0);
-
-      final next = RecurrenceRule.daily.calculateNextOccurrence(
-        scheduled,
-        after: reference,
-      );
-
-      expect(next.year, equals(2026));
-      expect(next.month, equals(11));
-      expect(next.day, equals(2));
-      expect(next.hour, equals(8));
-      expect(next.minute, equals(0));
+    test('the five named palettes have distinct accent colours', () {
+      final choices = [
+        AppThemeChoice.silver,
+        AppThemeChoice.paper,
+        AppThemeChoice.sage,
+        AppThemeChoice.dusk,
+        AppThemeChoice.amoled,
+      ];
+      final accents = choices.map(AppTheme.accentFor).toSet();
+      expect(accents.length, 5);
     });
 
-    test('Weekdays recurrence skips Saturday and Sunday', () {
-      // Friday Nov 6, 2026 at 20:00
-      final friday = DateTime(2026, 11, 6, 20, 0);
-      expect(friday.weekday, equals(DateTime.friday));
-
-      final reference = DateTime(2026, 11, 6, 21, 0);
-
-      final next = RecurrenceRule.weekdays.calculateNextOccurrence(
-        friday,
-        after: reference,
+    test('selected theme is restored from local preferences', () async {
+      final store = _MemoryThemePreferenceStore();
+      final firstContainer = ProviderContainer(
+        overrides: [themePreferenceStoreProvider.overrideWithValue(store)],
       );
-
-      // Should advance to Monday Nov 9, 2026
-      expect(next.weekday, equals(DateTime.monday));
-      expect(next.day, equals(9));
-      expect(next.hour, equals(20));
-    });
-
-    test('Weekly recurrence advances exactly 7 days', () {
-      final base = DateTime(2026, 11, 1, 10, 0);
-      final reference = DateTime(2026, 11, 1, 11, 0);
-
-      final next = RecurrenceRule.weekly.calculateNextOccurrence(
-        base,
-        after: reference,
+      expect(
+        await firstContainer.read(themeChoiceProvider.future),
+        AppThemeChoice.system,
       );
+      await firstContainer
+          .read(themeChoiceProvider.notifier)
+          .select(AppThemeChoice.amoled);
+      firstContainer.dispose();
 
-      expect(next, equals(DateTime(2026, 11, 8, 10, 0)));
+      final restartedContainer = ProviderContainer(
+        overrides: [themePreferenceStoreProvider.overrideWithValue(store)],
+      );
+      expect(
+        await restartedContainer.read(themeChoiceProvider.future),
+        AppThemeChoice.amoled,
+      );
+      restartedContainer.dispose();
     });
   });
-
   group('DriftReminderRepository Tests', () {
     test('persists reminder data after the database is reopened', () async {
       final directory = await Directory.systemTemp.createTemp('lujayn-db-');
@@ -156,6 +146,61 @@ void main() {
     });
   });
 
+  group('RecurrenceRule Unit Tests', () {
+    test('One-time reminder does not change scheduled date', () {
+      final scheduled = DateTime(2026, 11, 1, 9, 0);
+      final next = RecurrenceRule.none.calculateNextOccurrence(scheduled);
+      expect(next, equals(scheduled));
+      expect(RecurrenceRule.none.isRecurring, isFalse);
+    });
+
+    test('Daily recurrence advances to the next day after reference', () {
+      final scheduled = DateTime(2026, 11, 1, 8, 0);
+      final reference = DateTime(2026, 11, 1, 12, 0);
+
+      final next = RecurrenceRule.daily.calculateNextOccurrence(
+        scheduled,
+        after: reference,
+      );
+
+      expect(next.year, equals(2026));
+      expect(next.month, equals(11));
+      expect(next.day, equals(2));
+      expect(next.hour, equals(8));
+      expect(next.minute, equals(0));
+    });
+
+    test('Weekdays recurrence skips Saturday and Sunday', () {
+      // Friday Nov 6, 2026 at 20:00
+      final friday = DateTime(2026, 11, 6, 20, 0);
+      expect(friday.weekday, equals(DateTime.friday));
+
+      final reference = DateTime(2026, 11, 6, 21, 0);
+
+      final next = RecurrenceRule.weekdays.calculateNextOccurrence(
+        friday,
+        after: reference,
+      );
+
+      // Should advance to Monday Nov 9, 2026
+      expect(next.weekday, equals(DateTime.monday));
+      expect(next.day, equals(9));
+      expect(next.hour, equals(20));
+    });
+
+    test('Weekly recurrence advances exactly 7 days', () {
+      final base = DateTime(2026, 11, 1, 10, 0);
+      final reference = DateTime(2026, 11, 1, 11, 0);
+
+      final next = RecurrenceRule.weekly.calculateNextOccurrence(
+        base,
+        after: reference,
+      );
+
+      expect(next, equals(DateTime(2026, 11, 8, 10, 0)));
+    });
+  });
+
   group('MockReminderRepository Tests', () {
     late MockReminderRepository repository;
 
@@ -240,10 +285,11 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            themePreferenceStoreProvider.overrideWithValue(
+              _MemoryThemePreferenceStore(),
+            ),
             reminderRepositoryProvider.overrideWith((ref) {
-              final repository = MockReminderRepository(
-                preloadSampleData: true,
-              );
+              final repository = MockReminderRepository(preloadSampleData: true);
               ref.onDispose(repository.dispose);
               return repository;
             }),
@@ -281,20 +327,19 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            reminderRepositoryProvider.overrideWith((ref) {
-              final repository = MockReminderRepository(
-                preloadSampleData: true,
-              );
-              ref.onDispose(repository.dispose);
-              return repository;
-            }),
-          ],
-          child: const LujaynApp(),
-        ),
-      );
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          themePreferenceStoreProvider.overrideWithValue(
+            _MemoryThemePreferenceStore(),
+          ),
+          reminderRepositoryProvider.overrideWith((ref) {
+            final repository = MockReminderRepository(preloadSampleData: true);
+            ref.onDispose(repository.dispose);
+            return repository;
+          }),
+        ],
+        child: const LujaynApp(),
+      ));
       await tester.pumpAndSettle();
 
       // Tap Settings navigation tab
@@ -332,20 +377,19 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            reminderRepositoryProvider.overrideWith((ref) {
-              final repository = MockReminderRepository(
-                preloadSampleData: true,
-              );
-              ref.onDispose(repository.dispose);
-              return repository;
-            }),
-          ],
-          child: const LujaynApp(),
-        ),
-      );
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          themePreferenceStoreProvider.overrideWithValue(
+            _MemoryThemePreferenceStore(),
+          ),
+          reminderRepositoryProvider.overrideWith((ref) {
+            final repository = MockReminderRepository(preloadSampleData: true);
+            ref.onDispose(repository.dispose);
+            return repository;
+          }),
+        ],
+        child: const LujaynApp(),
+      ));
       await tester.pumpAndSettle();
 
       // Tap FAB
@@ -380,4 +424,16 @@ void main() {
       expect(find.text('Evening chamomile tea'), findsOneWidget);
     });
   });
+}
+
+class _MemoryThemePreferenceStore implements ThemePreferenceStore {
+  String? value;
+
+  @override
+  Future<String?> readThemeChoice() async => value;
+
+  @override
+  Future<void> writeThemeChoice(String value) async {
+    this.value = value;
+  }
 }
