@@ -180,7 +180,7 @@ void main() {
   });
 
   group('Lujayn Application Shell & Navigation Widget Tests', () {
-    testWidgets('App renders Home screen with Upcoming reminders and FAB', (
+    testWidgets('App renders the redesigned daily timeline and add action', (
       WidgetTester tester,
     ) async {
       tester.view.physicalSize = const Size(1080, 2400);
@@ -203,13 +203,14 @@ void main() {
       await tester.pumpAndSettle();
 
       // Check header and titles
-      expect(find.text('Upcoming reminders'), findsOneWidget);
+      expect(find.text('Today'), findsOneWidget);
+      expect(find.text('NEXT REMINDER'), findsOneWidget);
       expect(find.text('Upcoming'), findsOneWidget);
       expect(find.text('Completed'), findsOneWidget);
       expect(find.text('All'), findsOneWidget);
 
       // Check Floating Action Button
-      expect(find.text('New Reminder'), findsOneWidget);
+      expect(find.text('Add reminder'), findsOneWidget);
 
       // Check Navigation Bar items
       expect(find.text('Reminders'), findsOneWidget);
@@ -230,7 +231,16 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      await tester.pumpWidget(const ProviderScope(child: LujaynApp()));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            themePreferenceStoreProvider.overrideWithValue(
+              _MemoryThemePreferenceStore(),
+            ),
+          ],
+          child: const LujaynApp(),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Tap Settings navigation tab
@@ -268,11 +278,20 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      await tester.pumpWidget(const ProviderScope(child: LujaynApp()));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            themePreferenceStoreProvider.overrideWithValue(
+              _MemoryThemePreferenceStore(),
+            ),
+          ],
+          child: const LujaynApp(),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Tap FAB
-      await tester.tap(find.text('New Reminder'));
+      await tester.tap(find.text('Add reminder'));
       await tester.pumpAndSettle();
 
       // Verify form screen
@@ -299,7 +318,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should return to Home screen and display the new reminder
-      expect(find.text('Upcoming reminders'), findsOneWidget);
+      expect(find.text('Today'), findsOneWidget);
       expect(find.text('Evening chamomile tea'), findsOneWidget);
     });
   });
