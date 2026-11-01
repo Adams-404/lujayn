@@ -180,7 +180,7 @@ void main() {
   });
 
   group('Lujayn Application Shell & Navigation Widget Tests', () {
-    testWidgets('App renders the Today timeline with next reminder and primary action', (
+    testWidgets('App renders the Today timeline and primary action', (
       WidgetTester tester,
     ) async {
       tester.view.physicalSize = const Size(1080, 2400);
