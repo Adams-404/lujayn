@@ -39,8 +39,8 @@ class RecurrenceChipSelector extends StatelessWidget {
                 icon,
                 size: 16,
                 color: isSelected
-                    ? Colors.white
-                    : (theme.colorScheme.onSurfaceVariant),
+                    ? theme.colorScheme.onPrimary
+                    : theme.colorScheme.onSurfaceVariant,
               ),
               label: Text(label),
               selected: isSelected,
@@ -75,54 +75,76 @@ class RecurrenceChipSelector extends StatelessWidget {
           Text('Select repeating days:', style: theme.textTheme.labelMedium),
           const SizedBox(height: 8),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(7, (index) {
-              final dayNumber = index + 1; // 1 = Monday, 7 = Sunday
+              final dayNumber = index + 1;
               final dayNames = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+              final fullDayNames = [
+                'Monday',
+                'Tuesday',
+                'Wednesday',
+                'Thursday',
+                'Friday',
+                'Saturday',
+                'Sunday',
+              ];
               final isDaySelected = selectedRule.daysOfWeek.contains(dayNumber);
 
-              return InkWell(
-                onTap: () {
-                  final updatedDays = List<int>.from(selectedRule.daysOfWeek);
-                  if (isDaySelected) {
-                    updatedDays.remove(dayNumber);
-                  } else {
-                    updatedDays.add(dayNumber);
-                    updatedDays.sort();
-                  }
-                  onChanged(
-                    RecurrenceRule(
-                      type: updatedDays.isEmpty
-                          ? RecurrenceType.none
-                          : RecurrenceType.customDays,
-                      daysOfWeek: updatedDays,
-                    ),
-                  );
-                },
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  width: 38,
-                  height: 38,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isDaySelected
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.surfaceContainerHighest,
-                    border: Border.all(
-                      color: isDaySelected
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.outline,
-                    ),
-                  ),
-                  child: Text(
-                    dayNames[index],
-                    style: TextStyle(
-                      color: isDaySelected
-                          ? theme.colorScheme.onPrimary
-                          : theme.colorScheme.onSurface,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
+              return Expanded(
+                child: Semantics(
+                  button: true,
+                  selected: isDaySelected,
+                  label: fullDayNames[index],
+                  child: InkWell(
+                    onTap: () {
+                      final updatedDays = List<int>.from(
+                        selectedRule.daysOfWeek,
+                      );
+                      if (isDaySelected) {
+                        updatedDays.remove(dayNumber);
+                      } else {
+                        updatedDays.add(dayNumber);
+                        updatedDays.sort();
+                      }
+                      onChanged(
+                        RecurrenceRule(
+                          type: updatedDays.isEmpty
+                              ? RecurrenceType.none
+                              : RecurrenceType.customDays,
+                          daysOfWeek: updatedDays,
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(24),
+                    child: SizedBox(
+                      height: 48,
+                      child: Center(
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isDaySelected
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.surfaceContainerHighest,
+                            border: Border.all(
+                              color: isDaySelected
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.outline,
+                            ),
+                          ),
+                          child: Text(
+                            dayNames[index],
+                            style: TextStyle(
+                              color: isDaySelected
+                                  ? theme.colorScheme.onPrimary
+                                  : theme.colorScheme.onSurface,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
