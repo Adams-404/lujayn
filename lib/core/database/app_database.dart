@@ -26,8 +26,7 @@ class Reminders extends Table {
 /// This keeps persisted data safe if enum declaration order changes.
 @DriftDatabase(tables: [Reminders])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase([QueryExecutor? executor])
-    : super(executor ?? driftDatabase(name: 'lujayn'));
+  AppDatabase() : super(driftDatabase(name: 'lujayn'));
 
   /// In-memory or file-backed database constructor for tests.
   AppDatabase.forTesting(QueryExecutor executor) : super(executor);
