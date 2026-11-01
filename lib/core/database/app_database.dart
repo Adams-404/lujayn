@@ -18,7 +18,7 @@ class Reminders extends Table {
   DateTimeColumn get completedAt => dateTime().nullable()();
 
   @override
-  Set<Column<Object>> get primaryKey => {id};
+  Set<Column> get primaryKey => {id};
 }
 
 /// Local SQLite database for user reminders.
