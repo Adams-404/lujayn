@@ -1,7 +1,7 @@
 import 'package:flutter/services.dart';
 
-import 'reminder_alarm_scheduler.dart';
-import 'reminder_schedule_planner.dart';
+import '../../domain/services/reminder_alarm_scheduler.dart';
+import '../../domain/services/reminder_schedule_planner.dart';
 
 /// Android implementation backed by the native AlarmManager bridge.
 class AndroidReminderAlarmScheduler implements ReminderAlarmScheduler {

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -29,6 +30,7 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
   late DateTime _selectedDate;
   late TimeOfDay _selectedTime;
   late RecurrenceRule _selectedRecurrence;
+  final String _newReminderId = const Uuid().v4();
   bool _isSaving = false;
 
   bool get _isEditing => widget.initialReminder != null;
@@ -110,34 +112,117 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
     }
   }
 
+  /// Asks for the Android delivery permissions this reminder needs.
+  ///
+  /// Saving is never blocked: if the user declines, the reminder is still
+  /// stored and Android falls back to inexact delivery without notifications.
+  Future<void> _prepareDeliveryPermissions() async {
+    if (defaultTargetPlatform != TargetPlatform.android) return;
+
+    final scheduler = ref.read(reminderAlarmSchedulerProvider);
+
+    if (!await scheduler.canPostNotifications()) {
+      if (!mounted) return;
+      final shouldRequest = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Allow reminder notifications?'),
+          content: const Text(
+            'Lujayn needs notification permission to show an alert when a '
+            'reminder is due. You can still save reminders without it, but '
+            'Android will not display their notifications.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Not now'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Allow'),
+            ),
+          ],
+        ),
+      );
+      if (shouldRequest == true) {
+        await scheduler.requestNotificationPermission();
+      }
+    }
+
+    if (!await scheduler.canScheduleExactAlarms()) {
+      if (!mounted) return;
+      final openSettings = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Allow on-time reminders?'),
+          content: const Text(
+            'Android may delay reminders unless Lujayn is allowed to set '
+            'exact alarms. You can enable this in Alarms & reminders settings, '
+            'or continue with delivery that may be delayed.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Use delayed delivery'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Open settings'),
+            ),
+          ],
+        ),
+      );
+      if (openSettings == true) {
+        await scheduler.requestExactAlarmPermission();
+      }
+    }
+  }
+
   Future<void> _save() async {
     if (_isSaving || !_formKey.currentState!.validate()) return;
 
     setState(() => _isSaving = true);
-    final now = DateTime.now();
-    final reminder = Reminder(
-      id: widget.initialReminder?.id ?? const Uuid().v4(),
-      title: _titleController.text.trim(),
-      description: _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
-      scheduledDateTime: _scheduledDateTime,
-      recurrence: _selectedRecurrence,
-      status: widget.initialReminder?.status ?? ReminderStatus.active,
-      createdAt: widget.initialReminder?.createdAt ?? now,
-      updatedAt: now,
-      completedAt: widget.initialReminder?.completedAt,
-    );
-
     try {
+      await _prepareDeliveryPermissions();
+      if (!mounted) return;
+
+      final now = DateTime.now();
+      final reminder = Reminder(
+        id: widget.initialReminder?.id ?? _newReminderId,
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim().isEmpty
+            ? null
+            : _descriptionController.text.trim(),
+        scheduledDateTime: _scheduledDateTime,
+        recurrence: _selectedRecurrence,
+        status: widget.initialReminder?.status ?? ReminderStatus.active,
+        createdAt: widget.initialReminder?.createdAt ?? now,
+        updatedAt: now,
+        completedAt: widget.initialReminder?.completedAt,
+      );
+
       await ref
           .read(reminderActionControllerProvider)
           .createOrUpdateReminder(reminder);
 
       if (!mounted) return;
+      final scheduler = ref.read(reminderAlarmSchedulerProvider);
+      final notificationsEnabled =
+          defaultTargetPlatform != TargetPlatform.android ||
+          await scheduler.canPostNotifications();
+      final exactAlarmsEnabled =
+          defaultTargetPlatform != TargetPlatform.android ||
+          await scheduler.canScheduleExactAlarms();
+      if (!mounted) return;
+      final message = !notificationsEnabled
+          ? 'Saved, but notifications are disabled for Lujayn.'
+          : !exactAlarmsEnabled
+          ? 'Saved. Android may deliver this reminder later than scheduled.'
+          : (_isEditing ? 'Reminder updated' : 'Reminder saved');
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_isEditing ? 'Reminder updated' : 'Reminder saved'),
+          content: Text(message),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -146,7 +231,9 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Could not save your reminder. Please try again.'),
+          content: Text(
+            'Could not save or schedule your reminder. Please try again.',
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -385,7 +472,10 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
               HonestNoticeCard(
                 title: 'Saved on this device',
                 message:
-                    'Your reminder is stored locally. Automatic alarms and notifications are still being built, so Lujayn cannot alert you at the scheduled time yet.',
+                    'This reminder stays on your device and is scheduled with '
+                    'Android alarms. Nothing is uploaded. Android can still '
+                    'delay or suppress a reminder when permissions or battery '
+                    'restrictions block it.',
                 icon: Icons.lock_outline_rounded,
               ),
               const SizedBox(height: 12),
