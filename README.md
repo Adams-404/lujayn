@@ -100,7 +100,7 @@ lib/
 
 ---
 
-## Current Implementation Status: Phase 0 (Foundation)
+## Current Implementation Status: Phase 1 (Local foundation)
 
 | Feature / Area | Status | Notes |
 |---|---|---|
@@ -110,9 +110,9 @@ lib/
 | **Visual Design** | In progress | Five named palettes are implemented; full screen redesign is tracked separately |
 | **Home Screen** | Completed | Segmented filters (Upcoming, Completed, All), grouped by Today/Later |
 | **Creation & Edit** | Completed | Form with title validation, notes, date picker, quick time presets, recurrence selector |
-| **Sample Data** | Completed | 5 realistic, human sample reminders preloaded into isolated mock repository |
+| **Sample Data** | Test-only | Curated fixtures remain available to tests; production starts with an empty local database |
 | **Settings Screen** | In progress | Privacy transparency, five-theme picker, principles modal |
-| **Drift Architecture** | Prepared | Database contracts and repository interfaces ready for Phase 1 code generation |
+| **Local Persistence** | Implemented in current branch | Drift SQLite schema, stable enum serialization, reactive repository, and reopen/CRUD tests |
 | **Native Alarms & Audio**| Out of Scope (Phase 2 & 3)| Not simulated or faked; transparently documented |
 
 ---
@@ -138,22 +138,22 @@ lib/
    flutter pub get
    ```
 
-3. **Run static analysis:**
+3. **Generate Drift database code:**\n   ```bash\n   dart run build_runner build --delete-conflicting-outputs\n   ```\n\n4. **Run static analysis:**
    ```bash
    flutter analyze
    ```
 
-4. **Run unit and widget tests:**
+5. **Run unit and widget tests:**
    ```bash
    flutter test
    ```
 
-5. **Format code:**
+6. **Format code:**
    ```bash
    dart format .
    ```
 
-6. **Launch the application:**
+7. **Launch the application:**
    - On Linux desktop:
      ```bash
      flutter run -d linux
