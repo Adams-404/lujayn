@@ -9,11 +9,20 @@ Read this first, then `AGENTS.md`, then `lujayn-project-brief.md`.
 ## 1. Where things stand in one paragraph
 
 PR #21 (reminder form redesign) is **merged to `main`**. PR #22 (Android alarm
-delivery + call-style alert + the new logo) is **open as a draft, pushed, and
-waiting on one unverified CI run**. There is **uncommitted work in the working
-tree right now** (a real bug fix — see §4). Nothing else is half-done. The
-project is **not finished**: issue #5 is nearly done, #3 is partly done, and
-#6, #16, #17, #18 have not been started.
+delivery + call-style alert + the new logo) is **open, pushed, and verified by
+CI** — the workflow's `flutter build apk --debug` step passed, so the Kotlin and
+the generated icon resources are proven to compile. It is still marked draft and
+has **not** been merged, and **no one has run it on a real phone yet**. The
+project is **not finished**: issue #5 is nearly done, #3 is partly done, and #6,
+#16, #17, #18 have not been started.
+
+**Milestone reached 2026-11-01:** CI green on `cc58c6c` (full pipeline including
+the Android APK build), 56 tests passing locally, four real bugs fixed — snooze
+alarm id mapping, a dropped cold-start alert, an infinite loop in recurrence
+search, and a one-time reminder that saved but could never fire.
+
+**Nothing is in flight.** The last commit `0ad1949` was verified locally and is
+the stopping point. Pick up from §5.
 
 ---
 
@@ -21,14 +30,18 @@ project is **not finished**: issue #5 is nearly done, #3 is partly done, and
 
 ```
 branch : feat/android-reminder-scheduling
-HEAD   : 9e6e5ae  docs(android): add the physical-device reminder delivery test matrix
-origin : 9e6e5ae  (in sync — everything is pushed)
+HEAD   : 0ad1949  fix(reminders): refuse a one-time reminder set in the past
+origin : cc58c6c  (0ad1949 is committed locally and must be pushed first)
 main   : 8197cf4  feat(ui): redesign reminder creation and editing (#21)
 ```
 
 Branch commits on top of `main`:
 
 ```
+0ad1949 fix(reminders): refuse a one-time reminder set in the past
+cc58c6c fix(reminders): bound recurrence search so corrupt rules cannot hang
+b4bfe4a docs: add a handover report for the next contributor
+8ef8816 fix(reminders): map snooze alarm ids back to their reminder
 9e6e5ae docs(android): add the physical-device reminder delivery test matrix
 d529f6b feat(brand): adopt the Lujayn bell logo across the app
 03d1031 feat(reminders): present due reminders as a call-style alert
@@ -41,7 +54,6 @@ a384d9a ci: include alarm action tests in formatter diagnostics
 **Uncommitted:**
 
 ```
- M analysis_options.yaml                       <- auto-churn, revert, never commit
 ?? Smart Bell Reminder Icon-1.png              <- user's file, leave it alone
 ```
 
@@ -55,13 +67,12 @@ Every item below was checked with the real toolchain, not assumed.
 
 - **`dart format --output=none --set-exit-if-changed lib test`** — clean.
 - **`flutter analyze --fatal-infos`** — no issues.
-- **`flutter test`** — 42 passing at commit `9e6e5ae` (39 before the call-host
-  tests were added).
-- **CI run 41285344944** — succeeded, 5m38s. That run executes
-  `dart run build_runner build`, format, analyze, `flutter test`, and
-  `flutter build apk --debug`, so the Kotlin and the icon resources compiled.
-  It predates `03d1031`/`d529f6b`/`9e6e5ae`, so those three still need a green
-  run before merge.
+- **`flutter test`** — 56 passing at commit `0ad1949`.
+- **CI** — green on `b4bfe4a`, `9e6e5ae` and `cc58c6c` (full pipeline:
+  `build_runner`, format, analyze, `flutter test`, `flutter build apk --debug`).
+  The APK step passing is what proves the Kotlin and the generated icon
+  resources compile. `0ad1949` has not had a CI run yet — push it and confirm
+  before merging.
 
 ### PR #21 — merged (`8197cf4`)
 
@@ -144,14 +155,40 @@ Keep that mapping in one place — the controller and the bridge drifting apart 
 exactly how this happened.
 
 Verified after the fix: format clean, `flutter analyze --fatal-infos` clean,
-**45 tests passing**.
+**54 tests passing**.
+
+## 4b. A second bug found and fixed — recurrence could hang
+
+`RecurrenceRule.calculateNextOccurrence` looped until it found a matching
+weekday. A custom-day list holding only out-of-range values matched nothing, so
+the loop never ended and the app froze. Nothing in the UI can produce that
+today, but backup restore (#16) will feed this method data the app did not
+create, so it must terminate on any input.
+
+The day loops are now bounded by a four-year lookahead and the custom day list
+is filtered to real weekdays. A reminder more than four years overdue is dropped
+rather than silently re-armed. Covered by `test/recurrence_rule_test.dart`.
+
+## 4c. A third bug found and fixed — a reminder that could never fire
+
+The form accepted a one-time reminder whose time had already passed. The planner
+then rejected it, the scheduler cancelled, and the user still saw
+"Reminder saved". Nothing ever fired and nothing explained why.
+
+`_save()` in `reminder_form_screen.dart` now refuses that save and says
+"Choose a time in the future, or make this a repeating reminder." Repeating
+reminders are unaffected, because the planner advances them to their next
+occurrence. Covered by `test/reminder_form_screen_test.dart`.
+
+This is the pattern worth internalising: **a reminder that is accepted but never
+delivered is a reliability bug.** Prefer refusing the save over saving silently.
 
 ---
 
 ## 5. Then, in order
 
-0. **Push `8ef8816` and `docs/HANDOVER.md` first.** They were committed locally
-   while the network was unreliable, so check `git status` and
+0. **Push `0ad1949` first.** It is committed locally but not on the remote, so
+   check `git status` and
    `git log origin/feat/android-reminder-scheduling --oneline -1` before
    assuming the remote is current.
 1. **Confirm CI is green on the final push.** The run must show the
@@ -307,6 +344,10 @@ hole. That mistake was made and fixed once already.
   dropped on a cold start.
 - The call screen keeps initials as its "caller" badge rather than the logo, so
   the user can tell reminders apart at a glance.
+- A one-time reminder in the past is refused at save time rather than stored and
+  silently ignored.
+- Recurrence search is bounded. A reminder more than four years overdue is
+  dropped, not re-armed.
 
 ---
 
@@ -316,5 +357,30 @@ hole. That mistake was made and fixed once already.
   user's file, not generated here. Ask before deleting or committing it.
 - PR #22's body was rewritten to describe the call surface, the branding and the
   honest limitations. Keep it accurate if you add to it.
-- The logo is not yet in `web/index.html` as a favicon beyond
-  `web/favicon.png`; that is already wired.
+- `ReminderStatus.missed` exists but nothing sets it. Android posts a
+  "Missed: …" notification for a one-time reminder that passed while the device
+  was off, but the stored reminder stays `active`. Decide whether the app should
+  record the missed state or whether the enum value should be removed. Do not
+  remove it casually — it may already be persisted in existing databases.
+- PR #22 is still marked **draft** even though CI is green. That is deliberate:
+  it should not merge until the physical-device matrix is filled in.
+- Nothing was pushed after `cc58c6c`. `0ad1949` and this document are local until
+  someone runs `git push`.
+
+---
+
+## 12. Where I stopped
+
+Last verified state, so you do not have to guess:
+
+```bash
+dart format --output=none --set-exit-if-changed lib test   # clean
+flutter analyze --fatal-infos                              # no issues
+flutter test                                               # 56 passing
+```
+
+HEAD is `0ad1949`. CI was green on `cc58c6c`; `0ad1949` has not been pushed or
+run yet. The only untracked file is the user's `Smart Bell Reminder Icon-1.png`.
+
+Nothing was left half-written. The next action is to push, confirm CI, and then
+work through §5.
