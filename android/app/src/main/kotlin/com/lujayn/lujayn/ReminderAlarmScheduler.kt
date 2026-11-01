@@ -51,7 +51,7 @@ internal object ReminderAlarmScheduler {
 
     fun cancel(context: Context, id: String) {
         val alarmManager = context.getSystemService(AlarmManager::class.java)
-        alarmManager.cancel(pendingIntent(context, id))
+        pendingIntent(context, id)?.let(alarmManager::cancel)
         preferences(context).edit().remove(id).apply()
     }
 
@@ -59,7 +59,7 @@ internal object ReminderAlarmScheduler {
         val prefs = preferences(context)
         val alarmManager = context.getSystemService(AlarmManager::class.java)
         prefs.all.keys.forEach { id ->
-            alarmManager.cancel(pendingIntent(context, id))
+            pendingIntent(context, id)?.let(alarmManager::cancel)
         }
         prefs.edit().clear().apply()
     }
@@ -134,7 +134,7 @@ internal object ReminderAlarmScheduler {
         }
     }
 
-    private fun pendingIntent(context: Context, id: String): PendingIntent {
+    private fun pendingIntent(context: Context, id: String): PendingIntent? {
         val intent = Intent(context, ReminderAlarmReceiver::class.java)
             .setAction(alarmAction(id))
         return PendingIntent.getBroadcast(
@@ -142,11 +142,6 @@ internal object ReminderAlarmScheduler {
             id.hashCode(),
             intent,
             PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE,
-        ) ?: PendingIntent.getBroadcast(
-            context,
-            id.hashCode(),
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
     }
 
