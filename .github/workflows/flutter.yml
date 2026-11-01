@@ -36,8 +36,8 @@ jobs:
 
       - name: Capture formatter output (temporary diagnostic)
         run: |
-          dart format lib/features/reminders/presentation/screens/reminder_form_screen.dart
-          git diff -- lib/features/reminders/presentation/screens/reminder_form_screen.dart
+          dart format lib/features/reminders/presentation/screens/reminder_form_screen.dart test/widget_test.dart
+          git diff -- lib/features/reminders/presentation/screens/reminder_form_screen.dart test/widget_test.dart
 
       - name: Check formatting
         run: dart format --output=none --set-exit-if-changed lib test
