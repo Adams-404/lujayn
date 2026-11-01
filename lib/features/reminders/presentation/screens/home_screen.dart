@@ -126,7 +126,7 @@ class HomeScreen extends ConsumerWidget {
 
     final active = reminders.where((reminder) => reminder.isActive).toList();
     if (active.isEmpty) {
-      return const SliverFillRemaining(
+      return SliverFillRemaining(
         hasScrollBody: false,
         child: EmptyStateView(
           icon: Icons.notifications_none_rounded,
