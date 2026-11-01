@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../app/theme/app_colors.dart';
 import '../../../../core/utilities/date_formatters.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../controllers/reminder_providers.dart';
@@ -15,7 +14,6 @@ class ReminderDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     final remindersAsync = ref.watch(remindersStreamProvider);
 
@@ -90,12 +88,8 @@ class ReminderDetailScreen extends ConsumerWidget {
                       ),
                       decoration: BoxDecoration(
                         color: isCompleted
-                            ? (isDark
-                                  ? AppColors.darkSurfaceSubtle
-                                  : AppColors.statusCompletedSubtle)
-                            : (isDark
-                                  ? AppColors.darkSurfaceSubtle
-                                  : AppColors.calmSageSubtle),
+                            ? theme.colorScheme.surfaceContainerHighest
+                            : theme.colorScheme.tertiaryContainer,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -107,20 +101,16 @@ class ReminderDetailScreen extends ConsumerWidget {
                                 : Icons.alarm_rounded,
                             size: 16,
                             color: isCompleted
-                                ? (isDark
-                                      ? AppColors.darkTextSecondary
-                                      : AppColors.statusCompleted)
-                                : AppColors.calmSage,
+                                ? theme.colorScheme.onSurfaceVariant
+                                : theme.colorScheme.onTertiaryContainer,
                           ),
                           const SizedBox(width: 6),
                           Text(
                             isCompleted ? 'Completed' : 'Active Reminder',
                             style: theme.textTheme.labelMedium?.copyWith(
                               color: isCompleted
-                                  ? (isDark
-                                        ? AppColors.darkTextSecondary
-                                        : AppColors.statusCompleted)
-                                  : AppColors.calmSage,
+                                  ? theme.colorScheme.onSurfaceVariant
+                                  : theme.colorScheme.onTertiaryContainer,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -135,17 +125,13 @@ class ReminderDetailScreen extends ConsumerWidget {
                           vertical: 5,
                         ),
                         decoration: BoxDecoration(
-                          color: isDark
-                              ? AppColors.darkSurfaceSubtle
-                              : AppColors.lightSurfaceSubtle,
+                          color: theme.colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           reminder.recurrence.summary,
                           style: theme.textTheme.labelMedium?.copyWith(
-                            color: isDark
-                                ? AppColors.darkTextSecondary
-                                : AppColors.lightTextSecondary,
+                            color: theme.colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -170,14 +156,10 @@ class ReminderDetailScreen extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.darkSurface
-                          : AppColors.lightSurface,
+                      color: theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isDark
-                            ? AppColors.darkBorder
-                            : AppColors.lightBorder,
+                        color: theme.colorScheme.outline,
                       ),
                     ),
                     child: Text(
@@ -268,7 +250,7 @@ class ReminderDetailScreen extends ConsumerWidget {
                           FilledButton(
                             onPressed: () => Navigator.of(ctx).pop(true),
                             style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.statusDanger,
+                              backgroundColor: theme.colorScheme.error,
                             ),
                             child: const Text('Delete'),
                           ),
@@ -320,24 +302,19 @@ class _DetailRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Row(
       children: [
         Icon(
           icon,
           size: 20,
-          color: isDark
-              ? AppColors.darkTextSecondary
-              : AppColors.slateTealLight,
+          color: theme.colorScheme.primary,
         ),
         const SizedBox(width: 12),
         Text(
           label,
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: isDark
-                ? AppColors.darkTextSecondary
-                : AppColors.lightTextSecondary,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
         const Spacer(),
