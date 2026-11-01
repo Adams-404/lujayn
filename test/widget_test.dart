@@ -94,35 +94,38 @@ void main() {
       await directory.delete(recursive: true);
     });
 
-    test('streams changes and orders active reminders before completed ones', () async {
-      final database = AppDatabase.forTesting(NativeDatabase.memory());
-      final repository = DriftReminderRepository(database);
-      final now = DateTime(2026, 11, 1, 10);
+    test(
+      'streams changes and orders active reminders before completed ones',
+      () async {
+        final database = AppDatabase.forTesting(NativeDatabase.memory());
+        final repository = DriftReminderRepository(database);
+        final now = DateTime(2026, 11, 1, 10);
 
-      final completed = Reminder(
-        id: 'completed',
-        title: 'Already done',
-        scheduledDateTime: now.subtract(const Duration(hours: 1)),
-        status: ReminderStatus.completed,
-        createdAt: now,
-        updatedAt: now,
-        completedAt: now,
-      );
-      final active = Reminder(
-        id: 'active',
-        title: 'Still to do',
-        scheduledDateTime: now.add(const Duration(hours: 1)),
-        createdAt: now,
-        updatedAt: now,
-      );
+        final completed = Reminder(
+          id: 'completed',
+          title: 'Already done',
+          scheduledDateTime: now.subtract(const Duration(hours: 1)),
+          status: ReminderStatus.completed,
+          createdAt: now,
+          updatedAt: now,
+          completedAt: now,
+        );
+        final active = Reminder(
+          id: 'active',
+          title: 'Still to do',
+          scheduledDateTime: now.add(const Duration(hours: 1)),
+          createdAt: now,
+          updatedAt: now,
+        );
 
-      await repository.saveReminder(completed);
-      await repository.saveReminder(active);
-      final streamed = await repository.watchReminders().first;
+        await repository.saveReminder(completed);
+        await repository.saveReminder(active);
+        final streamed = await repository.watchReminders().first;
 
-      expect(streamed.map((item) => item.id), ['active', 'completed']);
-      await database.close();
-    });
+        expect(streamed.map((item) => item.id), ['active', 'completed']);
+        await database.close();
+      },
+    );
 
     test('toggles completion and deletes a reminder', () async {
       final database = AppDatabase.forTesting(NativeDatabase.memory());
