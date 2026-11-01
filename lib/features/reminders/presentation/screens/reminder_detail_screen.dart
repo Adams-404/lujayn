@@ -269,7 +269,7 @@ class ReminderDetailScreen extends ConsumerWidget {
                   },
                   icon: const Icon(
                     Icons.delete_outline_rounded,
-                    color: AppColors.statusDanger,
+                    color: theme.colorScheme.error,
                     size: 20,
                   ),
                   label: const Text(
