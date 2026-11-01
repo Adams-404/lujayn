@@ -34,7 +34,7 @@ class ReminderCard extends StatelessWidget {
         ),
         child: const Icon(
           Icons.delete_outline_rounded,
-          color: AppColors.statusDanger,
+          color: theme.colorScheme.error,
           size: 24,
         ),
       ),
@@ -139,13 +139,7 @@ class ReminderCard extends StatelessWidget {
                                   reminder.scheduledDateTime,
                                 ),
                                 style: theme.textTheme.labelMedium?.copyWith(
-                                  color: isCompleted
-                                      ? (isDark
-                                            ? AppColors.darkTextTertiary
-                                            : AppColors.lightTextTertiary)
-                                      : (isDark
-                                            ? AppColors.darkTextSecondary
-                                            : AppColors.lightTextSecondary),
+                                  color: theme.colorScheme.onSurfaceVariant,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -164,9 +158,7 @@ class ReminderCard extends StatelessWidget {
                               child: Text(
                                 reminder.recurrence.summary,
                                 style: theme.textTheme.labelSmall?.copyWith(
-                                  color: isDark
-                                      ? AppColors.darkTextSecondary
-                                      : AppColors.calmSage,
+                                  color: theme.colorScheme.onTertiaryContainer,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
