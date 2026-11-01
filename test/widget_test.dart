@@ -369,16 +369,20 @@ void main() {
       final formFinder = find.byType(Form);
       final listFinder = find.byType(ListView);
       final centerFinder = find.byType(ResponsiveCenter);
-      print('FORM DIAGNOSTIC: Form count=${formFinder.evaluate().length}');
-      print('FORM DIAGNOSTIC: ListView count=${listFinder.evaluate().length}');
-      print('FORM DIAGNOSTIC: ResponsiveCenter count=${centerFinder.evaluate().length}');
+      debugPrint('FORM DIAGNOSTIC: Form count=${formFinder.evaluate().length}');
+      debugPrint('FORM DIAGNOSTIC: ListView count=${listFinder.evaluate().length}');
+      debugPrint(
+        'FORM DIAGNOSTIC: ResponsiveCenter count=${centerFinder.evaluate().length}',
+      );
       if (formFinder.evaluate().isNotEmpty) {
-        print('FORM DIAGNOSTIC: Form size=${tester.getSize(formFinder)}');
+        debugPrint('FORM DIAGNOSTIC: Form size=${tester.getSize(formFinder)}');
       }
       if (listFinder.evaluate().isNotEmpty) {
-        print('FORM DIAGNOSTIC: ListView size=${tester.getSize(listFinder)}');
+        debugPrint('FORM DIAGNOSTIC: ListView size=${tester.getSize(listFinder)}');
       }
-      print('FORM DIAGNOSTIC: heading count=${find.text('What do you need to remember?').evaluate().length}');
+      debugPrint(
+        'FORM DIAGNOSTIC: heading count=${find.text('What do you need to remember?').evaluate().length}',
+      );
 
       // Verify the form content is laid out and the title is required.
       expect(find.text('New reminder'), findsOneWidget);
