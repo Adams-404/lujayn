@@ -33,7 +33,7 @@ Every product and architectural decision in Lujayn is governed by these 9 non-ne
 | **State Management** | Riverpod (`flutter_riverpod` 3.x with modern `Notifier` & `NotifierProvider`) |
 | **UI Design System** | Five selectable Material 3 themes (Silver, Paper, Sage, Dusk, AMOLED), plus system appearance and semantic colour roles |
 | **Architecture** | Feature-first layered architecture (Domain, Data, Presentation) |
-| **Planned Persistence** | Drift SQLite (`drift` / `drift_flutter` in Phase 1; clean in-memory mock repository in Phase 0) |
+| **Persistence** | Drift + SQLite with versioned schema, reactive queries, and local-only reminder storage |
 | **Planned Android Engine** | Native Kotlin integration via `AlarmManager`, `BroadcastReceiver`, and full-screen notifications (Phase 2) |
 | **Planned Audio** | Local voice recording, audio playback, and text-to-speech (Phase 3) |
 
@@ -54,7 +54,7 @@ lib/
 │
 ├── core/
 │   ├── database/
-│   │   └── app_database.dart      # Database contract & Drift architecture blueprint
+│   │   └── app_database.dart      # Drift SQLite schema and migrations
 │   ├── utilities/
 │   │   └── date_formatters.dart   # Human-friendly date and time formatters
 │   └── widgets/
@@ -69,7 +69,7 @@ lib/
     │   │   ├── models/            # DTOs and database mapping contracts
     │   │   └── repositories/
     │   │       ├── mock_reminder_repository.dart   # Isolated in-memory reactive repository
-    │   │       └── drift_reminder_repository.dart  # Phase 1 Drift SQLite placeholder
+    │   │       └── drift_reminder_repository.dart  # Production Drift SQLite repository
     │   ├── domain/
     │   │   ├── models/
     │   │   │   ├── recurrence_rule.dart            # Recurrence calculations & schedule rules
