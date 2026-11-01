@@ -113,24 +113,48 @@ final completedRemindersProvider = Provider<AsyncValue<List<Reminder>>>((ref) {
 
 /// Controller handling reminder user mutations.
 class ReminderActionNotifier {
-  ReminderActionNotifier(this._repository);
+  ReminderActionNotifier(
+    this._repository,
+    this._scheduler,
+    this._planner,
+  );
 
   final ReminderRepository _repository;
+  final ReminderAlarmScheduler _scheduler;
+  final ReminderSchedulePlanner _planner;
 
   Future<void> createOrUpdateReminder(Reminder reminder) async {
     await _repository.saveReminder(reminder);
+    await _syncAlarm(reminder);
   }
 
   Future<void> toggleStatus(String id) async {
     await _repository.toggleReminderStatus(id);
+    final updated = await _repository.getReminderById(id);
+    if (updated == null) {
+      await _scheduler.cancel(id);
+    } else {
+      await _syncAlarm(updated);
+    }
   }
 
   Future<void> deleteReminder(String id) async {
     await _repository.deleteReminder(id);
+    await _scheduler.cancel(id);
   }
 
   Future<void> clearAll() async {
     await _repository.clearAllReminders();
+    await _scheduler.cancelAll();
+  }
+
+  Future<void> _syncAlarm(Reminder reminder) async {
+    final schedule = _planner.plan(reminder, now: DateTime.now());
+    if (schedule == null) {
+      await _scheduler.cancel(reminder.id);
+    } else {
+      await _scheduler.schedule(schedule);
+    }
   }
 }
 
@@ -138,5 +162,7 @@ final reminderActionControllerProvider = Provider<ReminderActionNotifier>((
   ref,
 ) {
   final repository = ref.watch(reminderRepositoryProvider);
-  return ReminderActionNotifier(repository);
+  final scheduler = ref.watch(reminderAlarmSchedulerProvider);
+  final planner = ref.watch(reminderSchedulePlannerProvider);
+  return ReminderActionNotifier(repository, scheduler, planner);
 });
