@@ -364,7 +364,8 @@ void main() {
       await tester.tap(find.text('Add reminder'));
       await tester.pumpAndSettle();
 
-      // Verify form screen
+      // Verify the form screen and its first prompt
+      expect(find.text('New reminder'), findsOneWidget);
       expect(find.text('What do you need to remember?'), findsOneWidget);
       expect(find.text('Notes'), findsOneWidget);
       expect(find.text('Repeat schedule'), findsOneWidget);
