@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -56,15 +57,8 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
       _selectedRecurrence = initial.recurrence;
     } else {
       final suggested = DateTime.now().add(const Duration(hours: 1));
-      _selectedDate = DateTime(
-        suggested.year,
-        suggested.month,
-        suggested.day,
-      );
-      _selectedTime = TimeOfDay(
-        hour: suggested.hour,
-        minute: suggested.minute,
-      );
+      _selectedDate = DateTime(suggested.year, suggested.month, suggested.day);
+      _selectedTime = TimeOfDay(hour: suggested.hour, minute: suggested.minute);
       _selectedRecurrence = RecurrenceRule.none;
     }
   }
@@ -269,9 +263,7 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
                     label: Text(
                       isDateToday || isDateTomorrow
                           ? 'Choose date'
-                          : AppDateFormatters.formatFullDate(
-                              _selectedDate,
-                            ),
+                          : AppDateFormatters.formatFullDate(_selectedDate),
                     ),
                   ),
                 ],
@@ -317,9 +309,7 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
                                 ),
                               ),
                               Text(
-                                AppDateFormatters.formatFullDate(
-                                  _selectedDate,
-                                ),
+                                AppDateFormatters.formatFullDate(_selectedDate),
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: colors.onSurfaceVariant,
                                 ),
@@ -444,9 +434,7 @@ class _FormSectionLabel extends StatelessWidget {
     final theme = Theme.of(context);
     return Text(
       label,
-      style: theme.textTheme.titleMedium?.copyWith(
-        fontWeight: FontWeight.w700,
-      ),
+      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
     );
   }
 }
@@ -467,16 +455,12 @@ class _DateChoice extends StatelessWidget {
     return selected
         ? FilledButton.tonal(
             onPressed: onPressed,
-            style: FilledButton.styleFrom(
-              minimumSize: const Size(88, 48),
-            ),
+            style: FilledButton.styleFrom(minimumSize: const Size(88, 48)),
             child: Text(label),
           )
         : OutlinedButton(
             onPressed: onPressed,
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(88, 48),
-            ),
+            style: OutlinedButton.styleFrom(minimumSize: const Size(88, 48)),
             child: Text(label),
           );
   }
@@ -495,9 +479,8 @@ class _TimeChoice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ActionChip(
-      label: Text(label),
-      onPressed: () => onPressed(time),
-    );
+    return ActionChip(label: Text(label), onPressed: () => onPressed(time));
   }
 }
+Formatted 1 file (1 changed) in 0.01 seconds.
+##[group]
