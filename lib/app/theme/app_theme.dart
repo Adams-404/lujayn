@@ -11,6 +11,9 @@ class AppTheme {
 
   static Color accentFor(AppThemeChoice choice) => _paletteFor(choice).accent;
 
+  static Color onAccentFor(AppThemeChoice choice) =>
+      _paletteFor(choice).onAccent;
+
   static ThemeData forChoice(AppThemeChoice choice) {
     final palette = _paletteFor(choice);
     final brightness = palette.brightness;
