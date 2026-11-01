@@ -111,10 +111,8 @@ class RecurrenceChipSelector extends StatelessWidget {
                         : theme.colorScheme.surfaceContainerHighest,
                     border: Border.all(
                       color: isDaySelected
-                          ? AppColors.slateTeal
-                          : (isDark
-                                ? AppColors.darkBorder
-                                : AppColors.lightBorder),
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.outline,
                     ),
                   ),
                   child: Text(
