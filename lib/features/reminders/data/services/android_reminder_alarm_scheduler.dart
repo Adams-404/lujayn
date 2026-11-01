@@ -29,6 +29,11 @@ class AndroidReminderAlarmScheduler implements ReminderAlarmScheduler {
       'title': schedule.title,
       'description': schedule.description,
       'scheduledAtMillis': schedule.scheduledAt.millisecondsSinceEpoch,
+      'localYear': schedule.scheduledAt.year,
+      'localMonth': schedule.scheduledAt.month,
+      'localDay': schedule.scheduledAt.day,
+      'localHour': schedule.scheduledAt.hour,
+      'localMinute': schedule.scheduledAt.minute,
       'recurrenceType': schedule.recurrence.type.name,
       'daysOfWeek': schedule.recurrence.daysOfWeek,
     });
