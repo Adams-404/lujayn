@@ -176,8 +176,8 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
             width: constraints.maxWidth < 640 ? constraints.maxWidth : 640,
             height: constraints.maxHeight,
             child: Form(
-            key: _formKey,
-            child: ListView(
+              key: _formKey,
+              child: ListView(
               padding: const EdgeInsets.fromLTRB(22, 20, 22, 28),
               children: [
                 Text(
@@ -398,8 +398,6 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
                 const SizedBox(height: 12),
               ],
             ),
-          ),
-        ),
           ),
         ),
       ),
