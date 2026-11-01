@@ -91,7 +91,6 @@ class MockReminderRepository implements ReminderRepository {
     }
   }
 
-  @override
   Future<void> resetToSampleData() async {
     _reminders
       ..clear()
