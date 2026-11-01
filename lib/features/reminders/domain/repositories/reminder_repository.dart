@@ -23,9 +23,6 @@ abstract class ReminderRepository {
   /// Toggles between active and completed status.
   Future<void> toggleReminderStatus(String id);
 
-  /// Resets the repository to default curated sample data.
-  Future<void> resetToSampleData();
-
   /// Clears all reminders from the repository.
   Future<void> clearAllReminders();
 }
