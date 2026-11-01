@@ -26,6 +26,11 @@ internal object ReminderAlarmScheduler {
         scheduledAtMillis: Long,
         recurrenceType: String,
         daysOfWeek: List<Int>,
+        localYear: Int,
+        localMonth: Int,
+        localDay: Int,
+        localHour: Int,
+        localMinute: Int,
     ) {
         val data = JSONObject()
             .put("id", id)
@@ -34,6 +39,11 @@ internal object ReminderAlarmScheduler {
             .put("scheduledAtMillis", scheduledAtMillis)
             .put("recurrenceType", recurrenceType)
             .put("daysOfWeek", JSONArray(daysOfWeek))
+            .put("localYear", localYear)
+            .put("localMonth", localMonth)
+            .put("localDay", localDay)
+            .put("localHour", localHour)
+            .put("localMinute", localMinute)
 
         preferences(context).edit().putString(id, data.toString()).apply()
         scheduleStored(context, data)
@@ -61,8 +71,7 @@ internal object ReminderAlarmScheduler {
             val data = runCatching { JSONObject(encoded) }.getOrNull()
                 ?: return@forEach
             val now = System.currentTimeMillis()
-            val scheduledAt = data.optLong("scheduledAtMillis")
-            val next = if (scheduledAt > now) scheduledAt else nextOccurrence(data, now)
+            val next = nextOccurrence(data, now, includeCurrent = true)
             if (next == null) {
                 prefs.edit().remove(id).apply()
             } else {
@@ -141,12 +150,23 @@ internal object ReminderAlarmScheduler {
         )
     }
 
-    private fun nextOccurrence(data: JSONObject, afterMillis: Long): Long? {
+    private fun nextOccurrence(
+        data: JSONObject,
+        afterMillis: Long,
+        includeCurrent: Boolean = false,
+    ): Long? {
         val recurrence = data.optString("recurrenceType", "none")
-        if (recurrence == "none") return null
-
         val candidate = Calendar.getInstance().apply {
-            timeInMillis = data.optLong("scheduledAtMillis")
+            clear()
+            set(
+                data.optInt("localYear"),
+                data.optInt("localMonth") - 1,
+                data.optInt("localDay"),
+                data.optInt("localHour"),
+                data.optInt("localMinute"),
+                0,
+            )
+            set(Calendar.MILLISECOND, 0)
         }
         val days = data.optJSONArray("daysOfWeek") ?: JSONArray()
         if (recurrence == "customDays" && days.length() == 0) return null
@@ -161,7 +181,17 @@ internal object ReminderAlarmScheduler {
                 }
                 else -> false
             }
-            if (candidate.timeInMillis > afterMillis && matchesRule) {
+            val isAfterReference = if (includeCurrent) {
+                candidate.timeInMillis >= afterMillis
+            } else {
+                candidate.timeInMillis > afterMillis
+            }
+            if (isAfterReference && matchesRule) {
+                data.put("localYear", candidate.get(Calendar.YEAR))
+                data.put("localMonth", candidate.get(Calendar.MONTH) + 1)
+                data.put("localDay", candidate.get(Calendar.DAY_OF_MONTH))
+                data.put("localHour", candidate.get(Calendar.HOUR_OF_DAY))
+                data.put("localMinute", candidate.get(Calendar.MINUTE))
                 return candidate.timeInMillis
             }
             candidate.add(
