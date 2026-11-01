@@ -171,8 +171,9 @@ lib/
 
 ## Road Map
 
-- **Phase 0 (Current):** Project foundation, architecture, theme, navigation, reminder creation, mock repository.
-- **Phase 1:** Drift SQLite database persistence, migrations, and recurrence calculation unit tests.
+- **Phase 0:** Project foundation, navigation, reminder creation, and mock fixtures.
+- **Phase 1 (Current):** Drift SQLite persistence, schema migrations, local theme preferences, and repository tests.
+- **Phase 2:** Android alarm delivery, notification permissions, reboot recovery, and call-style reminder presentation.
 - **Phase 2:** Android native alarm scheduling (`AlarmManager`), exact alarm permissions, and full-screen notification presentation.
 - **Phase 3:** Voice recording, audio playback upon answering, text-to-speech fallback, and sound/vibration customization.
 - **Phase 4:** Missed reminder handling, local encrypted backup & export, lifecycle recovery testing.
