@@ -22,27 +22,28 @@ class AppTheme {
       textSecondary: palette.textSecondary,
       textTertiary: palette.textTertiary,
     );
-    final scheme = ColorScheme.fromSeed(
-      seedColor: palette.accent,
-      brightness: brightness,
-    ).copyWith(
-      primary: palette.accent,
-      onPrimary: palette.onAccent,
-      secondary: palette.secondary,
-      onSecondary: palette.onAccent,
-      tertiary: palette.success,
-      surface: palette.surface,
-      onSurface: palette.textPrimary,
-      error: palette.error,
-      onError: Colors.white,
-      outline: palette.outline,
-      outlineVariant: palette.outline.withValues(alpha: 0.65),
-      surfaceContainerLowest: palette.background,
-      surfaceContainerLow: palette.surface,
-      surfaceContainer: palette.surfaceElevated,
-      surfaceContainerHigh: palette.surfaceElevated,
-      surfaceContainerHighest: palette.surfaceElevated,
-    );
+    final scheme =
+        ColorScheme.fromSeed(
+          seedColor: palette.accent,
+          brightness: brightness,
+        ).copyWith(
+          primary: palette.accent,
+          onPrimary: palette.onAccent,
+          secondary: palette.secondary,
+          onSecondary: palette.onAccent,
+          tertiary: palette.success,
+          surface: palette.surface,
+          onSurface: palette.textPrimary,
+          error: palette.error,
+          onError: Colors.white,
+          outline: palette.outline,
+          outlineVariant: palette.outline.withValues(alpha: 0.65),
+          surfaceContainerLowest: palette.background,
+          surfaceContainerLow: palette.surface,
+          surfaceContainer: palette.surfaceElevated,
+          surfaceContainerHigh: palette.surfaceElevated,
+          surfaceContainerHighest: palette.surfaceElevated,
+        );
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
@@ -72,7 +73,10 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: palette.surface,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         hintStyle: TextStyle(color: palette.textTertiary),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
@@ -89,7 +93,9 @@ class AppTheme {
           foregroundColor: palette.onAccent,
           minimumSize: const Size(48, 48),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
           textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
       ),
@@ -98,7 +104,9 @@ class AppTheme {
           foregroundColor: palette.textPrimary,
           minimumSize: const Size(48, 48),
           side: BorderSide(color: palette.outline),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(

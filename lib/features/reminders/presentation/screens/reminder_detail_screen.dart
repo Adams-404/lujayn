@@ -158,9 +158,7 @@ class ReminderDetailScreen extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: theme.colorScheme.outline,
-                      ),
+                      border: Border.all(color: theme.colorScheme.outline),
                     ),
                     child: Text(
                       reminder.description!.trim(),
@@ -305,11 +303,7 @@ class _DetailRow extends StatelessWidget {
 
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 20,
-          color: theme.colorScheme.primary,
-        ),
+        Icon(icon, size: 20, color: theme.colorScheme.primary),
         const SizedBox(width: 12),
         Text(
           label,

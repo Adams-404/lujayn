@@ -29,9 +29,7 @@ class SettingsScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: theme.colorScheme.outline,
-                ),
+                border: Border.all(color: theme.colorScheme.outline),
               ),
               child: Row(
                 children: [
@@ -307,7 +305,6 @@ class SettingsScreen extends ConsumerWidget {
       ),
     );
   }
-
 }
 
 class _SectionTitle extends StatelessWidget {

@@ -190,14 +190,16 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      await tester.pumpWidget(ProviderScope(
-        overrides: [
-          themePreferenceStoreProvider.overrideWithValue(
-            _MemoryThemePreferenceStore(),
-          ),
-        ],
-        child: const LujaynApp(),
-      ));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            themePreferenceStoreProvider.overrideWithValue(
+              _MemoryThemePreferenceStore(),
+            ),
+          ],
+          child: const LujaynApp(),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Check header and titles

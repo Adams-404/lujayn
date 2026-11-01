@@ -88,7 +88,9 @@ class _ThemeOption extends StatelessWidget {
                     Text(
                       choice.label,
                       style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: selected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -97,7 +99,10 @@ class _ThemeOption extends StatelessWidget {
                 ),
               ),
               if (selected)
-                Icon(Icons.check_circle_rounded, color: theme.colorScheme.primary)
+                Icon(
+                  Icons.check_circle_rounded,
+                  color: theme.colorScheme.primary,
+                )
               else
                 Icon(Icons.circle_outlined, color: theme.colorScheme.outline),
             ],
