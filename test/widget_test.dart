@@ -237,16 +237,20 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      await tester.pumpWidget(ProviderScope(
+      await tester.pumpWidget(
+        ProviderScope(
           overrides: [
             reminderRepositoryProvider.overrideWith((ref) {
-              final repository = MockReminderRepository(preloadSampleData: true);
+              final repository = MockReminderRepository(
+                preloadSampleData: true,
+              );
               ref.onDispose(repository.dispose);
               return repository;
             }),
           ],
           child: const LujaynApp(),
-        ));
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Check header and titles
@@ -277,16 +281,20 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      await tester.pumpWidget(ProviderScope(
+      await tester.pumpWidget(
+        ProviderScope(
           overrides: [
             reminderRepositoryProvider.overrideWith((ref) {
-              final repository = MockReminderRepository(preloadSampleData: true);
+              final repository = MockReminderRepository(
+                preloadSampleData: true,
+              );
               ref.onDispose(repository.dispose);
               return repository;
             }),
           ],
           child: const LujaynApp(),
-        ));
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Tap Settings navigation tab
@@ -324,16 +332,20 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      await tester.pumpWidget(ProviderScope(
+      await tester.pumpWidget(
+        ProviderScope(
           overrides: [
             reminderRepositoryProvider.overrideWith((ref) {
-              final repository = MockReminderRepository(preloadSampleData: true);
+              final repository = MockReminderRepository(
+                preloadSampleData: true,
+              );
               ref.onDispose(repository.dispose);
               return repository;
             }),
           ],
           child: const LujaynApp(),
-        ));
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Tap FAB

@@ -10,8 +10,7 @@ class Reminders extends Table {
   TextColumn get description => text().nullable()();
   DateTimeColumn get scheduledDateTime => dateTime()();
   TextColumn get recurrenceType => text()();
-  TextColumn get recurrenceDays =>
-      text().withDefault(const Constant('[]'))();
+  TextColumn get recurrenceDays => text().withDefault(const Constant('[]'))();
   TextColumn get status => text()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
