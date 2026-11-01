@@ -12,6 +12,12 @@ class NoopReminderAlarmScheduler implements ReminderAlarmScheduler {
   Future<bool> requestExactAlarmPermission() async => false;
 
   @override
+  Future<bool> canPostNotifications() async => false;
+
+  @override
+  Future<bool> requestNotificationPermission() async => false;
+
+  @override
   Future<void> schedule(ReminderSchedule schedule) async {}
 
   @override
