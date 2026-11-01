@@ -29,18 +29,18 @@ landed, and PR #23 redesigned Reminder Detail and Settings, completing #3.
 
 ```
 branch : main
-HEAD   : 0c27c55  feat(ui): redesign reminder detail and settings screens around Lujayn design system (#23)
-origin : 0c27c55  (in sync)
+HEAD   : 1692450  feat(ui): add tactile haptic feedback across interactive controls
+origin : 1692450  (in sync)
 ```
 
 Recent history:
 
 ```
+1692450 feat(ui): add tactile haptic feedback across interactive controls
+5dd79e3 feat(ui): refine home header, segmented filters, and floating navigation capsule
+2a2e7a9 docs: record PR #23 merge, Issue #3 closure, and 104 passing tests in handover
 0c27c55 feat(ui): redesign reminder detail and settings screens around Lujayn design system (#23)
 53955de docs: add speech and voice-pack cases to the device matrix
-8eaeb5b docs: record the audio and voice-pack milestone in the handover
-e16ea00 feat(voice): offer downloadable offline voices that sound human
-a3a147c feat(audio): read reminders aloud with the device's own speech engine
 ```
 
 **Uncommitted:**
@@ -440,9 +440,11 @@ Last verified state, so you do not have to guess:
 ```bash
 dart format --output=none --set-exit-if-changed lib test   # clean
 flutter analyze --fatal-infos                              # no issues
-flutter test                                               # 104 passing
+flutter test                                               # 107 passing
 ```
 
-`main` is at `0c27c55`, merged via PR #23 with green CI. Issue #3 is closed.
+`main` is at `1692450`, pushed and verified. Issue #3 is closed, floating nav
+capsule + segmented filters + full tactile haptic feedback across interactive controls
+are landed.
 Nothing was left half-written. The next action is to continue with Issue #6
 (voice engine adapter, audio playback, voice recording/playback).
