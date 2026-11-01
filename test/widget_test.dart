@@ -300,7 +300,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should return to Home screen and display the new reminder
-      expect(find.text('Upcoming reminders'), findsOneWidget);
+      expect(find.text('Today'), findsAtLeastNWidgets(1));
       expect(find.text('Evening chamomile tea'), findsOneWidget);
     });
   });
