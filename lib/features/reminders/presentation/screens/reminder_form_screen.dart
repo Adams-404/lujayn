@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
-import '../../../../app/theme/app_colors.dart';
 import '../../../../core/utilities/date_formatters.dart';
 import '../../../../core/widgets/honest_notice_card.dart';
 import '../../../../core/widgets/responsive_center.dart';
@@ -139,7 +138,6 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final tomorrow = today.add(const Duration(days: 1));
@@ -231,13 +229,11 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
                   ChoiceChip(
                     label: const Text('Today'),
                     selected: isDateToday,
-                    selectedColor: AppColors.slateTeal,
+                    selectedColor: theme.colorScheme.primary,
                     labelStyle: TextStyle(
                       color: isDateToday
                           ? Colors.white
-                          : (isDark
-                                ? AppColors.darkTextPrimary
-                                : AppColors.lightTextPrimary),
+                          : (theme.colorScheme.onSurface),
                       fontWeight: isDateToday
                           ? FontWeight.w600
                           : FontWeight.w500,
@@ -249,13 +245,11 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
                   ChoiceChip(
                     label: const Text('Tomorrow'),
                     selected: isDateTomorrow,
-                    selectedColor: AppColors.slateTeal,
+                    selectedColor: theme.colorScheme.primary,
                     labelStyle: TextStyle(
                       color: isDateTomorrow
                           ? Colors.white
-                          : (isDark
-                                ? AppColors.darkTextPrimary
-                                : AppColors.lightTextPrimary),
+                          : (theme.colorScheme.onSurface),
                       fontWeight: isDateTomorrow
                           ? FontWeight.w600
                           : FontWeight.w500,
@@ -297,25 +291,23 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.access_time_rounded,
                           size: 22,
-                          color: AppColors.warmAmber,
+                          color: theme.colorScheme.secondary,
                         ),
                         const SizedBox(width: 12),
                         Text(
                           _selectedTime.format(context),
                           style: theme.textTheme.headlineMedium?.copyWith(
-                            color: isDark
-                                ? AppColors.darkTextPrimary
-                                : AppColors.lightTextPrimary,
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                         const Spacer(),
                         Text(
                           'Change',
                           style: theme.textTheme.labelMedium?.copyWith(
-                            color: AppColors.slateTealLight,
+                            color: theme.colorScheme.primary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),

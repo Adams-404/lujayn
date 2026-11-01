@@ -2,12 +2,58 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lujayn/app/app.dart';
+import 'package:lujayn/app/theme/app_theme.dart';
+import 'package:lujayn/app/theme/app_theme_choice.dart';
 import 'package:lujayn/features/reminders/data/repositories/mock_reminder_repository.dart';
 import 'package:lujayn/features/reminders/domain/models/recurrence_rule.dart';
 import 'package:lujayn/features/reminders/domain/models/reminder.dart';
 import 'package:lujayn/features/reminders/domain/models/reminder_status.dart';
+import 'package:lujayn/features/settings/presentation/controllers/settings_providers.dart';
 
 void main() {
+  group('Theme selection', () {
+    test('AMOLED uses a true black app background', () {
+      final theme = AppTheme.forChoice(AppThemeChoice.amoled);
+      expect(theme.scaffoldBackgroundColor, const Color(0xFF000000));
+      expect(theme.colorScheme.surface, const Color(0xFF050505));
+    });
+
+    test('the five named palettes have distinct accent colours', () {
+      final choices = [
+        AppThemeChoice.silver,
+        AppThemeChoice.paper,
+        AppThemeChoice.sage,
+        AppThemeChoice.dusk,
+        AppThemeChoice.amoled,
+      ];
+      final accents = choices.map(AppTheme.accentFor).toSet();
+      expect(accents.length, 5);
+    });
+
+    test('selected theme is restored from local preferences', () async {
+      final store = _MemoryThemePreferenceStore();
+      final firstContainer = ProviderContainer(
+        overrides: [themePreferenceStoreProvider.overrideWithValue(store)],
+      );
+      expect(
+        await firstContainer.read(themeChoiceProvider.future),
+        AppThemeChoice.system,
+      );
+      await firstContainer
+          .read(themeChoiceProvider.notifier)
+          .select(AppThemeChoice.amoled);
+      firstContainer.dispose();
+
+      final restartedContainer = ProviderContainer(
+        overrides: [themePreferenceStoreProvider.overrideWithValue(store)],
+      );
+      expect(
+        await restartedContainer.read(themeChoiceProvider.future),
+        AppThemeChoice.amoled,
+      );
+      restartedContainer.dispose();
+    });
+  });
   group('RecurrenceRule Unit Tests', () {
     test('One-time reminder does not change scheduled date', () {
       final scheduled = DateTime(2026, 11, 1, 9, 0);
@@ -144,7 +190,16 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      await tester.pumpWidget(const ProviderScope(child: LujaynApp()));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            themePreferenceStoreProvider.overrideWithValue(
+              _MemoryThemePreferenceStore(),
+            ),
+          ],
+          child: const LujaynApp(),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Check header and titles
@@ -175,7 +230,14 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      await tester.pumpWidget(const ProviderScope(child: LujaynApp()));
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          themePreferenceStoreProvider.overrideWithValue(
+            _MemoryThemePreferenceStore(),
+          ),
+        ],
+        child: const LujaynApp(),
+      ));
       await tester.pumpAndSettle();
 
       // Tap Settings navigation tab
@@ -213,7 +275,14 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      await tester.pumpWidget(const ProviderScope(child: LujaynApp()));
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          themePreferenceStoreProvider.overrideWithValue(
+            _MemoryThemePreferenceStore(),
+          ),
+        ],
+        child: const LujaynApp(),
+      ));
       await tester.pumpAndSettle();
 
       // Tap FAB
@@ -248,4 +317,16 @@ void main() {
       expect(find.text('Evening chamomile tea'), findsOneWidget);
     });
   });
+}
+
+class _MemoryThemePreferenceStore implements ThemePreferenceStore {
+  String? value;
+
+  @override
+  Future<String?> readThemeChoice() async => value;
+
+  @override
+  Future<void> writeThemeChoice(String value) async {
+    this.value = value;
+  }
 }
