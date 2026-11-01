@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 /// User-selectable appearance for the whole app.
 enum AppThemeChoice { system, silver, paper, sage, dusk, amoled }
 
