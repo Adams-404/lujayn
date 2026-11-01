@@ -82,7 +82,9 @@ class RecurrenceChipSelector extends StatelessWidget {
           const SizedBox(height: 12),
           Text('Select repeating days:', style: theme.textTheme.labelMedium),
           const SizedBox(height: 8),
-          Row(
+          Wrap(
+            spacing: 4,
+            runSpacing: 4,
             children: List.generate(7, (index) {
               final dayNumber = index + 1;
               final dayNames = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -97,7 +99,9 @@ class RecurrenceChipSelector extends StatelessWidget {
               ];
               final isDaySelected = selectedRule.daysOfWeek.contains(dayNumber);
 
-              return Expanded(
+              return SizedBox(
+                width: 48,
+                height: 48,
                 child: Semantics(
                   button: true,
                   selected: isDaySelected,
@@ -123,33 +127,30 @@ class RecurrenceChipSelector extends StatelessWidget {
                       );
                     },
                     borderRadius: BorderRadius.circular(24),
-                    child: SizedBox(
-                      height: 48,
-                      child: Center(
-                        child: Container(
-                          width: 36,
-                          height: 36,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
+                    child: Center(
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isDaySelected
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.surfaceContainerHighest,
+                          border: Border.all(
                             color: isDaySelected
                                 ? theme.colorScheme.primary
-                                : theme.colorScheme.surfaceContainerHighest,
-                            border: Border.all(
-                              color: isDaySelected
-                                  ? theme.colorScheme.primary
-                                  : theme.colorScheme.outline,
-                            ),
+                                : theme.colorScheme.outline,
                           ),
-                          child: Text(
-                            dayNames[index],
-                            style: TextStyle(
-                              color: isDaySelected
-                                  ? theme.colorScheme.onPrimary
-                                  : theme.colorScheme.onSurface,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                            ),
+                        ),
+                        child: Text(
+                          dayNames[index],
+                          style: TextStyle(
+                            color: isDaySelected
+                                ? theme.colorScheme.onPrimary
+                                : theme.colorScheme.onSurface,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
                           ),
                         ),
                       ),
