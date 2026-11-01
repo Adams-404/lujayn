@@ -1,3 +1,5 @@
+import 'reminder_schedule_planner.dart';
+
 /// Platform contract for scheduling local reminder alarms.
 abstract interface class ReminderAlarmScheduler {
   /// Whether Android currently allows exact alarms for this application.
