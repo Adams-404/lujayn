@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/repositories/mock_reminder_repository.dart';
+import '../../../../core/database/app_database.dart';
+import '../../data/repositories/drift_reminder_repository.dart';
 import '../../domain/models/reminder.dart';
 import '../../domain/models/reminder_status.dart';
 import '../../domain/repositories/reminder_repository.dart';
@@ -7,12 +8,16 @@ import '../../domain/repositories/reminder_repository.dart';
 /// Filter selection for reminder list.
 enum ReminderFilter { upcoming, completed, all }
 
-/// Provider for the active [ReminderRepository].
-/// Default is [MockReminderRepository] for Phase 0.
+/// Shared local SQLite database.
+final appDatabaseProvider = Provider<AppDatabase>((ref) {
+  final database = AppDatabase();
+  ref.onDispose(database.close);
+  return database;
+});
+
+/// Production repository. Mock data is only used by tests.
 final reminderRepositoryProvider = Provider<ReminderRepository>((ref) {
-  final repository = MockReminderRepository(preloadSampleData: true);
-  ref.onDispose(repository.dispose);
-  return repository;
+  return DriftReminderRepository(ref.watch(appDatabaseProvider));
 });
 
 /// Reactive stream of reminders from the repository.
@@ -103,10 +108,6 @@ class ReminderActionNotifier {
 
   Future<void> deleteReminder(String id) async {
     await _repository.deleteReminder(id);
-  }
-
-  Future<void> resetToSampleData() async {
-    await _repository.resetToSampleData();
   }
 
   Future<void> clearAll() async {
