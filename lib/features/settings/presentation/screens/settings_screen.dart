@@ -96,7 +96,7 @@ class SettingsScreen extends ConsumerWidget {
                     leading: const Icon(Icons.storage_outlined),
                     title: const Text('Data persistence'),
                     subtitle: const Text(
-                      'Phase 0: In-memory mock • Phase 1: Drift SQLite',
+                      'SQLite on this device. Works offline; no account or cloud storage.',
                     ),
                   ),
                   const Divider(),
@@ -120,27 +120,6 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                   const Divider(),
                   ListTile(
-                    leading: const Icon(Icons.restore_rounded),
-                    title: const Text('Reset sample reminders'),
-                    subtitle: const Text(
-                      'Reload the 5 curated sample reminders',
-                    ),
-                    onTap: () async {
-                      await ref
-                          .read(reminderActionControllerProvider)
-                          .resetToSampleData();
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Sample reminders reloaded'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                  const Divider(),
-                  ListTile(
                     leading: Icon(
                       Icons.delete_sweep_outlined,
                       color: theme.colorScheme.error,
@@ -156,7 +135,7 @@ class SettingsScreen extends ConsumerWidget {
                         builder: (ctx) => AlertDialog(
                           title: const Text('Clear all reminders?'),
                           content: const Text(
-                            'This will remove all reminders from the current repository. You can reload sample data at any time.',
+                            'This will permanently remove every reminder stored on this device.',
                           ),
                           actions: [
                             TextButton(
