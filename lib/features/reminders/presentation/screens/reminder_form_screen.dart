@@ -245,7 +245,7 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
                   ChoiceChip(
                     label: const Text('Tomorrow'),
                     selected: isDateTomorrow,
-                    selectedColor: AppColors.slateTeal,
+                    selectedColor: theme.colorScheme.primary,
                     labelStyle: TextStyle(
                       color: isDateTomorrow
                           ? Colors.white
@@ -300,9 +300,7 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
                         Text(
                           _selectedTime.format(context),
                           style: theme.textTheme.headlineMedium?.copyWith(
-                            color: isDark
-                                ? AppColors.darkTextPrimary
-                                : AppColors.lightTextPrimary,
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                         const Spacer(),
