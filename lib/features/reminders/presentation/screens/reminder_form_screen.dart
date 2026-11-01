@@ -269,7 +269,9 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
                     label: Text(
                       isDateToday || isDateTomorrow
                           ? 'Choose date'
-                          : AppDateFormatters.formatFullDate(_selectedDate),
+                          : AppDateFormatters.formatFullDate(
+                              _selectedDate,
+                            ),
                     ),
                   ),
                 ],
@@ -315,7 +317,9 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
                                 ),
                               ),
                               Text(
-                                AppDateFormatters.formatFullDate(_selectedDate),
+                                AppDateFormatters.formatFullDate(
+                                  _selectedDate,
+                                ),
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: colors.onSurfaceVariant,
                                 ),
