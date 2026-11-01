@@ -77,7 +77,7 @@ class _ThemeOption extends StatelessWidget {
                   size: 18,
                   color: isSystem
                       ? theme.colorScheme.onSurface
-                      : (choice.isDark ? Colors.white : Colors.white),
+                      : AppTheme.onAccentFor(choice),
                 ),
               ),
               const SizedBox(width: 14),
