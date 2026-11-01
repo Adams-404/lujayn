@@ -369,16 +369,24 @@ void main() {
       final formFinder = find.byType(Form);
       final listFinder = find.byType(ListView);
       final centerFinder = find.byType(ResponsiveCenter);
-      debugPrint('FORM DIAGNOSTIC: Form count=${formFinder.evaluate().length}');
-      debugPrint('FORM DIAGNOSTIC: ListView count=${listFinder.evaluate().length}');
+      debugPrint(
+        'FORM DIAGNOSTIC: Form count=${formFinder.evaluate().length}',
+      );
+      debugPrint(
+        'FORM DIAGNOSTIC: ListView count=${listFinder.evaluate().length}',
+      );
       debugPrint(
         'FORM DIAGNOSTIC: ResponsiveCenter count=${centerFinder.evaluate().length}',
       );
       if (formFinder.evaluate().isNotEmpty) {
-        debugPrint('FORM DIAGNOSTIC: Form size=${tester.getSize(formFinder)}');
+        debugPrint(
+          'FORM DIAGNOSTIC: Form size=${tester.getSize(formFinder)}',
+        );
       }
       if (listFinder.evaluate().isNotEmpty) {
-        debugPrint('FORM DIAGNOSTIC: ListView size=${tester.getSize(listFinder)}');
+        debugPrint(
+          'FORM DIAGNOSTIC: ListView size=${tester.getSize(listFinder)}',
+        );
       }
       debugPrint(
         'FORM DIAGNOSTIC: heading count=${find.text('What do you need to remember?').evaluate().length}',
