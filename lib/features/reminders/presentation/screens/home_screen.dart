@@ -156,6 +156,10 @@ class HomeScreen extends ConsumerWidget {
 
     return SliverMainAxisGroup(
       slivers: [
+        if (overdueRemaining.isNotEmpty) ...[
+          _groupHeading(context, 'PAST DUE'),
+          ..._timelineSlivers(context, ref, overdueRemaining),
+        ],
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 22),
@@ -165,10 +169,6 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
         ),
-        if (overdueRemaining.isNotEmpty) ...[
-          _groupHeading(context, 'PAST DUE'),
-          ..._timelineSlivers(context, ref, overdueRemaining),
-        ],
         if (today.isNotEmpty) ...[
           _groupHeading(context, 'ALSO TODAY'),
           ..._timelineSlivers(context, ref, today),
