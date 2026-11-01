@@ -8,47 +8,38 @@ Read this first, then `AGENTS.md`, then `lujayn-project-brief.md`.
 
 ## 1. Where things stand in one paragraph
 
-PR #21 (reminder form redesign) is **merged to `main`**. PR #22 (Android alarm
-delivery + call-style alert + the new logo) is **open, pushed, and verified by
-CI** — the workflow's `flutter build apk --debug` step passed, so the Kotlin and
-the generated icon resources are proven to compile. It is still marked draft and
-has **not** been merged, and **no one has run it on a real phone yet**. The
-project is **not finished**: issue #5 is nearly done, #3 is partly done, and #6,
-#16, #17, #18 have not been started.
+**PR #21 and PR #22 are both merged to `main`.** `main` is at `93ff905`, CI is
+green, 62 tests pass, and the working tree is clean. Issue #5 (alarm engine) and
+most of #3 (visual identity) are in. **No one has run the app on a real phone
+yet** — that is the one honest gap in the delivery work.
+`docs/android-device-test-matrix.md` is the checklist for it.
 
-**Milestone reached 2026-11-01:** CI green on `cc58c6c` (full pipeline including
-the Android APK build), 56 tests passing locally, four real bugs fixed — snooze
-alarm id mapping, a dropped cold-start alert, an infinite loop in recurrence
-search, and a one-time reminder that saved but could never fire.
+What is left: #3 needs the remaining screens reviewed (detail, settings, call
+surface) and a screenshot note; #6 (voice/TTS/sounds), #16 (encrypted backup),
+#17 (on-device natural language) and #18 (iOS) have not been started.
 
-**Nothing is in flight.** The last commit `0ad1949` was verified locally and is
-the stopping point. Pick up from §5.
+**Milestone 2026-11-01:** PR #22 merged, then a first pass at #3 landed — design
+tokens, deliberate loading/error/permission-denied states on Home, and two
+text-scaling overflows found and fixed.
 
 ---
 
 ## 2. Repository state (verified locally)
 
 ```
-branch : feat/android-reminder-scheduling
-HEAD   : 0ad1949  fix(reminders): refuse a one-time reminder set in the past
-origin : cc58c6c  (0ad1949 is committed locally and must be pushed first)
-main   : 8197cf4  feat(ui): redesign reminder creation and editing (#21)
+branch : main
+HEAD   : 93ff905  feat(ui): give the home screen deliberate loading, error and blocked states
+origin : 93ff905  (in sync)
 ```
 
-Branch commits on top of `main`:
+Recent history:
 
 ```
-0ad1949 fix(reminders): refuse a one-time reminder set in the past
-cc58c6c fix(reminders): bound recurrence search so corrupt rules cannot hang
-b4bfe4a docs: add a handover report for the next contributor
-8ef8816 fix(reminders): map snooze alarm ids back to their reminder
-9e6e5ae docs(android): add the physical-device reminder delivery test matrix
-d529f6b feat(brand): adopt the Lujayn bell logo across the app
-03d1031 feat(reminders): present due reminders as a call-style alert
-b597b94 fix(android): repair alarm bridge imports and harden delivery
-a384d9a ci: include alarm action tests in formatter diagnostics
-891b5eb test(reminders): verify alarm sync for reminder actions
-... (plus the earlier alarm-engine commits)
+93ff905 feat(ui): give the home screen deliberate loading, error and blocked states
+ca6ddf6 feat(android): add local AlarmManager reminder delivery (#22)
+8197cf4 feat(ui): redesign reminder creation and editing (#21)
+af9cf43 feat(ui): add time-first reminder timeline
+df68577 feat(storage): persist reminders locally with Drift and SQLite
 ```
 
 **Uncommitted:**
@@ -67,12 +58,11 @@ Every item below was checked with the real toolchain, not assumed.
 
 - **`dart format --output=none --set-exit-if-changed lib test`** — clean.
 - **`flutter analyze --fatal-infos`** — no issues.
-- **`flutter test`** — 56 passing at commit `0ad1949`.
-- **CI** — green on `b4bfe4a`, `9e6e5ae` and `cc58c6c` (full pipeline:
-  `build_runner`, format, analyze, `flutter test`, `flutter build apk --debug`).
-  The APK step passing is what proves the Kotlin and the generated icon
-  resources compile. `0ad1949` has not had a CI run yet — push it and confirm
-  before merging.
+- **`flutter test`** — 62 passing at `93ff905`.
+- **CI** — green on `ca6ddf6` (the #22 merge) and earlier. The pipeline runs
+  `build_runner`, format, analyze, `flutter test` and `flutter build apk --debug`,
+  so the APK step passing is what proves the Kotlin and icon resources compile.
+  `93ff905` has not had its own run yet — confirm it.
 
 ### PR #21 — merged (`8197cf4`)
 
@@ -81,7 +71,7 @@ inside Scaffold's `bottomNavigationBar` slot receives unbounded height, so the
 bar became infinitely tall and squeezed the body to zero. Fixed with
 `Center(heightFactor: 1)` and `body: Form > ResponsiveCenter > ListView`.
 
-### PR #22 — open, draft
+### PR #22 — merged (`ca6ddf6`)
 
 **Alarm engine (Kotlin + Dart)**
 
@@ -183,31 +173,37 @@ occurrence. Covered by `test/reminder_form_screen_test.dart`.
 This is the pattern worth internalising: **a reminder that is accepted but never
 delivered is a reliability bug.** Prefer refusing the save over saving silently.
 
+## 4d. Two overflows found while doing #3
+
+Testing Home at 200% text exposed both:
+
+- `EmptyStateView` clipped by 21px when a notice sat above it, because the
+  column had a fixed vertical padding and no scroll. It now scrolls.
+- The filter row (`Upcoming / Completed / All`) overflowed horizontally by 290px
+  on a 360dp screen at double text. It now scrolls horizontally.
+
+Both are accessibility bugs, not cosmetics — a clipped state means an action the
+user cannot reach. `test/home_screen_states_test.dart` now pins both at 200%
+text on a small screen.
+
 ---
 
 ## 5. Then, in order
 
-0. **Push `0ad1949` first.** It is committed locally but not on the remote, so
-   check `git status` and
-   `git log origin/feat/android-reminder-scheduling --oneline -1` before
-   assuming the remote is current.
-1. **Confirm CI is green on the final push.** The run must show the
-   `Build Android debug APK` step passing. Only then is the Kotlin proven.
-   `gh run list --branch feat/android-reminder-scheduling --limit 1`
-2. **Mark PR #22 ready and merge it** (`gh pr ready 22`, then
-   `gh pr merge 22 --squash --delete-branch`). Do not merge on a red or unknown
-   run.
-3. **Physical-device verification.** Fill in
-   `docs/android-device-test-matrix.md` on real hardware and paste the result
-   into the PR. Nothing in the alarm path may be called "working" until this is
-   done.
+1. **Confirm CI is green on `93ff905`.** `gh run list --branch main --limit 1`.
+2. **Physical-device verification.** Fill in
+   `docs/android-device-test-matrix.md` on real hardware. Nothing in the alarm
+   path may be called "working" until this is done. This is the only thing
+   blocking #5 from being closed.
+3. **Finish #3.** Tokens and Home states are in. Still to review:
+   reminder detail, settings, and the call-style surface; plus a screen-by-screen
+   note or screenshots in a PR, which the issue explicitly asks for.
 4. **Then the remaining issues**, roughly in this order:
-   - **#5** — close out the alarm engine once the matrix is filled.
    - **#6** — local voice recording, playback, TTS, reminder sounds. No network,
-     no cloud transcription.
-   - **#3** — finish the visual identity: the logo is in, but the design
-     direction work is not.
+     no cloud transcription. This is the heart of the product and the biggest
+     remaining piece.
    - **#16** — encrypted local backup and restore (local file, user-held key).
+     Note the recurrence fix in §4b — restore will feed the app untrusted data.
    - **#17** — on-device natural-language reminder creation. Must stay on-device.
    - **#18** — iOS support via native notifications. Only after Android is
      settled.
@@ -348,6 +344,11 @@ hole. That mistake was made and fixed once already.
   silently ignored.
 - Recurrence search is bounded. A reminder more than four years overdue is
   dropped, not re-armed.
+- Spacing and radii come from `AppSpacing` / `AppRadius` in
+  `lib/app/theme/app_spacing.dart`, not from literals. New code should use them;
+  older widgets are being migrated as they are touched.
+- Home never nags about permissions when delivery is healthy. The notice only
+  appears when something is actually wrong.
 
 ---
 
@@ -362,10 +363,9 @@ hole. That mistake was made and fixed once already.
   was off, but the stored reminder stays `active`. Decide whether the app should
   record the missed state or whether the enum value should be removed. Do not
   remove it casually — it may already be persisted in existing databases.
-- PR #22 is still marked **draft** even though CI is green. That is deliberate:
-  it should not merge until the physical-device matrix is filled in.
-- Nothing was pushed after `cc58c6c`. `0ad1949` and this document are local until
-  someone runs `git push`.
+- PR #22 is merged, but the physical-device matrix is still empty. That is the
+  outstanding honesty item, not a code problem.
+- Issue #5 can be closed once the matrix is filled in.
 
 ---
 
@@ -376,11 +376,10 @@ Last verified state, so you do not have to guess:
 ```bash
 dart format --output=none --set-exit-if-changed lib test   # clean
 flutter analyze --fatal-infos                              # no issues
-flutter test                                               # 56 passing
+flutter test                                               # 62 passing
 ```
 
-HEAD is `0ad1949`. CI was green on `cc58c6c`; `0ad1949` has not been pushed or
-run yet. The only untracked file is the user's `Smart Bell Reminder Icon-1.png`.
+`main` is at `93ff905` and pushed. CI has not run on that commit yet.
 
-Nothing was left half-written. The next action is to push, confirm CI, and then
-work through §5.
+Nothing was left half-written. The next action is to confirm CI and then work
+through §5, starting with physical-device verification.
