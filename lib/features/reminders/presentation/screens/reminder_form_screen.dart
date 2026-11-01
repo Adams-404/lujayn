@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -482,5 +481,3 @@ class _TimeChoice extends StatelessWidget {
     return ActionChip(label: Text(label), onPressed: () => onPressed(time));
   }
 }
-Formatted 1 file (1 changed) in 0.01 seconds.
-##[group]
