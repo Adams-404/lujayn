@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lujayn/app/app.dart';
-import 'package:lujayn/core/widgets/responsive_center.dart';
 import 'package:lujayn/app/theme/app_theme.dart';
 import 'package:lujayn/app/theme/app_theme_choice.dart';
 import 'package:lujayn/core/database/app_database.dart';
@@ -365,37 +364,14 @@ void main() {
       await tester.tap(find.text('Add reminder'));
       await tester.pumpAndSettle();
 
-      // Temporary layout diagnostics for the failing form navigation test.
-      final formFinder = find.byType(Form);
-      final listFinder = find.byType(ListView);
-      final centerFinder = find.byType(ResponsiveCenter);
-      debugPrint(
-        'FORM DIAGNOSTIC: Form count=${formFinder.evaluate().length}',
-      );
-      debugPrint(
-        'FORM DIAGNOSTIC: ListView count=${listFinder.evaluate().length}',
-      );
-      debugPrint(
-        'FORM DIAGNOSTIC: ResponsiveCenter count=${centerFinder.evaluate().length}',
-      );
-      if (formFinder.evaluate().isNotEmpty) {
-        debugPrint(
-          'FORM DIAGNOSTIC: Form size=${tester.getSize(formFinder)}',
-        );
-      }
-      if (listFinder.evaluate().isNotEmpty) {
-        debugPrint(
-          'FORM DIAGNOSTIC: ListView size=${tester.getSize(listFinder)}',
-        );
-      }
-      debugPrint(
-        'FORM DIAGNOSTIC: heading count=${find.text('What do you need to remember?').evaluate().length}',
-      );
-
       // Verify the form content is laid out and the title is required.
       expect(find.text('New reminder'), findsOneWidget);
+      expect(find.text('What do you need to remember?'), findsOneWidget);
       expect(find.byType(TextFormField), findsWidgets);
       expect(find.text('Save'), findsOneWidget);
+
+      // The form must occupy real height, not be collapsed to zero.
+      expect(tester.getSize(find.byType(Form)).height, greaterThan(0));
 
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
