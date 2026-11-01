@@ -181,12 +181,28 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
   Future<void> _save() async {
     if (_isSaving || !_formKey.currentState!.validate()) return;
 
+    final now = DateTime.now();
+
+    // A one-time reminder in the past produces no alarm at all, so saving it
+    // would quietly do nothing. Repeating reminders are fine: the planner
+    // advances them to their next occurrence.
+    if (!_selectedRecurrence.isRecurring && !_scheduledDateTime.isAfter(now)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Choose a time in the future, or make this a repeating reminder.',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isSaving = true);
     try {
       await _prepareDeliveryPermissions();
       if (!mounted) return;
 
-      final now = DateTime.now();
       final reminder = Reminder(
         id: widget.initialReminder?.id ?? _newReminderId,
         title: _titleController.text.trim(),
