@@ -69,14 +69,12 @@ internal object ReminderAlarmScheduler {
         if (triggerAt <= System.currentTimeMillis()) return
 
         val alarmManager = context.getSystemService(AlarmManager::class.java)
-        val operation = pendingIntent(context, id).apply {
-            // Intent extras are refreshed by pendingIntent() below.
-        }
         val intent = Intent(context, ReminderAlarmReceiver::class.java).apply {
             putExtra(ReminderAlarmReceiver.EXTRA_ID, id)
             putExtra(ReminderAlarmReceiver.EXTRA_TITLE, data.optString("title"))
             putExtra(ReminderAlarmReceiver.EXTRA_DESCRIPTION, data.optString("description"))
         }
+        intent.action = alarmAction(id)
         val broadcast = PendingIntent.getBroadcast(
             context,
             id.hashCode(),
@@ -105,7 +103,7 @@ internal object ReminderAlarmScheduler {
 
     private fun pendingIntent(context: Context, id: String): PendingIntent {
         val intent = Intent(context, ReminderAlarmReceiver::class.java)
-            .setAction("com.lujayn.REMINDER_ALARM.$id")
+            .setAction(alarmAction(id))
         return PendingIntent.getBroadcast(
             context,
             id.hashCode(),
@@ -118,6 +116,8 @@ internal object ReminderAlarmScheduler {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
     }
+
+    private fun alarmAction(id: String) = "com.lujayn.REMINDER_ALARM.$id"
 
     private fun preferences(context: Context) =
         context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
