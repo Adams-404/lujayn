@@ -230,7 +230,14 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      await tester.pumpWidget(const ProviderScope(child: LujaynApp()));
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          themePreferenceStoreProvider.overrideWithValue(
+            _MemoryThemePreferenceStore(),
+          ),
+        ],
+        child: const LujaynApp(),
+      ));
       await tester.pumpAndSettle();
 
       // Tap Settings navigation tab
@@ -268,7 +275,14 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      await tester.pumpWidget(const ProviderScope(child: LujaynApp()));
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          themePreferenceStoreProvider.overrideWithValue(
+            _MemoryThemePreferenceStore(),
+          ),
+        ],
+        child: const LujaynApp(),
+      ));
       await tester.pumpAndSettle();
 
       // Tap FAB
