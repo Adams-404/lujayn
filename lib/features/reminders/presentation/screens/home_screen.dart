@@ -140,14 +140,19 @@ class HomeScreen extends ConsumerWidget {
       );
     }
 
-    final now = DateTime.now();
-    final next = active.firstWhere(
-      (reminder) => reminder.scheduledDateTime.isAfter(now),
-      orElse: () => active.first,
-    );
+    final overdue = active.where((reminder) => reminder.isPastDue).toList();
+    final future = active.where((reminder) => !reminder.isPastDue).toList();
+    final next = future.isNotEmpty ? future.first : overdue.first;
     final remaining = active.where((reminder) => reminder.id != next.id).toList();
-    final today = remaining.where((reminder) => reminder.isToday).toList();
-    final later = remaining.where((reminder) => !reminder.isToday).toList();
+    final overdueRemaining = remaining
+        .where((reminder) => reminder.isPastDue)
+        .toList();
+    final today = remaining
+        .where((reminder) => !reminder.isPastDue && reminder.isToday)
+        .toList();
+    final later = remaining
+        .where((reminder) => !reminder.isPastDue && !reminder.isToday)
+        .toList();
 
     return SliverMainAxisGroup(
       slivers: [
@@ -160,6 +165,10 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
         ),
+        if (overdueRemaining.isNotEmpty) ...[
+          _groupHeading(context, 'PAST DUE'),
+          ..._timelineSlivers(context, ref, overdueRemaining),
+        ],
         if (today.isNotEmpty) ...[
           _groupHeading(context, 'ALSO TODAY'),
           ..._timelineSlivers(context, ref, today),
@@ -354,6 +363,7 @@ class _NextReminderPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final accent = reminder.isPastDue ? colors.error : colors.primary;
 
     return Material(
       color: colors.surfaceContainerLow,
@@ -363,7 +373,7 @@ class _NextReminderPanel extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(18, 17, 18, 18),
           decoration: BoxDecoration(
             border: Border(
-              left: BorderSide(color: colors.primary, width: 3),
+              left: BorderSide(color: accent, width: 3),
               top: BorderSide(color: colors.outlineVariant),
               right: BorderSide(color: colors.outlineVariant),
               bottom: BorderSide(color: colors.outlineVariant),
@@ -375,7 +385,7 @@ class _NextReminderPanel extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    'NEXT REMINDER',
+                    reminder.isPastDue ? 'NEEDS ATTENTION' : 'NEXT REMINDER',
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: colors.onSurfaceVariant,
                       fontWeight: FontWeight.w700,
@@ -383,14 +393,14 @@ class _NextReminderPanel extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  Icon(Icons.north_east_rounded, size: 17, color: colors.primary),
+                  Icon(Icons.north_east_rounded, size: 17, color: accent),
                 ],
               ),
               const SizedBox(height: 17),
               Text(
                 AppDateFormatters.formatTime(reminder.scheduledDateTime),
                 style: theme.textTheme.displaySmall?.copyWith(
-                  color: colors.primary,
+                  color: accent,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -1.2,
                 ),
