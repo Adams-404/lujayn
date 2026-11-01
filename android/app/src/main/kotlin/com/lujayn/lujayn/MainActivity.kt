@@ -46,6 +46,8 @@ class MainActivity : FlutterActivity() {
                     val title = call.argument<String>("title")
                     val description = call.argument<String>("description")
                     val scheduledAtMillis = call.argument<Number>("scheduledAtMillis")
+                    val recurrenceType = call.argument<String>("recurrenceType") ?: "none"
+                    val daysOfWeek = call.argument<List<Int>>("daysOfWeek") ?: emptyList()
                     if (id == null || title == null || scheduledAtMillis == null) {
                         result.error("INVALID_ARGUMENTS", "Missing reminder alarm data.", null)
                     } else {
@@ -55,6 +57,8 @@ class MainActivity : FlutterActivity() {
                             title,
                             description,
                             scheduledAtMillis.toLong(),
+                            recurrenceType,
+                            daysOfWeek,
                         )
                         result.success(null)
                     }
