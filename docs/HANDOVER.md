@@ -8,19 +8,20 @@ Read this first, then `AGENTS.md`, then `lujayn-project-brief.md`.
 
 ## 1. Where things stand in one paragraph
 
-**PR #21 and PR #22 are both merged to `main`.** `main` is at `93ff905`, CI is
-green, 62 tests pass, and the working tree is clean. Issue #5 (alarm engine) and
-most of #3 (visual identity) are in. **No one has run the app on a real phone
-yet** — that is the one honest gap in the delivery work.
-`docs/android-device-test-matrix.md` is the checklist for it.
+`main` is at `e16ea00`, 93 tests pass, and the working tree is clean. Issue #5
+(alarm engine) is merged, #3 (visual identity) is partly done, #18 (iOS) is
+**closed as deferred**, and #6 (audio) now has two real slices: reading a
+reminder aloud with the device engine, and a downloadable offline voice system
+that installs Kokoro or Kitten Nano. **No one has run the app on a real phone
+yet** — that is the one honest gap in the delivery work, and it now covers the
+voices too. `docs/android-device-test-matrix.md` is the checklist.
 
-What is left: #3 needs the remaining screens reviewed (detail, settings, call
-surface) and a screenshot note; #6 (voice/TTS/sounds), #16 (encrypted backup),
-#17 (on-device natural language) and #18 (iOS) have not been started.
+What is left: the sherpa-onnx engine adapter that actually speaks with a
+downloaded pack (#6), voice recording and playback (#6), encrypted backup (#16),
+on-device natural language (#17). #18 is out of scope until Android is settled.
 
-**Milestone 2026-11-01:** PR #22 merged, then a first pass at #3 landed — design
-tokens, deliberate loading/error/permission-denied states on Home, and two
-text-scaling overflows found and fixed.
+**Milestone 2026-11-01 (later):** text-to-speech landed, then the voice pack
+system — catalog, verified download, atomic install, picker UI, and 31 new tests.
 
 ---
 
@@ -28,18 +29,18 @@ text-scaling overflows found and fixed.
 
 ```
 branch : main
-HEAD   : 93ff905  feat(ui): give the home screen deliberate loading, error and blocked states
-origin : 93ff905  (in sync)
+HEAD   : e16ea00  feat(voice): offer downloadable offline voices that sound human
+origin : e16ea00  (in sync)
 ```
 
 Recent history:
 
 ```
+e16ea00 feat(voice): offer downloadable offline voices that sound human
+a3a147c feat(audio): read reminders aloud with the device's own speech engine
+bf53bf6 docs: record the #22 merge and the #3 first pass in the handover
 93ff905 feat(ui): give the home screen deliberate loading, error and blocked states
 ca6ddf6 feat(android): add local AlarmManager reminder delivery (#22)
-8197cf4 feat(ui): redesign reminder creation and editing (#21)
-af9cf43 feat(ui): add time-first reminder timeline
-df68577 feat(storage): persist reminders locally with Drift and SQLite
 ```
 
 **Uncommitted:**
@@ -58,11 +59,37 @@ Every item below was checked with the real toolchain, not assumed.
 
 - **`dart format --output=none --set-exit-if-changed lib test`** — clean.
 - **`flutter analyze --fatal-infos`** — no issues.
-- **`flutter test`** — 62 passing at `93ff905`.
+- **`flutter test`** — 93 passing at `e16ea00`.
 - **CI** — green on `ca6ddf6` (the #22 merge) and earlier. The pipeline runs
   `build_runner`, format, analyze, `flutter test` and `flutter build apk --debug`,
   so the APK step passing is what proves the Kotlin and icon resources compile.
-  `93ff905` has not had its own run yet — confirm it.
+  `93ff905`, `a3a147c` and `e16ea00` have not had their own run confirmed.
+
+### Voice and speech (`a3a147c`, `e16ea00`)
+
+- `ReminderSpeechService` is the domain contract. `FlutterReminderSpeechService`
+  speaks with the device engine; `NoopReminderSpeechService` reports itself
+  unavailable on other targets. Provider: `reminderSpeechServiceProvider`.
+- Speech is opt-in. `spokenRemindersEnabledProvider` defaults to **off**,
+  because a reminder can arrive in a meeting. The call screen always offers a
+  manual "Read aloud" when an engine exists, and says so plainly when the
+  setting is on but no engine is installed.
+- Leaving the call screen stops speech.
+- The voice pack system lives under `lib/features/voice`. Two packs, both
+  Apache-2.0, both verified against the upstream release:
+
+  | Pack | Download | Unpacked | Voices |
+  |---|---|---|---|
+  | Light (Kitten Nano fp16) | 25.6 MB | 40 MB | 8 |
+  | Natural (Kokoro v0.19 int8) | 98.5 MB | 151 MB | 11 |
+
+  **Both packs name their model file something other than `model.onnx`**
+  (`model.fp16.onnx`, `model.int8.onnx`). That is recorded per pack in
+  `voice_catalog.dart`. Read `docs/voice-packs.md` before touching it.
+- Installs are staged and atomic: download → SHA-256 check → bzip2/tar on a
+  background isolate → marker file → rename. Every failure path is tested
+  against a real `.tar.bz2` built in the test.
+- Deleting a pack moves the selection back to the device voice.
 
 ### PR #21 — merged (`8197cf4`)
 
@@ -190,23 +217,37 @@ text on a small screen.
 
 ## 5. Then, in order
 
-1. **Confirm CI is green on `93ff905`.** `gh run list --branch main --limit 1`.
+1. **Confirm CI is green on `e16ea00`.** `gh run list --branch main --limit 1`.
+   The `Build Android debug APK` step is the one that matters: the new
+   dependencies (`archive`, `crypto`, `path_provider`, `path`) all have Android
+   implementations and this is the first time they are compiled.
 2. **Physical-device verification.** Fill in
    `docs/android-device-test-matrix.md` on real hardware. Nothing in the alarm
-   path may be called "working" until this is done. This is the only thing
-   blocking #5 from being closed.
-3. **Finish #3.** Tokens and Home states are in. Still to review:
+   path or the voice path may be called "working" until this is done.
+3. **Finish #6.** Two of the four Phase 3 pieces are in (device TTS, voice
+   packs). Still to do:
+   - **The engine adapter.** Add `sherpa_onnx`, implement an `OfflineVoiceEngine`
+     behind `ReminderSpeechService`, and make `reminderSpeechServiceProvider`
+     pick the installed pack when one is selected and fall back to the device
+     engine otherwise. `docs/voice-packs.md` has the exact model paths and the
+     `OfflineTts`/`OfflineTtsKokoroModelConfig` API shape.
+   - **Playback.** sherpa-onnx returns `Float32List` samples plus a sample rate;
+     they need to become sound. `audioplayers` (as the upstream Flutter example
+     uses) or Android `AudioTrack` are the options.
+   - **Voice recording and playback** for a spoken reminder, which needs
+     `RECORD_AUDIO` and the audio-focus rules the brief mentions.
+   - **Reminder tones and vibration** configuration.
+4. **Finish #3.** Tokens and Home states are in. Still to review:
    reminder detail, settings, and the call-style surface; plus a screen-by-screen
    note or screenshots in a PR, which the issue explicitly asks for.
-4. **Then the remaining issues**, roughly in this order:
-   - **#6** — local voice recording, playback, TTS, reminder sounds. No network,
-     no cloud transcription. This is the heart of the product and the biggest
-     remaining piece.
+5. **Then the remaining issues**, roughly in this order:
    - **#16** — encrypted local backup and restore (local file, user-held key).
      Note the recurrence fix in §4b — restore will feed the app untrusted data.
    - **#17** — on-device natural-language reminder creation. Must stay on-device.
-   - **#18** — iOS support via native notifications. Only after Android is
-     settled.
+
+**#18 (iOS) is closed as deferred.** Do not reopen it until Android is verified
+on hardware and a Mac is available; an untestable platform implementation is
+guesswork.
 
 ---
 
@@ -366,6 +407,18 @@ hole. That mistake was made and fixed once already.
 - PR #22 is merged, but the physical-device matrix is still empty. That is the
   outstanding honesty item, not a code problem.
 - Issue #5 can be closed once the matrix is filled in.
+- **The voices do not speak yet.** The catalog, download, verification, install
+  and selection are done and tested; the sherpa-onnx adapter and audio playback
+  are not written. Do not describe the downloadable voices as working.
+- `VoicePack.installedBytes` and the model file names are measured facts, not
+  estimates. If a pack version is bumped, download and inspect the archive again
+  before changing the catalog — both packs name their model file something other
+  than `model.onnx`.
+- The Kokoro pack needs 151 MB of storage. On a device with little free space
+  the install fails cleanly but there is no pre-flight free-space check yet.
+  Worth adding before release.
+- `ReminderSpeechService` currently always resolves to the device engine. The
+  pack selection is stored and displayed but not yet consulted when speaking.
 
 ---
 
@@ -376,10 +429,12 @@ Last verified state, so you do not have to guess:
 ```bash
 dart format --output=none --set-exit-if-changed lib test   # clean
 flutter analyze --fatal-infos                              # no issues
-flutter test                                               # 62 passing
+flutter test                                               # 93 passing
 ```
 
-`main` is at `93ff905` and pushed. CI has not run on that commit yet.
+`main` is at `e16ea00` and pushed. CI has not run on that commit yet — confirm
+it, and specifically watch the `Build Android debug APK` step, because the new
+dependencies are being compiled for Android for the first time.
 
 Nothing was left half-written. The next action is to confirm CI and then work
 through §5, starting with physical-device verification.
