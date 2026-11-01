@@ -48,7 +48,16 @@ class MainActivity : FlutterActivity() {
                     val scheduledAtMillis = call.argument<Number>("scheduledAtMillis")
                     val recurrenceType = call.argument<String>("recurrenceType") ?: "none"
                     val daysOfWeek = call.argument<List<Int>>("daysOfWeek") ?: emptyList()
-                    if (id == null || title == null || scheduledAtMillis == null) {
+                    val localYear = call.argument<Int>("localYear")
+                    val localMonth = call.argument<Int>("localMonth")
+                    val localDay = call.argument<Int>("localDay")
+                    val localHour = call.argument<Int>("localHour")
+                    val localMinute = call.argument<Int>("localMinute")
+                    if (
+                        id == null || title == null || scheduledAtMillis == null ||
+                        localYear == null || localMonth == null || localDay == null ||
+                        localHour == null || localMinute == null
+                    ) {
                         result.error("INVALID_ARGUMENTS", "Missing reminder alarm data.", null)
                     } else {
                         ReminderAlarmScheduler.schedule(
@@ -59,6 +68,11 @@ class MainActivity : FlutterActivity() {
                             scheduledAtMillis.toLong(),
                             recurrenceType,
                             daysOfWeek,
+                            localYear,
+                            localMonth,
+                            localDay,
+                            localHour,
+                            localMinute,
                         )
                         result.success(null)
                     }
