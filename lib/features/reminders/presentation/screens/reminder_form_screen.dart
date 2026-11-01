@@ -170,240 +170,238 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
       appBar: AppBar(
         title: Text(_isEditing ? 'Edit reminder' : 'New reminder'),
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) => Center(
-          child: SizedBox(
-            width: constraints.maxWidth < 640 ? constraints.maxWidth : 640,
-            height: constraints.maxHeight,
-            child: Form(
-              key: _formKey,
-              child: ListView(
-              padding: const EdgeInsets.fromLTRB(22, 20, 22, 28),
-              children: [
-                Text(
-                  'What do you need to remember?',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+      body: Form(
+        key: _formKey,
+        child: ResponsiveCenter(
+          maxWidth: 640,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(22, 20, 22, 28),
+            children: [
+              Text(
+                'What do you need to remember?',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  'Give it a name. You can add details and choose when it should happen.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colors.onSurfaceVariant,
-                    height: 1.45,
-                  ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Give it a name. You can add details and choose when it should happen.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  height: 1.45,
                 ),
-                const SizedBox(height: 24),
-                _FormSectionLabel(label: 'Reminder'),
-                const SizedBox(height: 9),
-                TextFormField(
-                  controller: _titleController,
-                  textCapitalization: TextCapitalization.sentences,
-                  textInputAction: TextInputAction.next,
-                  maxLength: 80,
-                  style: theme.textTheme.bodyLarge,
-                  decoration: const InputDecoration(
-                    hintText: 'e.g. Take medication',
-                    counterText: '',
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter what you need to remember';
-                    }
-                    return null;
-                  },
+              ),
+              const SizedBox(height: 24),
+              _FormSectionLabel(label: 'Reminder'),
+              const SizedBox(height: 9),
+              TextFormField(
+                controller: _titleController,
+                textCapitalization: TextCapitalization.sentences,
+                textInputAction: TextInputAction.next,
+                maxLength: 80,
+                style: theme.textTheme.bodyLarge,
+                decoration: const InputDecoration(
+                  hintText: 'e.g. Take medication',
+                  counterText: '',
                 ),
-                const SizedBox(height: 20),
-                _FormSectionLabel(label: 'Notes'),
-                const SizedBox(height: 4),
-                Text(
-                  'Optional details that may help when the reminder appears.',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colors.onSurfaceVariant,
-                  ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter what you need to remember';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+              _FormSectionLabel(label: 'Notes'),
+              const SizedBox(height: 4),
+              Text(
+                'Optional details that may help when the reminder appears.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
                 ),
-                const SizedBox(height: 9),
-                TextFormField(
-                  controller: _descriptionController,
-                  maxLines: 3,
-                  minLines: 2,
-                  textCapitalization: TextCapitalization.sentences,
-                  textInputAction: TextInputAction.newline,
-                  decoration: const InputDecoration(
-                    hintText: 'Add instructions or a little context...',
-                    alignLabelWithHint: true,
-                  ),
+              ),
+              const SizedBox(height: 9),
+              TextFormField(
+                controller: _descriptionController,
+                maxLines: 3,
+                minLines: 2,
+                textCapitalization: TextCapitalization.sentences,
+                textInputAction: TextInputAction.newline,
+                decoration: const InputDecoration(
+                  hintText: 'Add instructions or a little context...',
+                  alignLabelWithHint: true,
                 ),
-                const SizedBox(height: 28),
-                _FormSectionLabel(label: 'When'),
-                const SizedBox(height: 12),
-                Text(
-                  'Date',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              ),
+              const SizedBox(height: 28),
+              _FormSectionLabel(label: 'When'),
+              const SizedBox(height: 12),
+              Text(
+                'Date',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(height: 9),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _DateChoice(
-                      label: 'Today',
-                      selected: isDateToday,
-                      onPressed: () => setState(() => _selectedDate = today),
+              ),
+              const SizedBox(height: 9),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _DateChoice(
+                    label: 'Today',
+                    selected: isDateToday,
+                    onPressed: () => setState(() => _selectedDate = today),
+                  ),
+                  _DateChoice(
+                    label: 'Tomorrow',
+                    selected: isDateTomorrow,
+                    onPressed: () => setState(() => _selectedDate = tomorrow),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _pickCustomDate,
+                    icon: const Icon(Icons.calendar_today_outlined, size: 17),
+                    label: Text(
+                      isDateToday || isDateTomorrow
+                          ? 'Choose date'
+                          : AppDateFormatters.formatFullDate(
+                                  _selectedDate,
+                                ),
                     ),
-                    _DateChoice(
-                      label: 'Tomorrow',
-                      selected: isDateTomorrow,
-                      onPressed: () => setState(() => _selectedDate = tomorrow),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: _pickCustomDate,
-                      icon: const Icon(Icons.calendar_today_outlined, size: 17),
-                      label: Text(
-                        isDateToday || isDateTomorrow
-                            ? 'Choose date'
-                            : AppDateFormatters.formatFullDate(
-                                    _selectedDate,
-                                  ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 22),
-                Text(
-                  'Time',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
                   ),
+                ],
+              ),
+              const SizedBox(height: 22),
+              Text(
+                'Time',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(height: 9),
-                Material(
-                  color: colors.surfaceContainerLow,
-                  child: InkWell(
-                    onTap: _pickCustomTime,
-                    child: Container(
-                      constraints: const BoxConstraints(minHeight: 76),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: colors.outlineVariant),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.schedule_rounded,
+              ),
+              const SizedBox(height: 9),
+              Material(
+                color: colors.surfaceContainerLow,
+                child: InkWell(
+                  onTap: _pickCustomTime,
+                  child: Container(
+                    constraints: const BoxConstraints(minHeight: 76),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: colors.outlineVariant),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.schedule_rounded,
+                          color: colors.primary,
+                          size: 23,
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                _selectedTime.format(context),
+                                style: theme.textTheme.headlineSmall
+                                    ?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                              Text(
+                                AppDateFormatters.formatFullDate(
+                                  _selectedDate,
+                                ),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colors.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          'Change',
+                          style: theme.textTheme.labelLarge?.copyWith(
                             color: colors.primary,
-                            size: 23,
+                            fontWeight: FontWeight.w600,
                           ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  _selectedTime.format(context),
-                                  style: theme.textTheme.headlineSmall
-                                      ?.copyWith(fontWeight: FontWeight.w600),
-                                ),
-                                Text(
-                                  AppDateFormatters.formatFullDate(
-                                    _selectedDate,
-                                  ),
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: colors.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Text(
-                            'Change',
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: colors.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.chevron_right_rounded,
-                            color: colors.onSurfaceVariant,
-                          ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  'Quick times',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: colors.onSurfaceVariant,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Quick times',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _TimeChoice(
+                    label: 'Morning',
+                    time: const TimeOfDay(hour: 8, minute: 0),
+                    onPressed: (time) => setState(() => _selectedTime = time),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _TimeChoice(
-                      label: 'Morning',
-                      time: const TimeOfDay(hour: 8, minute: 0),
-                      onPressed: (time) => setState(() => _selectedTime = time),
-                    ),
-                    _TimeChoice(
-                      label: 'Afternoon',
-                      time: const TimeOfDay(hour: 14, minute: 0),
-                      onPressed: (time) => setState(() => _selectedTime = time),
-                    ),
-                    _TimeChoice(
-                      label: 'Evening',
-                      time: const TimeOfDay(hour: 19, minute: 0),
-                      onPressed: (time) => setState(() => _selectedTime = time),
-                    ),
-                    _TimeChoice(
-                      label: 'Night',
-                      time: const TimeOfDay(hour: 21, minute: 30),
-                      onPressed: (time) => setState(() => _selectedTime = time),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 28),
-                _FormSectionLabel(label: 'Repeat schedule'),
-                const SizedBox(height: 6),
-                Text(
-                  'Choose how often this reminder should repeat.',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colors.onSurfaceVariant,
+                  _TimeChoice(
+                    label: 'Afternoon',
+                    time: const TimeOfDay(hour: 14, minute: 0),
+                    onPressed: (time) => setState(() => _selectedTime = time),
                   ),
+                  _TimeChoice(
+                    label: 'Evening',
+                    time: const TimeOfDay(hour: 19, minute: 0),
+                    onPressed: (time) => setState(() => _selectedTime = time),
+                  ),
+                  _TimeChoice(
+                    label: 'Night',
+                    time: const TimeOfDay(hour: 21, minute: 30),
+                    onPressed: (time) => setState(() => _selectedTime = time),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 28),
+              _FormSectionLabel(label: 'Repeat schedule'),
+              const SizedBox(height: 6),
+              Text(
+                'Choose how often this reminder should repeat.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
                 ),
-                const SizedBox(height: 12),
-                RecurrenceChipSelector(
-                  selectedRule: _selectedRecurrence,
-                  onChanged: (rule) =>
-                      setState(() => _selectedRecurrence = rule),
-                ),
-                const SizedBox(height: 28),
-                HonestNoticeCard(
-                  title: 'Saved on this device',
-                  message:
-                      'Your reminder is stored locally. Automatic alarms and notifications are still being built, so Lujayn cannot alert you at the scheduled time yet.',
-                  icon: Icons.lock_outline_rounded,
-                ),
-                const SizedBox(height: 12),
-              ],
-            ),
+              ),
+              const SizedBox(height: 12),
+              RecurrenceChipSelector(
+                selectedRule: _selectedRecurrence,
+                onChanged: (rule) =>
+                    setState(() => _selectedRecurrence = rule),
+              ),
+              const SizedBox(height: 28),
+              HonestNoticeCard(
+                title: 'Saved on this device',
+                message:
+                    'Your reminder is stored locally. Automatic alarms and notifications are still being built, so Lujayn cannot alert you at the scheduled time yet.',
+                icon: Icons.lock_outline_rounded,
+              ),
+              const SizedBox(height: 12),
+            ],
           ),
         ),
       ),
-      ),
+      // Scaffold lays this slot out with an unbounded height, so the content
+      // must shrink-wrap vertically or it would take the whole screen and
+      // collapse the form body to zero height.
       bottomNavigationBar: SafeArea(
-        child: Align(
+        child: Center(
           heightFactor: 1,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 640),
