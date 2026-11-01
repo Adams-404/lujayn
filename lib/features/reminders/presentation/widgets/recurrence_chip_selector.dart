@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../app/theme/app_colors.dart';
 import '../../domain/models/recurrence_rule.dart';
 
 /// Interactive chip selector for recurrence options.
@@ -16,7 +15,6 @@ class RecurrenceChipSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     final options = [
       (RecurrenceRule.none, 'One-time', Icons.event_rounded),
@@ -42,19 +40,15 @@ class RecurrenceChipSelector extends StatelessWidget {
                 size: 16,
                 color: isSelected
                     ? Colors.white
-                    : (isDark
-                          ? AppColors.darkTextSecondary
-                          : AppColors.lightTextSecondary),
+                    : (theme.colorScheme.onSurfaceVariant),
               ),
               label: Text(label),
               selected: isSelected,
-              selectedColor: AppColors.slateTeal,
+              selectedColor: theme.colorScheme.primary,
               labelStyle: TextStyle(
                 color: isSelected
-                    ? Colors.white
-                    : (isDark
-                          ? AppColors.darkTextPrimary
-                          : AppColors.lightTextPrimary),
+                    ? theme.colorScheme.onPrimary
+                    : theme.colorScheme.onSurface,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 fontSize: 13,
               ),
@@ -62,8 +56,8 @@ class RecurrenceChipSelector extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 side: BorderSide(
                   color: isSelected
-                      ? AppColors.slateTeal
-                      : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                      ? theme.colorScheme.primary
+                      : (theme.colorScheme.outline),
                 ),
               ),
               onSelected: (selected) {
@@ -113,26 +107,20 @@ class RecurrenceChipSelector extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: isDaySelected
-                        ? AppColors.slateTeal
-                        : (isDark
-                              ? AppColors.darkSurfaceSubtle
-                              : AppColors.lightSurfaceSubtle),
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.surfaceContainerHighest,
                     border: Border.all(
                       color: isDaySelected
-                          ? AppColors.slateTeal
-                          : (isDark
-                                ? AppColors.darkBorder
-                                : AppColors.lightBorder),
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.outline,
                     ),
                   ),
                   child: Text(
                     dayNames[index],
                     style: TextStyle(
                       color: isDaySelected
-                          ? Colors.white
-                          : (isDark
-                                ? AppColors.darkTextPrimary
-                                : AppColors.lightTextPrimary),
+                          ? theme.colorScheme.onPrimary
+                          : theme.colorScheme.onSurface,
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),

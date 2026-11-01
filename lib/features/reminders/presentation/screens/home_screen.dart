@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../app/theme/app_colors.dart';
 import '../../../../core/utilities/date_formatters.dart';
 import '../../../../core/widgets/empty_state_view.dart';
 import '../../../../core/widgets/responsive_center.dart';
@@ -18,7 +17,6 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final currentFilter = ref.watch(reminderFilterProvider);
     final remindersAsync = ref.watch(remindersStreamProvider);
 
@@ -38,9 +36,7 @@ class HomeScreen extends ConsumerWidget {
                       Text(
                         AppDateFormatters.formatFullDate(DateTime.now()),
                         style: theme.textTheme.labelMedium?.copyWith(
-                          color: isDark
-                              ? AppColors.darkTextSecondary
-                              : AppColors.lightTextSecondary,
+                          color: theme.colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.2,
                         ),
@@ -63,9 +59,7 @@ class HomeScreen extends ConsumerWidget {
                                 ? 'No reminders scheduled'
                                 : '$activeCount active ${activeCount == 1 ? 'reminder' : 'reminders'}',
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: isDark
-                                  ? AppColors.darkTextSecondary
-                                  : AppColors.lightTextSecondary,
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           );
                         },
@@ -338,7 +332,6 @@ class _FilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return InkWell(
       onTap: onTap,
@@ -348,23 +341,21 @@ class _FilterChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.slateTeal
-              : (isDark ? AppColors.darkSurface : AppColors.lightSurface),
+              ? theme.colorScheme.primary
+              : theme.colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
-                ? AppColors.slateTeal
-                : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                ? theme.colorScheme.primary
+                : theme.colorScheme.outline,
           ),
         ),
         child: Text(
           label,
           style: theme.textTheme.labelMedium?.copyWith(
             color: isSelected
-                ? Colors.white
-                : (isDark
-                      ? AppColors.darkTextPrimary
-                      : AppColors.lightTextPrimary),
+                ? theme.colorScheme.onPrimary
+                : theme.colorScheme.onSurface,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
           ),
         ),

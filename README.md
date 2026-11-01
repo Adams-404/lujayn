@@ -31,7 +31,7 @@ Every product and architectural decision in Lujayn is governed by these 9 non-ne
 | **Framework** | Flutter (Channel stable, 3.44.8) |
 | **Language** | Dart 3.12+ |
 | **State Management** | Riverpod (`flutter_riverpod` 3.x with modern `Notifier` & `NotifierProvider`) |
-| **UI Design System** | Custom Material 3 theme (Slate Teal, Warm Amber, Calm Sage), high contrast, accessible touch targets (min 48dp) |
+| **UI Design System** | Five selectable Material 3 themes (Silver, Paper, Sage, Dusk, AMOLED), plus system appearance and semantic colour roles |
 | **Architecture** | Feature-first layered architecture (Domain, Data, Presentation) |
 | **Planned Persistence** | Drift SQLite (`drift` / `drift_flutter` in Phase 1; clean in-memory mock repository in Phase 0) |
 | **Planned Android Engine** | Native Kotlin integration via `AlarmManager`, `BroadcastReceiver`, and full-screen notifications (Phase 2) |
@@ -106,12 +106,12 @@ lib/
 |---|---|---|
 | **Project Setup** | Completed | Flutter project initialized with Android, iOS, and Linux desktop targets |
 | **Architecture** | Completed | Feature-first clean architecture separating domain, data, and presentation |
-| **State Management** | Completed | Riverpod 3 NotifierProviders wired for reminders, filters, and theme mode |
-| **Visual Design** | Completed | Polished light & dark theme, typography, comfortable touch targets |
+| **State Management** | Completed | Riverpod 3 providers for reminders, filters, and persisted theme choice |
+| **Visual Design** | In progress | Five named palettes are implemented; full screen redesign is tracked separately |
 | **Home Screen** | Completed | Segmented filters (Upcoming, Completed, All), grouped by Today/Later |
 | **Creation & Edit** | Completed | Form with title validation, notes, date picker, quick time presets, recurrence selector |
 | **Sample Data** | Completed | 5 realistic, human sample reminders preloaded into isolated mock repository |
-| **Settings Screen** | Completed | Privacy transparency, platform permission primer, appearance switch, principles modal |
+| **Settings Screen** | In progress | Privacy transparency, five-theme picker, principles modal |
 | **Drift Architecture** | Prepared | Database contracts and repository interfaces ready for Phase 1 code generation |
 | **Native Alarms & Audio**| Out of Scope (Phase 2 & 3)| Not simulated or faked; transparently documented |
 

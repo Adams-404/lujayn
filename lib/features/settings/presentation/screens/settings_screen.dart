@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lujayn/app/theme/app_colors.dart';
+import 'package:lujayn/app/theme/app_theme_choice.dart';
 import 'package:lujayn/core/widgets/responsive_center.dart';
 import 'package:lujayn/features/reminders/presentation/controllers/reminder_providers.dart';
 import '../controllers/settings_providers.dart';
 import '../widgets/principles_dialog.dart';
+import '../widgets/theme_picker.dart';
 
 /// Settings and principles screen for Lujayn.
 class SettingsScreen extends ConsumerWidget {
@@ -13,8 +14,8 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final currentThemeMode = ref.watch(themeModeProvider);
+    final currentThemeChoice =
+        ref.watch(themeChoiceProvider).asData?.value ?? AppThemeChoice.system;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -26,11 +27,9 @@ class SettingsScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+                color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                ),
+                border: Border.all(color: theme.colorScheme.outline),
               ),
               child: Row(
                 children: [
@@ -38,12 +37,12 @@ class SettingsScreen extends ConsumerWidget {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: AppColors.calmSage.withValues(alpha: 0.12),
+                      color: theme.colorScheme.tertiary.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.lock_outline_rounded,
-                      color: AppColors.calmSage,
+                      color: theme.colorScheme.tertiary,
                       size: 22,
                     ),
                   ),
@@ -62,9 +61,7 @@ class SettingsScreen extends ConsumerWidget {
                         Text(
                           'Your reminders and data stay entirely on this device. No ads, tracking, or cloud sync.',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: isDark
-                                ? AppColors.darkTextSecondary
-                                : AppColors.lightTextSecondary,
+                            color: theme.colorScheme.onSurfaceVariant,
                             height: 1.4,
                           ),
                         ),
@@ -144,13 +141,13 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                   const Divider(),
                   ListTile(
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.delete_sweep_outlined,
-                      color: AppColors.statusDanger,
+                      color: theme.colorScheme.error,
                     ),
-                    title: const Text(
+                    title: Text(
                       'Clear all reminders',
-                      style: TextStyle(color: AppColors.statusDanger),
+                      style: TextStyle(color: theme.colorScheme.error),
                     ),
                     subtitle: const Text('Remove all stored reminder records'),
                     onTap: () async {
@@ -169,7 +166,7 @@ class SettingsScreen extends ConsumerWidget {
                             FilledButton(
                               onPressed: () => Navigator.of(ctx).pop(true),
                               style: FilledButton.styleFrom(
-                                backgroundColor: AppColors.statusDanger,
+                                backgroundColor: theme.colorScheme.error,
                               ),
                               child: const Text('Clear All'),
                             ),
@@ -235,36 +232,12 @@ class SettingsScreen extends ConsumerWidget {
             // Section: Appearance
             _SectionTitle(title: 'Appearance'),
             Card(
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.palette_outlined),
-                    title: const Text('Theme'),
-                    subtitle: Text(_themeModeName(currentThemeMode)),
-                    trailing: SegmentedButton<ThemeMode>(
-                      segments: const [
-                        ButtonSegment(
-                          value: ThemeMode.system,
-                          icon: Icon(Icons.brightness_auto_rounded, size: 16),
-                        ),
-                        ButtonSegment(
-                          value: ThemeMode.light,
-                          icon: Icon(Icons.light_mode_rounded, size: 16),
-                        ),
-                        ButtonSegment(
-                          value: ThemeMode.dark,
-                          icon: Icon(Icons.dark_mode_rounded, size: 16),
-                        ),
-                      ],
-                      selected: {currentThemeMode},
-                      onSelectionChanged: (selected) {
-                        ref
-                            .read(themeModeProvider.notifier)
-                            .setThemeMode(selected.first);
-                      },
-                    ),
-                  ),
-                ],
+              clipBehavior: Clip.antiAlias,
+              child: ThemePicker(
+                selected: currentThemeChoice,
+                onSelected: (choice) {
+                  ref.read(themeChoiceProvider.notifier).select(choice);
+                },
               ),
             ),
 
@@ -284,12 +257,12 @@ class SettingsScreen extends ConsumerWidget {
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
-                            color: AppColors.slateTeal,
+                            color: theme.colorScheme.primary,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.alarm_rounded,
-                            color: Colors.white,
+                            color: theme.colorScheme.onPrimary,
                             size: 18,
                           ),
                         ),
@@ -331,17 +304,6 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  static String _themeModeName(ThemeMode mode) {
-    switch (mode) {
-      case ThemeMode.system:
-        return 'Follows device system theme';
-      case ThemeMode.light:
-        return 'Light theme';
-      case ThemeMode.dark:
-        return 'Dark theme';
-    }
   }
 }
 
