@@ -203,7 +203,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Check header and titles
-      expect(find.text('Today'), findsOneWidget);
+      expect(find.text('Here’s what you’ve set aside to remember.'), findsOneWidget);
       expect(find.text('NEXT REMINDER'), findsOneWidget);
       expect(find.text('Upcoming'), findsOneWidget);
       expect(find.text('Completed'), findsOneWidget);
