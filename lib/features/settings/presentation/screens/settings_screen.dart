@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lujayn/app/theme/app_theme_choice.dart';
+import 'package:lujayn/core/widgets/lujayn_mark.dart';
 import 'package:lujayn/core/widgets/responsive_center.dart';
 import 'package:lujayn/features/reminders/presentation/controllers/reminder_providers.dart';
 import '../controllers/settings_providers.dart';
@@ -18,7 +19,15 @@ class SettingsScreen extends ConsumerWidget {
         ref.watch(themeChoiceProvider).asData?.value ?? AppThemeChoice.system;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(
+        title: Row(
+          children: [
+            LujaynMark(size: 24, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: 10),
+            const Text('Settings'),
+          ],
+        ),
+      ),
       body: ResponsiveCenter(
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),

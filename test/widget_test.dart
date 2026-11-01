@@ -13,6 +13,8 @@ import 'package:lujayn/features/reminders/data/repositories/drift_reminder_repos
 import 'package:lujayn/features/reminders/domain/models/recurrence_rule.dart';
 import 'package:lujayn/features/reminders/domain/models/reminder.dart';
 import 'package:lujayn/features/reminders/domain/models/reminder_status.dart';
+import 'package:lujayn/features/reminders/domain/services/reminder_alarm_scheduler.dart';
+import 'package:lujayn/features/reminders/domain/services/reminder_schedule_planner.dart';
 import 'package:lujayn/features/reminders/presentation/controllers/reminder_providers.dart';
 import 'package:lujayn/features/settings/presentation/controllers/settings_providers.dart';
 
@@ -395,9 +397,39 @@ Widget _testApp() {
         ref.onDispose(repository.dispose);
         return repository;
       }),
+      // Widget tests have no Android bridge, so stand in a scheduler that
+      // reports the permissions as granted.
+      reminderAlarmSchedulerProvider.overrideWithValue(
+        const _GrantingAlarmScheduler(),
+      ),
     ],
     child: const LujaynApp(),
   );
+}
+
+class _GrantingAlarmScheduler implements ReminderAlarmScheduler {
+  const _GrantingAlarmScheduler();
+
+  @override
+  Future<bool> canScheduleExactAlarms() async => true;
+
+  @override
+  Future<bool> canPostNotifications() async => true;
+
+  @override
+  Future<bool> requestExactAlarmPermission() async => true;
+
+  @override
+  Future<bool> requestNotificationPermission() async => true;
+
+  @override
+  Future<void> schedule(ReminderSchedule schedule) async {}
+
+  @override
+  Future<void> cancel(String reminderId) async {}
+
+  @override
+  Future<void> cancelAll() async {}
 }
 
 class _MemoryThemePreferenceStore implements ThemePreferenceStore {
