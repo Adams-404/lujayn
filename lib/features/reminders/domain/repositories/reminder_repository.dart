@@ -2,9 +2,8 @@ import '../models/reminder.dart';
 
 /// Abstract contract for reminder persistence.
 ///
-/// In Phase 0, this is implemented by [MockReminderRepository].
-/// In Phase 1, it will be seamlessly swapped with a Drift SQLite implementation
-/// without modifying presentation or domain logic.
+/// Implementations include the production Drift SQLite repository and an
+/// in-memory mock used by tests.
 abstract class ReminderRepository {
   /// Continuously streams the list of reminders ordered by scheduled time.
   Stream<List<Reminder>> watchReminders();
@@ -23,9 +22,6 @@ abstract class ReminderRepository {
 
   /// Toggles between active and completed status.
   Future<void> toggleReminderStatus(String id);
-
-  /// Resets the repository to default curated sample data.
-  Future<void> resetToSampleData();
 
   /// Clears all reminders from the repository.
   Future<void> clearAllReminders();

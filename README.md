@@ -33,7 +33,7 @@ Every product and architectural decision in Lujayn is governed by these 9 non-ne
 | **State Management** | Riverpod (`flutter_riverpod` 3.x with modern `Notifier` & `NotifierProvider`) |
 | **UI Design System** | Five selectable Material 3 themes (Silver, Paper, Sage, Dusk, AMOLED), plus system appearance and semantic colour roles |
 | **Architecture** | Feature-first layered architecture (Domain, Data, Presentation) |
-| **Planned Persistence** | Drift SQLite (`drift` / `drift_flutter` in Phase 1; clean in-memory mock repository in Phase 0) |
+| **Persistence** | Drift + SQLite with versioned schema, reactive queries, and local-only reminder storage |
 | **Planned Android Engine** | Native Kotlin integration via `AlarmManager`, `BroadcastReceiver`, and full-screen notifications (Phase 2) |
 | **Planned Audio** | Local voice recording, audio playback, and text-to-speech (Phase 3) |
 
@@ -54,7 +54,7 @@ lib/
 │
 ├── core/
 │   ├── database/
-│   │   └── app_database.dart      # Database contract & Drift architecture blueprint
+│   │   └── app_database.dart      # Drift SQLite schema and migrations
 │   ├── utilities/
 │   │   └── date_formatters.dart   # Human-friendly date and time formatters
 │   └── widgets/
@@ -69,7 +69,7 @@ lib/
     │   │   ├── models/            # DTOs and database mapping contracts
     │   │   └── repositories/
     │   │       ├── mock_reminder_repository.dart   # Isolated in-memory reactive repository
-    │   │       └── drift_reminder_repository.dart  # Phase 1 Drift SQLite placeholder
+    │   │       └── drift_reminder_repository.dart  # Production Drift SQLite repository
     │   ├── domain/
     │   │   ├── models/
     │   │   │   ├── recurrence_rule.dart            # Recurrence calculations & schedule rules
@@ -100,7 +100,7 @@ lib/
 
 ---
 
-## Current Implementation Status: Phase 0 (Foundation)
+## Current Implementation Status: Phase 1 (Local foundation)
 
 | Feature / Area | Status | Notes |
 |---|---|---|
@@ -110,9 +110,9 @@ lib/
 | **Visual Design** | In progress | Five named palettes are implemented; full screen redesign is tracked separately |
 | **Home Screen** | Completed | Segmented filters (Upcoming, Completed, All), grouped by Today/Later |
 | **Creation & Edit** | Completed | Form with title validation, notes, date picker, quick time presets, recurrence selector |
-| **Sample Data** | Completed | 5 realistic, human sample reminders preloaded into isolated mock repository |
+| **Sample Data** | Test-only | Curated fixtures remain available to tests; production starts with an empty local database |
 | **Settings Screen** | In progress | Privacy transparency, five-theme picker, principles modal |
-| **Drift Architecture** | Prepared | Database contracts and repository interfaces ready for Phase 1 code generation |
+| **Local Persistence** | Implemented in current branch | Drift SQLite schema, stable enum serialization, reactive repository, and reopen/CRUD tests |
 | **Native Alarms & Audio**| Out of Scope (Phase 2 & 3)| Not simulated or faked; transparently documented |
 
 ---
@@ -138,22 +138,22 @@ lib/
    flutter pub get
    ```
 
-3. **Run static analysis:**
+3. **Generate Drift database code:**\n   ```bash\n   dart run build_runner build --delete-conflicting-outputs\n   ```\n\n4. **Run static analysis:**
    ```bash
    flutter analyze
    ```
 
-4. **Run unit and widget tests:**
+5. **Run unit and widget tests:**
    ```bash
    flutter test
    ```
 
-5. **Format code:**
+6. **Format code:**
    ```bash
    dart format .
    ```
 
-6. **Launch the application:**
+7. **Launch the application:**
    - On Linux desktop:
      ```bash
      flutter run -d linux
@@ -171,8 +171,9 @@ lib/
 
 ## Road Map
 
-- **Phase 0 (Current):** Project foundation, architecture, theme, navigation, reminder creation, mock repository.
-- **Phase 1:** Drift SQLite database persistence, migrations, and recurrence calculation unit tests.
+- **Phase 0:** Project foundation, navigation, reminder creation, and mock fixtures.
+- **Phase 1 (Current):** Drift SQLite persistence, schema migrations, local theme preferences, and repository tests.
+- **Phase 2:** Android alarm delivery, notification permissions, reboot recovery, and call-style reminder presentation.
 - **Phase 2:** Android native alarm scheduling (`AlarmManager`), exact alarm permissions, and full-screen notification presentation.
 - **Phase 3:** Voice recording, audio playback upon answering, text-to-speech fallback, and sound/vibration customization.
 - **Phase 4:** Missed reminder handling, local encrypted backup & export, lifecycle recovery testing.
