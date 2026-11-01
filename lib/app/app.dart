@@ -12,7 +12,7 @@ class LujaynApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedTheme =
-        ref.watch(themeChoiceProvider).valueOrNull ?? AppThemeChoice.system;
+        ref.watch(themeChoiceProvider).asData?.value ?? AppThemeChoice.system;
     final followsSystem = selectedTheme == AppThemeChoice.system;
 
     return MaterialApp(
