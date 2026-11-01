@@ -3,10 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/database/app_database.dart';
 import '../../data/repositories/drift_reminder_repository.dart';
 import '../../data/services/android_reminder_alarm_scheduler.dart';
+import '../../data/services/android_reminder_call_bridge.dart';
 import '../../data/services/noop_reminder_alarm_scheduler.dart';
+import '../../data/services/noop_reminder_call_bridge.dart';
+import '../../domain/models/recurrence_rule.dart';
 import '../../domain/models/reminder.dart';
 import '../../domain/models/reminder_status.dart';
 import '../../domain/services/reminder_alarm_scheduler.dart';
+import '../../domain/services/reminder_call_bridge.dart';
 import '../../domain/services/reminder_schedule_planner.dart';
 import '../../domain/repositories/reminder_repository.dart';
 
@@ -38,6 +42,14 @@ final reminderAlarmSchedulerProvider = Provider<ReminderAlarmScheduler>((ref) {
 final reminderSchedulePlannerProvider = Provider<ReminderSchedulePlanner>(
   (ref) => const ReminderSchedulePlanner(),
 );
+
+/// Hand-off of due reminders from the platform to the call-style surface.
+final reminderCallBridgeProvider = Provider<ReminderCallBridge>((ref) {
+  if (defaultTargetPlatform == TargetPlatform.android) {
+    return AndroidReminderCallBridge();
+  }
+  return const NoopReminderCallBridge();
+});
 
 /// Reactive stream of reminders from the repository.
 final remindersStreamProvider = StreamProvider<List<Reminder>>((ref) {
@@ -134,9 +146,59 @@ class ReminderActionNotifier {
     }
   }
 
+  /// Re-alerts [id] after [duration] without moving the reminder's own schedule.
+  ///
+  /// A separate one-off alarm keeps a recurring series anchored to the time the
+  /// user chose instead of permanently shifting it by the snooze length.
+  Future<void> snooze(
+    String id, {
+    Duration duration = const Duration(minutes: 10),
+  }) async {
+    final reminder = await _repository.getReminderById(id);
+    if (reminder == null) return;
+
+    await _scheduler.schedule(
+      ReminderSchedule(
+        reminderId: _snoozeAlarmId(id),
+        title: reminder.title,
+        description: reminder.description,
+        recurrence: RecurrenceRule.none,
+        scheduledAt: DateTime.now().add(duration),
+      ),
+    );
+  }
+
+  /// Closes a due reminder after the user acts on its alert.
+  ///
+  /// A one-time reminder becomes completed. A recurring reminder keeps its
+  /// series intact and only re-syncs the next alarm.
+  Future<void> dismissOccurrence(String id) async {
+    await _scheduler.cancel(_snoozeAlarmId(id));
+    final reminder = await _repository.getReminderById(id);
+    if (reminder == null) {
+      await _scheduler.cancel(id);
+      return;
+    }
+    if (reminder.recurrence.isRecurring) {
+      await _syncAlarm(reminder);
+      return;
+    }
+
+    final now = DateTime.now();
+    await _repository.saveReminder(
+      reminder.copyWith(
+        status: ReminderStatus.completed,
+        completedAt: now,
+        updatedAt: now,
+      ),
+    );
+    await _scheduler.cancel(id);
+  }
+
   Future<void> deleteReminder(String id) async {
     await _repository.deleteReminder(id);
     await _scheduler.cancel(id);
+    await _scheduler.cancel(_snoozeAlarmId(id));
   }
 
   Future<void> clearAll() async {
@@ -148,10 +210,13 @@ class ReminderActionNotifier {
     final schedule = _planner.plan(reminder, now: DateTime.now());
     if (schedule == null) {
       await _scheduler.cancel(reminder.id);
+      await _scheduler.cancel(_snoozeAlarmId(reminder.id));
     } else {
       await _scheduler.schedule(schedule);
     }
   }
+
+  static String _snoozeAlarmId(String reminderId) => '$reminderId::snooze';
 }
 
 final reminderActionControllerProvider = Provider<ReminderActionNotifier>((

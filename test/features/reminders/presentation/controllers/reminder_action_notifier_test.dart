@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lujayn/features/reminders/data/repositories/mock_reminder_repository.dart';
+import 'package:lujayn/features/reminders/domain/models/recurrence_rule.dart';
 import 'package:lujayn/features/reminders/domain/models/reminder.dart';
+import 'package:lujayn/features/reminders/domain/models/reminder_status.dart';
 import 'package:lujayn/features/reminders/domain/services/reminder_alarm_scheduler.dart';
 import 'package:lujayn/features/reminders/domain/services/reminder_schedule_planner.dart';
 import 'package:lujayn/features/reminders/presentation/controllers/reminder_providers.dart';
@@ -83,6 +85,87 @@ void main() {
       await actions.clearAll();
 
       expect(scheduler.cancelAllCalls, 1);
+    });
+
+    test(
+      'snooze schedules a separate alarm without moving the reminder',
+      () async {
+        final now = DateTime.now();
+        final reminder = Reminder(
+          id: 'snooze',
+          title: 'Drink water',
+          scheduledDateTime: now.add(const Duration(hours: 2)),
+          recurrence: RecurrenceRule.daily,
+          createdAt: now,
+          updatedAt: now,
+        );
+        await actions.createOrUpdateReminder(reminder);
+
+        await actions.snooze(
+          reminder.id,
+          duration: const Duration(minutes: 10),
+        );
+
+        final snoozed = scheduler.scheduled.last;
+        expect(snoozed.reminderId, 'snooze::snooze');
+        expect(snoozed.recurrence, RecurrenceRule.none);
+        expect(
+          snoozed.scheduledAt.difference(DateTime.now()).inMinutes,
+          inInclusiveRange(9, 10),
+        );
+        expect(
+          (await repository.getReminderById(reminder.id))!.scheduledDateTime,
+          reminder.scheduledDateTime,
+        );
+      },
+    );
+
+    test(
+      'dismissing a one-time reminder completes it and cancels alarms',
+      () async {
+        final now = DateTime.now();
+        final reminder = Reminder(
+          id: 'dismiss-once',
+          title: 'Post the letter',
+          scheduledDateTime: now.add(const Duration(minutes: 1)),
+          createdAt: now,
+          updatedAt: now,
+        );
+        await actions.createOrUpdateReminder(reminder);
+
+        await actions.dismissOccurrence(reminder.id);
+
+        final stored = await repository.getReminderById(reminder.id);
+        expect(stored!.status, ReminderStatus.completed);
+        expect(stored.completedAt, isNotNull);
+        expect(scheduler.cancelled, contains('dismiss-once'));
+        expect(scheduler.cancelled, contains('dismiss-once::snooze'));
+      },
+    );
+
+    test('dismissing a recurring reminder keeps the series active', () async {
+      final now = DateTime.now();
+      final reminder = Reminder(
+        id: 'dismiss-repeat',
+        title: 'Take vitamins',
+        scheduledDateTime: now.add(const Duration(minutes: 1)),
+        recurrence: RecurrenceRule.daily,
+        createdAt: now,
+        updatedAt: now,
+      );
+      await actions.createOrUpdateReminder(reminder);
+
+      await actions.dismissOccurrence(reminder.id);
+
+      final stored = await repository.getReminderById(reminder.id);
+      expect(stored!.status, ReminderStatus.active);
+      expect(
+        scheduler.scheduled.where(
+          (item) => item.reminderId == 'dismiss-repeat',
+        ),
+        hasLength(2),
+      );
+      expect(scheduler.cancelled, contains('dismiss-repeat::snooze'));
     });
   });
 }

@@ -53,6 +53,9 @@ internal object ReminderNotifications {
         createChannel(context)
         val openApp = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(ReminderAlarmReceiver.EXTRA_ID, id)
+            putExtra(ReminderAlarmReceiver.EXTRA_TITLE, title)
+            putExtra(ReminderAlarmReceiver.EXTRA_DESCRIPTION, description)
         }
         val contentIntent = PendingIntent.getActivity(
             context,
@@ -68,7 +71,7 @@ internal object ReminderNotifications {
         }
         val body = description.ifBlank { "It's time for your reminder." }
         val notification = builder
-            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+            .setSmallIcon(R.drawable.ic_stat_lujayn)
             .setContentTitle(if (missed) "Missed: $title" else title)
             .setContentText(body)
             .setStyle(Notification.BigTextStyle().bigText(body))
@@ -76,12 +79,28 @@ internal object ReminderNotifications {
             .setPriority(Notification.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(contentIntent)
+            .apply {
+                // Android may refuse this. When it does, the notification is
+                // shown as a heads-up instead and tapping it opens the alert.
+                if (!missed && canUseFullScreenIntent(context)) {
+                    setFullScreenIntent(contentIntent, true)
+                }
+            }
             .build()
 
         runCatching {
             context.getSystemService(NotificationManager::class.java)
                 .notify(id.hashCode(), notification)
         }
+    }
+
+    /// Full-screen intents need an explicit grant from Android 14 onwards.
+    private fun canUseFullScreenIntent(context: Context): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            return true
+        }
+        return context.getSystemService(NotificationManager::class.java)
+            .canUseFullScreenIntent()
     }
 }
 
