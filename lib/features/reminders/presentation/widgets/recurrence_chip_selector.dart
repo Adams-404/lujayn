@@ -21,6 +21,14 @@ class RecurrenceChipSelector extends StatelessWidget {
       (RecurrenceRule.daily, 'Daily', Icons.repeat_rounded),
       (RecurrenceRule.weekdays, 'Weekdays', Icons.work_outline_rounded),
       (RecurrenceRule.weekly, 'Weekly', Icons.calendar_view_week_rounded),
+      (
+        RecurrenceRule(
+          type: RecurrenceType.customDays,
+          daysOfWeek: [DateTime.monday],
+        ),
+        'Custom days',
+        Icons.tune_rounded,
+      ),
     ];
 
     return Column(
