@@ -246,6 +246,28 @@ void main() {
       expect(find.text('Evening Blood Pressure Check'), findsOneWidget);
     }
   });
+
+  testWidgets('displays caller persona info when present on reminder', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.reset);
+
+    final personaReminder = testReminder.copyWith(
+      id: 'persona-detail-1',
+      callerName: 'Mom ❤️',
+      callerNumber: 'Mobile • (555) 019-2831',
+      callerIcon: 'family',
+    );
+    await repository.saveReminder(personaReminder);
+
+    await tester.pumpWidget(wrap(reminderId: personaReminder.id));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Mom ❤️'), findsOneWidget);
+    expect(find.text('Mobile • (555) 019-2831'), findsOneWidget);
+  });
 }
 
 class _StubAlarmScheduler implements ReminderAlarmScheduler {

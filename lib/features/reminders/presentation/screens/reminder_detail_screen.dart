@@ -7,6 +7,7 @@ import '../../../../core/utilities/date_formatters.dart';
 import '../../../../core/widgets/empty_state_view.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../controllers/reminder_providers.dart';
+import '../widgets/caller_persona_selector.dart';
 import '../widgets/voice_note_player_widget.dart';
 import 'reminder_form_screen.dart';
 
@@ -210,6 +211,40 @@ class ReminderDetailScreen extends ConsumerWidget {
                   VoiceNotePlayerWidget(
                     fileNameOrPath: reminder.voiceNotePath!,
                     totalDuration: reminder.voiceNoteDuration,
+                  ),
+                ],
+
+                if (reminder.hasCallerPersona) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  Material(
+                    color: colors.surface,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.surface),
+                      side: BorderSide(color: colors.outline),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: colors.primaryContainer,
+                        foregroundColor: colors.onPrimaryContainer,
+                        child: Icon(
+                          iconForCallerIcon(reminder.callerIcon),
+                          size: 20,
+                        ),
+                      ),
+                      title: Text(
+                        reminder.callerName ?? '',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Text(
+                        reminder.callerNumber ?? 'Simulated caller',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
 

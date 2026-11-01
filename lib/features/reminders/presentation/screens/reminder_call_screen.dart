@@ -1,12 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/utilities/date_formatters.dart';
 import '../../../settings/presentation/controllers/settings_providers.dart';
 import '../../domain/models/reminder.dart';
 import '../../domain/services/reminder_speech_service.dart';
 import '../controllers/reminder_providers.dart';
+import '../widgets/caller_persona_selector.dart';
 import '../widgets/voice_note_player_widget.dart';
 
 /// The focused, call-style surface shown when a reminder becomes due.
@@ -75,6 +79,9 @@ class _CallBodyState extends ConsumerState<_CallBody> {
   ReminderSpeechService? _speech;
   bool _speechAvailable = false;
   bool _speaking = false;
+  bool _isAnswered = false;
+  int _callSeconds = 0;
+  Timer? _callTimer;
 
   Reminder get _reminder => widget.reminder;
 
@@ -89,8 +96,45 @@ class _CallBodyState extends ConsumerState<_CallBody> {
   @override
   void dispose() {
     // Leaving the screen must never leave a voice talking to an empty room.
+    _callTimer?.cancel();
     _speech?.stop();
     super.dispose();
+  }
+
+  void _answerCall() {
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _isAnswered = true;
+      _callSeconds = 0;
+    });
+    _callTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() => _callSeconds++);
+      } else {
+        timer.cancel();
+      }
+    });
+
+    if (_speechAvailable) {
+      if (_speaking) {
+        _speech?.stop();
+        _speaking = false;
+      }
+      _speak();
+    }
+  }
+
+  void _hangUp() {
+    HapticFeedback.mediumImpact();
+    _callTimer?.cancel();
+    _speech?.stop();
+    if (mounted) Navigator.of(context).maybePop();
+  }
+
+  String get _formattedCallDuration {
+    final minutes = (_callSeconds ~/ 60).toString().padLeft(2, '0');
+    final seconds = (_callSeconds % 60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
   }
 
   Future<void> _prepareSpeech() async {
@@ -126,12 +170,18 @@ class _CallBodyState extends ConsumerState<_CallBody> {
   }
 
   /// What the user hears: the reminder itself, then the note that goes with it.
+  /// When answered, an interactive dialpad prompt is added.
   /// Recurrence summaries are deliberately left out — they are visual context,
   /// not something useful to hear while the alert is ringing.
   String get _spokenText {
     final note = _reminder.description;
-    if (note == null || note.trim().isEmpty) return _reminder.title;
-    return '${_reminder.title}. $note';
+    final base = (note == null || note.trim().isEmpty)
+        ? _reminder.title
+        : '${_reminder.title}. $note';
+    if (_isAnswered) {
+      return '$base. Press 1 for done, 2 to reschedule, or 3 to keep active.';
+    }
+    return base;
   }
 
   Future<void> _snooze() async {
@@ -161,16 +211,18 @@ class _CallBodyState extends ConsumerState<_CallBody> {
       child: Column(
         children: [
           Text(
-            'REMINDER',
+            _isAnswered
+                ? 'CONNECTED • $_formattedCallDuration'
+                : (_reminder.hasCallerPersona ? 'INCOMING CALL' : 'REMINDER'),
             style: theme.textTheme.labelMedium?.copyWith(
-              color: colors.onSurfaceVariant,
+              color: _isAnswered ? colors.primary : colors.onSurfaceVariant,
               letterSpacing: 1.6,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 6),
           Text(
-            time,
+            _isAnswered ? 'In call' : time,
             style: theme.textTheme.titleMedium?.copyWith(
               color: colors.onSurfaceVariant,
             ),
@@ -180,16 +232,66 @@ class _CallBodyState extends ConsumerState<_CallBody> {
               child: Column(
                 children: [
                   const SizedBox(height: 36),
-                  _CallerBadge(label: _initials(_reminder.title)),
-                  const SizedBox(height: 26),
-                  Text(
-                    _reminder.title,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      height: 1.2,
+                  if (_reminder.hasCallerPersona) ...[
+                    _CallerBadge(
+                      label: _initials(_reminder.callerName!),
+                      icon: iconForCallerIcon(_reminder.callerIcon),
                     ),
-                  ),
+                    const SizedBox(height: 22),
+                    Text(
+                      _reminder.callerName!,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        height: 1.2,
+                      ),
+                    ),
+                    if (_reminder.callerNumber case final num?
+                        when num.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        num,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 18),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.xs,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceContainerHighest.withValues(
+                          alpha: 0.5,
+                        ),
+                        borderRadius: BorderRadius.circular(AppRadius.circle),
+                        border: Border.all(color: colors.outlineVariant),
+                      ),
+                      child: Text(
+                        _reminder.title,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colors.onSurface,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    _CallerBadge(label: _initials(_reminder.title)),
+                    const SizedBox(height: 26),
+                    Text(
+                      _reminder.title,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        height: 1.2,
+                      ),
+                    ),
+                  ],
                   if (_reminder.description case final note?
                       when note.isNotEmpty) ...[
                     const SizedBox(height: 14),
@@ -209,12 +311,67 @@ class _CallBodyState extends ConsumerState<_CallBody> {
                       color: colors.onSurfaceVariant,
                     ),
                   ),
+                  if (_isAnswered) ...[
+                    const SizedBox(height: 20),
+                    Material(
+                      color: colors.surface,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.surface),
+                        side: BorderSide(color: colors.outlineVariant),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        child: Column(
+                          children: [
+                            Text(
+                              'Dialpad — press a key to respond:',
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: colors.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _KeypadButton(
+                                    keyNumber: '1',
+                                    label: 'Done',
+                                    color: colors.primary,
+                                    onPressed: _dismiss,
+                                  ),
+                                ),
+                                const SizedBox(width: AppSpacing.sm),
+                                Expanded(
+                                  child: _KeypadButton(
+                                    keyNumber: '2',
+                                    label: 'Reschedule',
+                                    color: colors.secondary,
+                                    onPressed: _snooze,
+                                  ),
+                                ),
+                                const SizedBox(width: AppSpacing.sm),
+                                Expanded(
+                                  child: _KeypadButton(
+                                    keyNumber: '3',
+                                    label: 'Keep Active',
+                                    color: colors.outline,
+                                    onPressed: _hangUp,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                   if (_reminder.hasVoiceNote) ...[
                     const SizedBox(height: 14),
                     VoiceNotePlayerWidget(
                       fileNameOrPath: _reminder.voiceNotePath!,
                       totalDuration: _reminder.voiceNoteDuration,
-                      autoPlay: autoSpeak,
+                      autoPlay: autoSpeak || _isAnswered,
                     ),
                   ] else if (_speechAvailable) ...[
                     const SizedBox(height: 8),
@@ -225,7 +382,11 @@ class _CallBodyState extends ConsumerState<_CallBody> {
                             ? Icons.stop_circle_outlined
                             : Icons.volume_up_rounded,
                       ),
-                      label: Text(_speaking ? 'Stop reading' : 'Read aloud'),
+                      label: Text(
+                        _speaking
+                            ? 'Stop reading'
+                            : (_isAnswered ? 'Repeat message' : 'Read aloud'),
+                      ),
                     ),
                   ] else if (autoSpeak) ...[
                     // The setting is on but the device cannot speak. Say so
@@ -245,29 +406,57 @@ class _CallBodyState extends ConsumerState<_CallBody> {
             ),
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: _dismiss,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(56),
+          if (_isAnswered) ...[
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _hangUp,
+                style: FilledButton.styleFrom(
+                  backgroundColor: colors.error,
+                  foregroundColor: colors.onError,
+                  minimumSize: const Size.fromHeight(56),
+                ),
+                icon: const Icon(Icons.call_end_rounded),
+                label: const Text('Hang Up'),
               ),
-              icon: const Icon(Icons.check_rounded),
-              label: const Text('Done'),
             ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: _snooze,
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(56),
+          ] else ...[
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _answerCall,
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(56),
+                ),
+                icon: const Icon(Icons.call_rounded),
+                label: const Text('Answer Call'),
               ),
-              icon: const Icon(Icons.snooze_rounded),
-              label: const Text('Snooze 10 minutes'),
             ),
-          ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _dismiss,
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(56),
+                ),
+                icon: const Icon(Icons.check_rounded),
+                label: const Text('Done'),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _snooze,
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(56),
+                ),
+                icon: const Icon(Icons.snooze_rounded),
+                label: const Text('Snooze 10 minutes'),
+              ),
+            ),
+          ],
           const SizedBox(height: 14),
           Text(
             'Android may show this as a notification instead of a full screen '
@@ -295,9 +484,10 @@ class _CallBodyState extends ConsumerState<_CallBody> {
 }
 
 class _CallerBadge extends StatelessWidget {
-  const _CallerBadge({required this.label});
+  const _CallerBadge({required this.label, this.icon});
 
   final String label;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -314,13 +504,15 @@ class _CallerBadge extends StatelessWidget {
           color: colors.primaryContainer,
           border: Border.all(color: colors.outlineVariant, width: 1.5),
         ),
-        child: Text(
-          label,
-          style: theme.textTheme.displaySmall?.copyWith(
-            color: colors.onPrimaryContainer,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        child: icon != null
+            ? Icon(icon, size: 52, color: colors.onPrimaryContainer)
+            : Text(
+                label,
+                style: theme.textTheme.displaySmall?.copyWith(
+                  color: colors.onPrimaryContainer,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
       ),
     );
   }
@@ -380,6 +572,63 @@ class _CallMessage extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _KeypadButton extends StatelessWidget {
+  const _KeypadButton({
+    required this.keyNumber,
+    required this.label,
+    required this.color,
+    required this.onPressed,
+  });
+
+  final String keyNumber;
+  final String label;
+  final Color color;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return OutlinedButton(
+      onPressed: () {
+        HapticFeedback.mediumImpact();
+        onPressed();
+      },
+      style: OutlinedButton.styleFrom(
+        side: BorderSide(color: color.withValues(alpha: 0.6), width: 1.5),
+        padding: const EdgeInsets.symmetric(
+          vertical: AppSpacing.sm,
+          horizontal: AppSpacing.xs,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.surface),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            keyNumber,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurface,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }

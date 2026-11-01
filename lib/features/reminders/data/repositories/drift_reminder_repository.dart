@@ -95,6 +95,9 @@ class DriftReminderRepository implements ReminderRepository {
       status: reminder.status.name,
       voiceNotePath: Value(reminder.voiceNotePath),
       voiceNoteDurationMs: Value(reminder.voiceNoteDuration?.inMilliseconds),
+      callerName: Value(reminder.callerName),
+      callerNumber: Value(reminder.callerNumber),
+      callerIcon: Value(reminder.callerIcon),
       createdAt: reminder.createdAt,
       updatedAt: reminder.updatedAt,
       completedAt: Value(reminder.completedAt),
@@ -124,6 +127,9 @@ class DriftReminderRepository implements ReminderRepository {
       voiceNoteDuration: record.voiceNoteDurationMs != null
           ? Duration(milliseconds: record.voiceNoteDurationMs!)
           : null,
+      callerName: record.callerName,
+      callerNumber: record.callerNumber,
+      callerIcon: record.callerIcon,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
       completedAt: record.completedAt,

@@ -140,6 +140,38 @@ void main() {
       expect(find.text('0:18'), findsOneWidget);
     },
   );
+
+  testWidgets('saving reminder with caller persona persists persona fields', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(wrap(const ReminderFormScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'e.g. Take medication'),
+      'Call Mom back',
+    );
+
+    // Select Family / Mom preset
+    await tester.ensureVisible(find.text('Family / Mom'));
+    await tester.tap(find.text('Family / Mom'));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Save'));
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    final reminders = await repository.getReminders();
+    expect(reminders, hasLength(1));
+    expect(reminders.first.callerName, 'Mom ❤️');
+    expect(reminders.first.callerNumber, 'Mobile');
+    expect(reminders.first.callerIcon, 'family');
+    expect(reminders.first.hasCallerPersona, isTrue);
+  });
 }
 
 class _RecordingAlarmScheduler implements ReminderAlarmScheduler {

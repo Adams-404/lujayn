@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lujayn/app/theme/app_theme.dart';
+import 'package:lujayn/app/theme/app_theme_choice.dart';
 import 'package:lujayn/features/reminders/data/services/noop_voice_playback_service.dart';
 import 'package:lujayn/features/reminders/data/repositories/mock_reminder_repository.dart';
 import 'package:lujayn/features/reminders/domain/models/reminder.dart';
@@ -60,7 +62,7 @@ void main() {
     );
   }
 
-  Widget wrap(Widget child) {
+  Widget wrap(Widget child, {AppThemeChoice? themeChoice}) {
     return ProviderScope(
       overrides: [
         reminderRepositoryProvider.overrideWithValue(repository),
@@ -72,7 +74,10 @@ void main() {
           NoopVoicePlaybackService(),
         ),
       ],
-      child: MaterialApp(home: child),
+      child: MaterialApp(
+        theme: themeChoice != null ? AppTheme.forChoice(themeChoice) : null,
+        home: child,
+      ),
     );
   }
 
@@ -149,6 +154,139 @@ void main() {
 
     expect(find.text('Reminder not found'), findsOneWidget);
     expect(find.text('Close'), findsOneWidget);
+  });
+
+  testWidgets('renders incoming call simulation with caller persona', (
+    tester,
+  ) async {
+    final now = DateTime.now();
+    final reminder = Reminder(
+      id: 'persona-call',
+      title: 'Pick up dry cleaning',
+      callerName: 'Mom ❤️',
+      callerNumber: 'Mobile • (555) 019-2831',
+      callerIcon: 'family',
+      scheduledDateTime: now,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await repository.saveReminder(reminder);
+
+    await tester.pumpWidget(wrap(ReminderCallScreen(reminderId: reminder.id)));
+    await tester.pumpAndSettle();
+
+    expect(find.text('INCOMING CALL'), findsOneWidget);
+    expect(find.text('Mom ❤️'), findsOneWidget);
+    expect(find.text('Mobile • (555) 019-2831'), findsOneWidget);
+    expect(find.text('Pick up dry cleaning'), findsOneWidget);
+    expect(find.text('Answer Call'), findsOneWidget);
+  });
+
+  testWidgets('answering a call connects and shows dialpad and hang up', (
+    tester,
+  ) async {
+    final reminder = dueReminder();
+    await repository.saveReminder(reminder);
+
+    await tester.pumpWidget(wrap(ReminderCallScreen(reminderId: reminder.id)));
+    await tester.pumpAndSettle();
+
+    expect(find.text('REMINDER'), findsOneWidget);
+    expect(find.text('Answer Call'), findsOneWidget);
+
+    await tester.tap(find.text('Answer Call'));
+    await tester.pump();
+
+    expect(find.textContaining('CONNECTED'), findsOneWidget);
+    expect(find.text('In call'), findsOneWidget);
+    expect(find.text('Dialpad — press a key to respond:'), findsOneWidget);
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
+    expect(find.text('3'), findsOneWidget);
+    expect(find.text('Hang Up'), findsOneWidget);
+  });
+
+  testWidgets('dialpad key 1 marks reminder completed', (tester) async {
+    final reminder = dueReminder();
+    await repository.saveReminder(reminder);
+
+    await tester.pumpWidget(wrap(ReminderCallScreen(reminderId: reminder.id)));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Answer Call'));
+    await tester.pump();
+
+    await tester.ensureVisible(find.text('1'));
+    await tester.tap(find.text('1'));
+    await tester.pumpAndSettle();
+
+    expect(
+      (await repository.getReminderById(reminder.id))!.status,
+      ReminderStatus.completed,
+    );
+    expect(scheduler.cancelled, contains('due'));
+  });
+
+  testWidgets('dialpad key 2 snoozes the reminder', (tester) async {
+    final reminder = dueReminder();
+    await repository.saveReminder(reminder);
+
+    await tester.pumpWidget(wrap(ReminderCallScreen(reminderId: reminder.id)));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Answer Call'));
+    await tester.pump();
+
+    await tester.ensureVisible(find.text('2'));
+    await tester.tap(find.text('2'));
+    await tester.pumpAndSettle();
+
+    expect(scheduler.scheduled.single.reminderId, 'due::snooze');
+  });
+
+  testWidgets('hang up button ends the call', (tester) async {
+    final reminder = dueReminder();
+    await repository.saveReminder(reminder);
+
+    await tester.pumpWidget(wrap(ReminderCallScreen(reminderId: reminder.id)));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Answer Call'));
+    await tester.pump();
+
+    expect(find.text('Hang Up'), findsOneWidget);
+    await tester.tap(find.text('Hang Up'));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('answering call speaks message with dialpad instruction', (
+    tester,
+  ) async {
+    final reminder = dueReminder();
+    await repository.saveReminder(reminder);
+
+    await tester.pumpWidget(wrap(ReminderCallScreen(reminderId: reminder.id)));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Answer Call'));
+    await tester.pump();
+
+    expect(speech.spoken, [
+      'Take evening medication. With a full glass of water. Press 1 for done, 2 to reschedule, or 3 to keep active.',
+    ]);
+  });
+
+  testWidgets('call screen renders across all five themes', (tester) async {
+    final reminder = dueReminder();
+    await repository.saveReminder(reminder);
+
+    for (final theme in AppThemeChoice.values) {
+      await tester.pumpWidget(
+        wrap(ReminderCallScreen(reminderId: reminder.id), themeChoice: theme),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(ReminderCallScreen), findsOneWidget);
+    }
   });
 
   group('reading a reminder aloud', () {

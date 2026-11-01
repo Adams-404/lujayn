@@ -8,20 +8,18 @@ Read this first, then `AGENTS.md`, then `lujayn-project-brief.md`.
 
 ## 1. Where things stand in one paragraph
 
-`main` is at `0c27c55`, 104 tests pass, and the working tree is clean. Issue #5
+`main` is at `84f0a27`, 139 tests pass, and the working tree is clean. Issue #5
 (alarm engine) is merged, **#3 (visual identity) is completed and closed**,
-#18 (iOS) is **closed as deferred**, and #6 (audio) has two real slices:
-reading a reminder aloud with the device engine, and a downloadable offline
-voice system that installs Kokoro or Kitten Nano. **No one has run the app on a real phone
+**#6 (audio & voice recording) is completed and closed**,
+#18 (iOS) is **closed as deferred**, and Caller Persona + Interactive Phone Call
+Simulation has been implemented and tested. **No one has run the app on a real phone
 yet** — that is the one honest gap in the delivery work, and it now covers the
-voices too. `docs/android-device-test-matrix.md` is the checklist.
+voices and call simulation too. `docs/android-device-test-matrix.md` is the checklist.
 
-What is left: the sherpa-onnx engine adapter that actually speaks with a
-downloaded pack (#6), encrypted backup (#16),
+What is left: physical device verification for #5, the sherpa-onnx engine adapter for downloaded voice packs, encrypted backup (#16),
 on-device natural language (#17). #18 is out of scope until Android is settled.
 
-**Milestone 2026-11-01 (latest):** local voice recording, private audio storage,
-audio playback, Drift schema v2 migration, and orphan cleanup landed (124 tests passing).
+**Milestone 2026-11-01 (latest):** Caller Persona customization (presets + custom name/number/icon), Drift schema v3 migration, interactive phone call answering simulation with live call duration counter, automated voice/speech playback upon answering, dialpad responses (1: Done, 2: Reschedule, 3: Keep Active), and Hang Up control landed (139 tests passing).
 
 ---
 
@@ -440,9 +438,10 @@ Last verified state, so you do not have to guess:
 ```bash
 dart format --output=none --set-exit-if-changed lib test   # clean
 flutter analyze --fatal-infos                              # no issues
-flutter test                                               # 124 passing
+flutter test                                               # 139 passing
 ```
 
-Local voice recording, app-private storage, audio playback, Drift schema v2 migration,
-and orphan cleanup are landed and verified across 124 passing tests.
-The next action on Issue #6 is the sherpa-onnx engine adapter for downloadable offline voice packs.
+Caller Persona simulation and Interactive In-Call Phone Screen (Answer Call,
+connected live duration timer, auto voice note & speech readout, dialpad response
+keys 1/2/3, red Hang Up button, Drift schema v3 migration) are landed and verified across 139 passing tests.
+The next actions are physical-device verification for #5, the sherpa-onnx engine adapter for downloadable offline voice packs, encrypted backup (#16), and on-device natural language (#17).

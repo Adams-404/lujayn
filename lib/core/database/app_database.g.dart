@@ -107,6 +107,39 @@ class $RemindersTable extends Reminders
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _callerNameMeta = const VerificationMeta(
+    'callerName',
+  );
+  @override
+  late final GeneratedColumn<String> callerName = GeneratedColumn<String>(
+    'caller_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _callerNumberMeta = const VerificationMeta(
+    'callerNumber',
+  );
+  @override
+  late final GeneratedColumn<String> callerNumber = GeneratedColumn<String>(
+    'caller_number',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _callerIconMeta = const VerificationMeta(
+    'callerIcon',
+  );
+  @override
+  late final GeneratedColumn<String> callerIcon = GeneratedColumn<String>(
+    'caller_icon',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -151,6 +184,9 @@ class $RemindersTable extends Reminders
     status,
     voiceNotePath,
     voiceNoteDurationMs,
+    callerName,
+    callerNumber,
+    callerIcon,
     createdAt,
     updatedAt,
     completedAt,
@@ -246,6 +282,27 @@ class $RemindersTable extends Reminders
         ),
       );
     }
+    if (data.containsKey('caller_name')) {
+      context.handle(
+        _callerNameMeta,
+        callerName.isAcceptableOrUnknown(data['caller_name']!, _callerNameMeta),
+      );
+    }
+    if (data.containsKey('caller_number')) {
+      context.handle(
+        _callerNumberMeta,
+        callerNumber.isAcceptableOrUnknown(
+          data['caller_number']!,
+          _callerNumberMeta,
+        ),
+      );
+    }
+    if (data.containsKey('caller_icon')) {
+      context.handle(
+        _callerIconMeta,
+        callerIcon.isAcceptableOrUnknown(data['caller_icon']!, _callerIconMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -316,6 +373,18 @@ class $RemindersTable extends Reminders
         DriftSqlType.int,
         data['${effectivePrefix}voice_note_duration_ms'],
       ),
+      callerName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}caller_name'],
+      ),
+      callerNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}caller_number'],
+      ),
+      callerIcon: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}caller_icon'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -347,6 +416,9 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
   final String status;
   final String? voiceNotePath;
   final int? voiceNoteDurationMs;
+  final String? callerName;
+  final String? callerNumber;
+  final String? callerIcon;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? completedAt;
@@ -360,6 +432,9 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
     required this.status,
     this.voiceNotePath,
     this.voiceNoteDurationMs,
+    this.callerName,
+    this.callerNumber,
+    this.callerIcon,
     required this.createdAt,
     required this.updatedAt,
     this.completedAt,
@@ -381,6 +456,15 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
     }
     if (!nullToAbsent || voiceNoteDurationMs != null) {
       map['voice_note_duration_ms'] = Variable<int>(voiceNoteDurationMs);
+    }
+    if (!nullToAbsent || callerName != null) {
+      map['caller_name'] = Variable<String>(callerName);
+    }
+    if (!nullToAbsent || callerNumber != null) {
+      map['caller_number'] = Variable<String>(callerNumber);
+    }
+    if (!nullToAbsent || callerIcon != null) {
+      map['caller_icon'] = Variable<String>(callerIcon);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -407,6 +491,15 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
       voiceNoteDurationMs: voiceNoteDurationMs == null && nullToAbsent
           ? const Value.absent()
           : Value(voiceNoteDurationMs),
+      callerName: callerName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(callerName),
+      callerNumber: callerNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(callerNumber),
+      callerIcon: callerIcon == null && nullToAbsent
+          ? const Value.absent()
+          : Value(callerIcon),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       completedAt: completedAt == null && nullToAbsent
@@ -434,6 +527,9 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
       voiceNoteDurationMs: serializer.fromJson<int?>(
         json['voiceNoteDurationMs'],
       ),
+      callerName: serializer.fromJson<String?>(json['callerName']),
+      callerNumber: serializer.fromJson<String?>(json['callerNumber']),
+      callerIcon: serializer.fromJson<String?>(json['callerIcon']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
@@ -452,6 +548,9 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
       'status': serializer.toJson<String>(status),
       'voiceNotePath': serializer.toJson<String?>(voiceNotePath),
       'voiceNoteDurationMs': serializer.toJson<int?>(voiceNoteDurationMs),
+      'callerName': serializer.toJson<String?>(callerName),
+      'callerNumber': serializer.toJson<String?>(callerNumber),
+      'callerIcon': serializer.toJson<String?>(callerIcon),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'completedAt': serializer.toJson<DateTime?>(completedAt),
@@ -468,6 +567,9 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
     String? status,
     Value<String?> voiceNotePath = const Value.absent(),
     Value<int?> voiceNoteDurationMs = const Value.absent(),
+    Value<String?> callerName = const Value.absent(),
+    Value<String?> callerNumber = const Value.absent(),
+    Value<String?> callerIcon = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
     Value<DateTime?> completedAt = const Value.absent(),
@@ -485,6 +587,9 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
     voiceNoteDurationMs: voiceNoteDurationMs.present
         ? voiceNoteDurationMs.value
         : this.voiceNoteDurationMs,
+    callerName: callerName.present ? callerName.value : this.callerName,
+    callerNumber: callerNumber.present ? callerNumber.value : this.callerNumber,
+    callerIcon: callerIcon.present ? callerIcon.value : this.callerIcon,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     completedAt: completedAt.present ? completedAt.value : this.completedAt,
@@ -512,6 +617,15 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
       voiceNoteDurationMs: data.voiceNoteDurationMs.present
           ? data.voiceNoteDurationMs.value
           : this.voiceNoteDurationMs,
+      callerName: data.callerName.present
+          ? data.callerName.value
+          : this.callerName,
+      callerNumber: data.callerNumber.present
+          ? data.callerNumber.value
+          : this.callerNumber,
+      callerIcon: data.callerIcon.present
+          ? data.callerIcon.value
+          : this.callerIcon,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       completedAt: data.completedAt.present
@@ -532,6 +646,9 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
           ..write('status: $status, ')
           ..write('voiceNotePath: $voiceNotePath, ')
           ..write('voiceNoteDurationMs: $voiceNoteDurationMs, ')
+          ..write('callerName: $callerName, ')
+          ..write('callerNumber: $callerNumber, ')
+          ..write('callerIcon: $callerIcon, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('completedAt: $completedAt')
@@ -550,6 +667,9 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
     status,
     voiceNotePath,
     voiceNoteDurationMs,
+    callerName,
+    callerNumber,
+    callerIcon,
     createdAt,
     updatedAt,
     completedAt,
@@ -567,6 +687,9 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
           other.status == this.status &&
           other.voiceNotePath == this.voiceNotePath &&
           other.voiceNoteDurationMs == this.voiceNoteDurationMs &&
+          other.callerName == this.callerName &&
+          other.callerNumber == this.callerNumber &&
+          other.callerIcon == this.callerIcon &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.completedAt == this.completedAt);
@@ -582,6 +705,9 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
   final Value<String> status;
   final Value<String?> voiceNotePath;
   final Value<int?> voiceNoteDurationMs;
+  final Value<String?> callerName;
+  final Value<String?> callerNumber;
+  final Value<String?> callerIcon;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<DateTime?> completedAt;
@@ -596,6 +722,9 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
     this.status = const Value.absent(),
     this.voiceNotePath = const Value.absent(),
     this.voiceNoteDurationMs = const Value.absent(),
+    this.callerName = const Value.absent(),
+    this.callerNumber = const Value.absent(),
+    this.callerIcon = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.completedAt = const Value.absent(),
@@ -611,6 +740,9 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
     required String status,
     this.voiceNotePath = const Value.absent(),
     this.voiceNoteDurationMs = const Value.absent(),
+    this.callerName = const Value.absent(),
+    this.callerNumber = const Value.absent(),
+    this.callerIcon = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.completedAt = const Value.absent(),
@@ -632,6 +764,9 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
     Expression<String>? status,
     Expression<String>? voiceNotePath,
     Expression<int>? voiceNoteDurationMs,
+    Expression<String>? callerName,
+    Expression<String>? callerNumber,
+    Expression<String>? callerIcon,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<DateTime>? completedAt,
@@ -648,6 +783,9 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
       if (voiceNotePath != null) 'voice_note_path': voiceNotePath,
       if (voiceNoteDurationMs != null)
         'voice_note_duration_ms': voiceNoteDurationMs,
+      if (callerName != null) 'caller_name': callerName,
+      if (callerNumber != null) 'caller_number': callerNumber,
+      if (callerIcon != null) 'caller_icon': callerIcon,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (completedAt != null) 'completed_at': completedAt,
@@ -665,6 +803,9 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
     Value<String>? status,
     Value<String?>? voiceNotePath,
     Value<int?>? voiceNoteDurationMs,
+    Value<String?>? callerName,
+    Value<String?>? callerNumber,
+    Value<String?>? callerIcon,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<DateTime?>? completedAt,
@@ -680,6 +821,9 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
       status: status ?? this.status,
       voiceNotePath: voiceNotePath ?? this.voiceNotePath,
       voiceNoteDurationMs: voiceNoteDurationMs ?? this.voiceNoteDurationMs,
+      callerName: callerName ?? this.callerName,
+      callerNumber: callerNumber ?? this.callerNumber,
+      callerIcon: callerIcon ?? this.callerIcon,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       completedAt: completedAt ?? this.completedAt,
@@ -717,6 +861,15 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
     if (voiceNoteDurationMs.present) {
       map['voice_note_duration_ms'] = Variable<int>(voiceNoteDurationMs.value);
     }
+    if (callerName.present) {
+      map['caller_name'] = Variable<String>(callerName.value);
+    }
+    if (callerNumber.present) {
+      map['caller_number'] = Variable<String>(callerNumber.value);
+    }
+    if (callerIcon.present) {
+      map['caller_icon'] = Variable<String>(callerIcon.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -744,6 +897,9 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
           ..write('status: $status, ')
           ..write('voiceNotePath: $voiceNotePath, ')
           ..write('voiceNoteDurationMs: $voiceNoteDurationMs, ')
+          ..write('callerName: $callerName, ')
+          ..write('callerNumber: $callerNumber, ')
+          ..write('callerIcon: $callerIcon, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('completedAt: $completedAt, ')
@@ -775,6 +931,9 @@ typedef $$RemindersTableCreateCompanionBuilder =
       required String status,
       Value<String?> voiceNotePath,
       Value<int?> voiceNoteDurationMs,
+      Value<String?> callerName,
+      Value<String?> callerNumber,
+      Value<String?> callerIcon,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<DateTime?> completedAt,
@@ -791,6 +950,9 @@ typedef $$RemindersTableUpdateCompanionBuilder =
       Value<String> status,
       Value<String?> voiceNotePath,
       Value<int?> voiceNoteDurationMs,
+      Value<String?> callerName,
+      Value<String?> callerNumber,
+      Value<String?> callerIcon,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<DateTime?> completedAt,
@@ -848,6 +1010,21 @@ class $$RemindersTableFilterComposer
 
   ColumnFilters<int> get voiceNoteDurationMs => $composableBuilder(
     column: $table.voiceNoteDurationMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get callerName => $composableBuilder(
+    column: $table.callerName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get callerNumber => $composableBuilder(
+    column: $table.callerNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get callerIcon => $composableBuilder(
+    column: $table.callerIcon,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -921,6 +1098,21 @@ class $$RemindersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get callerName => $composableBuilder(
+    column: $table.callerName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get callerNumber => $composableBuilder(
+    column: $table.callerNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get callerIcon => $composableBuilder(
+    column: $table.callerIcon,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -985,6 +1177,21 @@ class $$RemindersTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get callerName => $composableBuilder(
+    column: $table.callerName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get callerNumber => $composableBuilder(
+    column: $table.callerNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get callerIcon => $composableBuilder(
+    column: $table.callerIcon,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -1037,6 +1244,9 @@ class $$RemindersTableTableManager
                 Value<String> status = const Value.absent(),
                 Value<String?> voiceNotePath = const Value.absent(),
                 Value<int?> voiceNoteDurationMs = const Value.absent(),
+                Value<String?> callerName = const Value.absent(),
+                Value<String?> callerNumber = const Value.absent(),
+                Value<String?> callerIcon = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> completedAt = const Value.absent(),
@@ -1051,6 +1261,9 @@ class $$RemindersTableTableManager
                 status: status,
                 voiceNotePath: voiceNotePath,
                 voiceNoteDurationMs: voiceNoteDurationMs,
+                callerName: callerName,
+                callerNumber: callerNumber,
+                callerIcon: callerIcon,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 completedAt: completedAt,
@@ -1067,6 +1280,9 @@ class $$RemindersTableTableManager
                 required String status,
                 Value<String?> voiceNotePath = const Value.absent(),
                 Value<int?> voiceNoteDurationMs = const Value.absent(),
+                Value<String?> callerName = const Value.absent(),
+                Value<String?> callerNumber = const Value.absent(),
+                Value<String?> callerIcon = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<DateTime?> completedAt = const Value.absent(),
@@ -1081,6 +1297,9 @@ class $$RemindersTableTableManager
                 status: status,
                 voiceNotePath: voiceNotePath,
                 voiceNoteDurationMs: voiceNoteDurationMs,
+                callerName: callerName,
+                callerNumber: callerNumber,
+                callerIcon: callerIcon,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 completedAt: completedAt,

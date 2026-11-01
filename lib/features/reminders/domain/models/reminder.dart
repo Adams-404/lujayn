@@ -14,6 +14,9 @@ class Reminder {
     this.status = ReminderStatus.active,
     this.voiceNotePath,
     this.voiceNoteDuration,
+    this.callerName,
+    this.callerNumber,
+    this.callerIcon,
     required this.createdAt,
     required this.updatedAt,
     this.completedAt,
@@ -27,11 +30,16 @@ class Reminder {
   final ReminderStatus status;
   final String? voiceNotePath;
   final Duration? voiceNoteDuration;
+  final String? callerName;
+  final String? callerNumber;
+  final String? callerIcon;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? completedAt;
 
   bool get hasVoiceNote => voiceNotePath != null && voiceNotePath!.isNotEmpty;
+  bool get hasCallerPersona =>
+      callerName != null && callerName!.trim().isNotEmpty;
 
   bool get isCompleted => status == ReminderStatus.completed;
   bool get isActive => status == ReminderStatus.active;
@@ -65,6 +73,10 @@ class Reminder {
     String? voiceNotePath,
     Duration? voiceNoteDuration,
     bool clearVoiceNote = false,
+    String? callerName,
+    String? callerNumber,
+    String? callerIcon,
+    bool clearCallerPersona = false,
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? completedAt,
@@ -83,6 +95,11 @@ class Reminder {
       voiceNoteDuration: clearVoiceNote
           ? null
           : (voiceNoteDuration ?? this.voiceNoteDuration),
+      callerName: clearCallerPersona ? null : (callerName ?? this.callerName),
+      callerNumber: clearCallerPersona
+          ? null
+          : (callerNumber ?? this.callerNumber),
+      callerIcon: clearCallerPersona ? null : (callerIcon ?? this.callerIcon),
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       completedAt: clearCompletedAt ? null : (completedAt ?? this.completedAt),
@@ -102,6 +119,9 @@ class Reminder {
           status == other.status &&
           voiceNotePath == other.voiceNotePath &&
           voiceNoteDuration == other.voiceNoteDuration &&
+          callerName == other.callerName &&
+          callerNumber == other.callerNumber &&
+          callerIcon == other.callerIcon &&
           createdAt == other.createdAt &&
           updatedAt == other.updatedAt &&
           completedAt == other.completedAt;
@@ -112,5 +132,6 @@ class Reminder {
       title.hashCode ^
       scheduledDateTime.hashCode ^
       status.hashCode ^
-      voiceNotePath.hashCode;
+      voiceNotePath.hashCode ^
+      callerName.hashCode;
 }

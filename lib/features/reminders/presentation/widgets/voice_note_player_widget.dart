@@ -59,6 +59,17 @@ class _VoiceNotePlayerWidgetState extends ConsumerState<VoiceNotePlayerWidget> {
   }
 
   @override
+  void didUpdateWidget(VoiceNotePlayerWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.autoPlay && widget.autoPlay && !_state.isPlaying) {
+      final path = _resolvedPath;
+      if (path != null && _player != null) {
+        _player!.play(path);
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _sub?.cancel();
     _player?.stop();

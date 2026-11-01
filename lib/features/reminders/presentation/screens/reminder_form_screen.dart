@@ -11,6 +11,7 @@ import '../../domain/models/recurrence_rule.dart';
 import '../../domain/models/reminder.dart';
 import '../../domain/models/reminder_status.dart';
 import '../controllers/reminder_providers.dart';
+import '../widgets/caller_persona_selector.dart';
 import '../widgets/recurrence_chip_selector.dart';
 import '../widgets/voice_note_recorder_control.dart';
 
@@ -34,6 +35,9 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
   late RecurrenceRule _selectedRecurrence;
   String? _voiceNotePath;
   Duration? _voiceNoteDuration;
+  String? _callerName;
+  String? _callerNumber;
+  String? _callerIcon;
   final String _newReminderId = const Uuid().v4();
   bool _isSaving = false;
 
@@ -62,6 +66,9 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
       _selectedRecurrence = initial.recurrence;
       _voiceNotePath = initial.voiceNotePath;
       _voiceNoteDuration = initial.voiceNoteDuration;
+      _callerName = initial.callerName;
+      _callerNumber = initial.callerNumber;
+      _callerIcon = initial.callerIcon;
     } else {
       final suggested = DateTime.now().add(const Duration(hours: 1));
       _selectedDate = DateTime(suggested.year, suggested.month, suggested.day);
@@ -223,6 +230,9 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
         status: widget.initialReminder?.status ?? ReminderStatus.active,
         voiceNotePath: _voiceNotePath,
         voiceNoteDuration: _voiceNoteDuration,
+        callerName: _callerName,
+        callerNumber: _callerNumber,
+        callerIcon: _callerIcon,
         createdAt: widget.initialReminder?.createdAt ?? now,
         updatedAt: now,
         completedAt: widget.initialReminder?.completedAt,
@@ -361,6 +371,26 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
                     _voiceNotePath = path;
                     _voiceNoteDuration = duration;
                   });
+                },
+              ),
+              const SizedBox(height: 20),
+              _FormSectionLabel(label: 'Caller Simulation'),
+              const SizedBox(height: 4),
+              Text(
+                'Optionally customize who appears to be calling when this reminder alerts.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 9),
+              CallerPersonaSelector(
+                initialName: _callerName,
+                initialNumber: _callerNumber,
+                initialIcon: _callerIcon,
+                onChanged: ({callerName, callerNumber, callerIcon}) {
+                  _callerName = callerName;
+                  _callerNumber = callerNumber;
+                  _callerIcon = callerIcon;
                 },
               ),
               const SizedBox(height: 28),
