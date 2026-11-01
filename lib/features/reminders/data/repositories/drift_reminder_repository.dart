@@ -91,7 +91,7 @@ class DriftReminderRepository implements ReminderRepository {
       description: Value(reminder.description),
       scheduledDateTime: reminder.scheduledDateTime,
       recurrenceType: reminder.recurrence.type.name,
-      recurrenceDays: jsonEncode(reminder.recurrence.daysOfWeek),
+      recurrenceDays: Value(jsonEncode(reminder.recurrence.daysOfWeek)),
       status: reminder.status.name,
       createdAt: reminder.createdAt,
       updatedAt: reminder.updatedAt,
