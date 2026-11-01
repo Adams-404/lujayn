@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../app/theme/app_colors.dart';
 
 /// Minimal, warm empty state presentation for Lujayn.
 class EmptyStateView extends StatelessWidget {
@@ -21,7 +20,6 @@ class EmptyStateView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Center(
       child: Padding(
@@ -34,17 +32,13 @@ class EmptyStateView extends StatelessWidget {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.darkSurfaceSubtle
-                    : AppColors.lightSurfaceSubtle,
+                color: theme.colorScheme.surfaceContainerHighest,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
                 size: 32,
-                color: isDark
-                    ? AppColors.darkTextSecondary
-                    : AppColors.slateTealLight,
+                color: theme.colorScheme.primary,
               ),
             ),
             const SizedBox(height: 20),
