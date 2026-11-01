@@ -15,10 +15,10 @@ Lujayn is an offline-first personal reminder app. Reliability, privacy, accessib
 ## Before changing code
 
 1. Read `lujayn-project-brief.md` and the relevant feature code.
-2. For any visual or interaction change, read `.agents/skills/lujayn-mobile-design/SKILL.md` and `docs/design-direction.md`.
-3. Inspect existing abstractions and reuse them. Do not create duplicate providers, repositories, theme layers, or helpers.
+2. Check whether a skill under `.agents/skills/` applies. For any visual or interaction change, read `.agents/skills/lujayn-mobile-design/SKILL.md` first.
+3. Inspect existing abstractions and reuse them. Do not create another provider, repository, theme layer, or helper if one already exists.
 4. Keep dependencies minimal and explain why a new dependency is needed.
-5. Add or update tests with behaviour changes. Never claim tests or physical-device checks that were not run.
+5. Add or update tests with behaviour changes. Do not claim tests or physical-device checks that were not run.
 
 ## Current architecture
 
@@ -27,13 +27,13 @@ Lujayn is an offline-first personal reminder app. Reliability, privacy, accessib
 - Domain models and repository contracts under `lib/features/**/domain`.
 - Data implementations under `lib/features/**/data`.
 - Shared app shell, theme, and core widgets under `lib/app` and `lib/core`.
-- Drift/SQLite for local persistence.
+- Drift/SQLite is the planned local persistence layer.
 
 ## Quality gate
 
+Before opening a PR, run:
+
 ```bash
-flutter pub get
-dart run build_runner build --delete-conflicting-outputs
 dart format --output=none --set-exit-if-changed lib test
 flutter analyze --fatal-infos
 flutter test
@@ -43,4 +43,4 @@ If a command cannot be run, state that clearly and use CI as the verification ga
 
 ## UI work
 
-Use the Lujayn mobile design skill and `docs/design-direction.md`. Every screen must work across Silver, Paper, Sage, Dusk, and AMOLED, handle relevant UI states, support text scaling, and use semantic theme tokens instead of hardcoded colours.
+Use the Lujayn mobile design skill and `docs/design-direction.md`. Every screen must work across all five named themes, handle relevant UI states, support text scaling, and use semantic theme tokens instead of hardcoded colours.
