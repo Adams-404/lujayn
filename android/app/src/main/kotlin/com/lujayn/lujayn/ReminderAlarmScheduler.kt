@@ -5,7 +5,9 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import org.json.JSONArray
 import org.json.JSONObject
+import java.util.Calendar
 
 internal object ReminderAlarmScheduler {
     private const val PREFERENCES = "lujayn_reminder_alarms"
@@ -22,12 +24,16 @@ internal object ReminderAlarmScheduler {
         title: String,
         description: String?,
         scheduledAtMillis: Long,
+        recurrenceType: String,
+        daysOfWeek: List<Int>,
     ) {
         val data = JSONObject()
             .put("id", id)
             .put("title", title)
             .put("description", description ?: "")
             .put("scheduledAtMillis", scheduledAtMillis)
+            .put("recurrenceType", recurrenceType)
+            .put("daysOfWeek", JSONArray(daysOfWeek))
 
         preferences(context).edit().putString(id, data.toString()).apply()
         scheduleStored(context, data)
@@ -49,18 +55,36 @@ internal object ReminderAlarmScheduler {
     }
 
     fun rescheduleStored(context: Context) {
-        preferences(context).all.values.forEach { value ->
+        val prefs = preferences(context)
+        prefs.all.forEach { (id, value) ->
             val encoded = value as? String ?: return@forEach
-            runCatching { JSONObject(encoded) }.getOrNull()?.let { data ->
-                if (data.optLong("scheduledAtMillis") > System.currentTimeMillis()) {
-                    scheduleStored(context, data)
-                }
+            val data = runCatching { JSONObject(encoded) }.getOrNull()
+                ?: return@forEach
+            val now = System.currentTimeMillis()
+            val scheduledAt = data.optLong("scheduledAtMillis")
+            val next = if (scheduledAt > now) scheduledAt else nextOccurrence(data, now)
+            if (next == null) {
+                prefs.edit().remove(id).apply()
+            } else {
+                data.put("scheduledAtMillis", next)
+                prefs.edit().putString(id, data.toString()).apply()
+                scheduleStored(context, data)
             }
         }
     }
 
-    fun removeStored(context: Context, id: String) {
-        preferences(context).edit().remove(id).apply()
+    fun onAlarmDelivered(context: Context, id: String) {
+        val prefs = preferences(context)
+        val encoded = prefs.getString(id, null) ?: return
+        val data = runCatching { JSONObject(encoded) }.getOrNull() ?: return
+        val next = nextOccurrence(data, System.currentTimeMillis())
+        if (next == null) {
+            prefs.edit().remove(id).apply()
+        } else {
+            data.put("scheduledAtMillis", next)
+            prefs.edit().putString(id, data.toString()).apply()
+            scheduleStored(context, data)
+        }
     }
 
     private fun scheduleStored(context: Context, data: JSONObject) {
@@ -115,6 +139,37 @@ internal object ReminderAlarmScheduler {
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+    }
+
+    private fun nextOccurrence(data: JSONObject, afterMillis: Long): Long? {
+        val recurrence = data.optString("recurrenceType", "none")
+        if (recurrence == "none") return null
+
+        val candidate = Calendar.getInstance().apply {
+            timeInMillis = data.optLong("scheduledAtMillis")
+        }
+        val days = data.optJSONArray("daysOfWeek") ?: JSONArray()
+        if (recurrence == "customDays" && days.length() == 0) return null
+
+        repeat(370) {
+            val weekday = ((candidate.get(Calendar.DAY_OF_WEEK) + 5) % 7) + 1
+            val matchesRule = when (recurrence) {
+                "daily", "weekly" -> true
+                "weekdays" -> weekday in 1..5
+                "customDays" -> (0 until days.length()).any {
+                    days.optInt(it) == weekday
+                }
+                else -> false
+            }
+            if (candidate.timeInMillis > afterMillis && matchesRule) {
+                return candidate.timeInMillis
+            }
+            candidate.add(
+                Calendar.DAY_OF_YEAR,
+                if (recurrence == "weekly") 7 else 1,
+            )
+        }
+        return null
     }
 
     private fun alarmAction(id: String) = "com.lujayn.REMINDER_ALARM.$id"
