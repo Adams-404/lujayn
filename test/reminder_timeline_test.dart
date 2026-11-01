@@ -16,9 +16,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          reminderRepositoryProvider.overrideWithValue(repository),
-        ],
+        overrides: [reminderRepositoryProvider.overrideWithValue(repository)],
         child: MaterialApp(
           theme: AppTheme.forChoice(AppThemeChoice.silver),
           home: const HomeScreen(),

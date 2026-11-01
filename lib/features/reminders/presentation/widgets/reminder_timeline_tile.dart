@@ -33,7 +33,10 @@ class ReminderTimelineTile extends StatelessWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         color: colors.errorContainer,
-        child: Icon(Icons.delete_outline_rounded, color: colors.onErrorContainer),
+        child: Icon(
+          Icons.delete_outline_rounded,
+          color: colors.onErrorContainer,
+        ),
       ),
       confirmDismiss: (_) => showDialog<bool>(
         context: context,
@@ -78,7 +81,9 @@ class ReminderTimelineTile extends StatelessWidget {
                           ),
                         ),
                       Text(
-                        AppDateFormatters.formatTime(reminder.scheduledDateTime),
+                        AppDateFormatters.formatTime(
+                          reminder.scheduledDateTime,
+                        ),
                         style: theme.textTheme.labelLarge?.copyWith(
                           color: completed
                               ? colors.onSurfaceVariant
@@ -123,8 +128,12 @@ class ReminderTimelineTile extends StatelessWidget {
                       Text(
                         reminder.title,
                         style: theme.textTheme.titleMedium?.copyWith(
-                          color: completed ? colors.onSurfaceVariant : colors.onSurface,
-                          decoration: completed ? TextDecoration.lineThrough : null,
+                          color: completed
+                              ? colors.onSurfaceVariant
+                              : colors.onSurface,
+                          decoration: completed
+                              ? TextDecoration.lineThrough
+                              : null,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -168,7 +177,9 @@ class ReminderTimelineTile extends StatelessWidget {
                     completed
                         ? Icons.check_circle_rounded
                         : Icons.circle_outlined,
-                    color: completed ? colors.tertiary : colors.onSurfaceVariant,
+                    color: completed
+                        ? colors.tertiary
+                        : colors.onSurfaceVariant,
                   ),
                 ),
               ),

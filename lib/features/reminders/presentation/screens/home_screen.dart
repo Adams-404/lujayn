@@ -80,12 +80,8 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                data: (reminders) => _buildContent(
-                  context,
-                  ref,
-                  reminders,
-                  filter,
-                ),
+                data: (reminders) =>
+                    _buildContent(context, ref, reminders, filter),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 96)),
             ],
@@ -107,7 +103,9 @@ class HomeScreen extends ConsumerWidget {
     ReminderFilter filter,
   ) {
     if (filter == ReminderFilter.completed) {
-      final completed = reminders.where((reminder) => reminder.isCompleted).toList();
+      final completed = reminders
+          .where((reminder) => reminder.isCompleted)
+          .toList();
       if (completed.isEmpty) {
         return const SliverFillRemaining(
           hasScrollBody: false,
@@ -143,7 +141,9 @@ class HomeScreen extends ConsumerWidget {
     final overdue = active.where((reminder) => reminder.isPastDue).toList();
     final future = active.where((reminder) => !reminder.isPastDue).toList();
     final next = future.isNotEmpty ? future.first : overdue.first;
-    final remaining = active.where((reminder) => reminder.id != next.id).toList();
+    final remaining = active
+        .where((reminder) => reminder.id != next.id)
+        .toList();
     final overdueRemaining = remaining
         .where((reminder) => reminder.isPastDue)
         .toList();
@@ -269,10 +269,7 @@ class HomeScreen extends ConsumerWidget {
 }
 
 class _ReminderFilters extends StatelessWidget {
-  const _ReminderFilters({
-    required this.selected,
-    required this.onSelected,
-  });
+  const _ReminderFilters({required this.selected, required this.onSelected});
 
   final ReminderFilter selected;
   final ValueChanged<ReminderFilter> onSelected;
@@ -351,10 +348,7 @@ class _FilterTab extends StatelessWidget {
 }
 
 class _NextReminderPanel extends StatelessWidget {
-  const _NextReminderPanel({
-    required this.reminder,
-    required this.onTap,
-  });
+  const _NextReminderPanel({required this.reminder, required this.onTap});
 
   final Reminder reminder;
   final VoidCallback onTap;
@@ -425,7 +419,9 @@ class _NextReminderPanel extends StatelessWidget {
               ],
               const SizedBox(height: 14),
               Text(
-                AppDateFormatters.formatRelativeDate(reminder.scheduledDateTime),
+                AppDateFormatters.formatRelativeDate(
+                  reminder.scheduledDateTime,
+                ),
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: colors.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
