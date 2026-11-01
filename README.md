@@ -1,5 +1,9 @@
 # Lujayn
 
+<p align="center">
+  <img src="Lujayn-logo.png" alt="Lujayn logo" width="140">
+</p>
+
 > **A personal reminder companion that respects your privacy, stays on your device, and helps you remember what matters.**
 
 Lujayn is an independent, privacy-first, local-first personal reminder application for Android (with future iOS support in mind) built around the concept of simulated incoming-call-style reminders.

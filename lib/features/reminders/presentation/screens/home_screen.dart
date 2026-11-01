@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/utilities/date_formatters.dart';
 import '../../../../core/widgets/empty_state_view.dart';
+import '../../../../core/widgets/lujayn_mark.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../domain/models/reminder.dart';
 import '../controllers/reminder_providers.dart';
@@ -31,15 +32,37 @@ class HomeScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        AppDateFormatters.formatFullDate(DateTime.now()),
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          letterSpacing: 0.3,
-                        ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  AppDateFormatters.formatFullDate(
+                                    DateTime.now(),
+                                  ),
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Today',
+                                  style: theme.textTheme.displayLarge,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          LujaynMark(
+                            size: 34,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                      Text('Today', style: theme.textTheme.displayLarge),
                       const SizedBox(height: 5),
                       Text(
                         'Here’s what you’ve set aside to remember.',
