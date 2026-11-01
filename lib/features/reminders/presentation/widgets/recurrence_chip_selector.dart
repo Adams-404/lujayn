@@ -56,7 +56,7 @@ class RecurrenceChipSelector extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 side: BorderSide(
                   color: isSelected
-                      ? AppColors.slateTeal
+                      ? theme.colorScheme.primary
                       : (theme.colorScheme.outline),
                 ),
               ),
