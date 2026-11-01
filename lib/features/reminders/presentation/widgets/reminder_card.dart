@@ -54,7 +54,7 @@ class ReminderCard extends StatelessWidget {
               FilledButton(
                 onPressed: () => Navigator.of(ctx).pop(true),
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.statusDanger,
+                  backgroundColor: theme.colorScheme.error,
                 ),
                 child: const Text('Delete'),
               ),
