@@ -65,12 +65,28 @@ class ReminderTimelineTile extends StatelessWidget {
                 width: 72,
                 child: Padding(
                   padding: const EdgeInsets.only(top: 2),
-                  child: Text(
-                    AppDateFormatters.formatTime(reminder.scheduledDateTime),
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: completed ? colors.onSurfaceVariant : colors.onSurface,
-                      fontWeight: FontWeight.w600,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (!reminder.isToday)
+                        Text(
+                          AppDateFormatters.formatRelativeDate(
+                            reminder.scheduledDateTime,
+                          ),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colors.onSurfaceVariant,
+                          ),
                         ),
+                      Text(
+                        AppDateFormatters.formatTime(reminder.scheduledDateTime),
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: completed
+                              ? colors.onSurfaceVariant
+                              : colors.onSurface,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
