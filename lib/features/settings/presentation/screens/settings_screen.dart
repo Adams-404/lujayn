@@ -42,7 +42,7 @@ class SettingsScreen extends ConsumerWidget {
                       color: theme.colorScheme.tertiary.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.lock_outline_rounded,
                       color: theme.colorScheme.tertiary,
                       size: 22,
@@ -143,11 +143,11 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                   const Divider(),
                   ListTile(
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.delete_sweep_outlined,
                       color: theme.colorScheme.error,
                     ),
-                    title: const Text(
+                    title: Text(
                       'Clear all reminders',
                       style: TextStyle(color: theme.colorScheme.error),
                     ),
