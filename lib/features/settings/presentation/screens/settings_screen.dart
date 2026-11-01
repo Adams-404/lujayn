@@ -40,7 +40,7 @@ class SettingsScreen extends ConsumerWidget {
             AppSpacing.gutter,
             AppSpacing.md,
             AppSpacing.gutter,
-            AppSpacing.xxxl,
+            AppSpacing.fabClearance,
           ),
           children: [
             // Privacy Promise Banner

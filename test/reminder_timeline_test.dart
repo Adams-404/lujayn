@@ -35,4 +35,63 @@ void main() {
 
     expect(find.text('ALL REMINDERS'), findsOneWidget);
   });
+
+  testWidgets(
+    'home header and segmented filter bar render across all five themes without error',
+    (tester) async {
+      for (final choice in AppThemeChoice.values) {
+        final repository = MockReminderRepository(preloadSampleData: true);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              reminderRepositoryProvider.overrideWithValue(repository),
+            ],
+            child: MaterialApp(
+              theme: AppTheme.forChoice(choice),
+              home: const HomeScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Today'), findsAtLeastNWidgets(1));
+        expect(find.text('Upcoming'), findsOneWidget);
+        expect(find.text('Completed'), findsOneWidget);
+        expect(find.text('All'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        repository.dispose();
+      }
+    },
+  );
+
+  testWidgets(
+    'home header and segmented filter bar render without overflow at 200% text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final repository = MockReminderRepository(preloadSampleData: true);
+      addTearDown(repository.dispose);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [reminderRepositoryProvider.overrideWithValue(repository)],
+          child: MaterialApp(
+            theme: AppTheme.forChoice(AppThemeChoice.amoled),
+            home: const MediaQuery(
+              data: MediaQueryData(textScaler: TextScaler.linear(2.0)),
+              child: HomeScreen(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Today'), findsAtLeastNWidgets(1));
+      expect(find.text('Upcoming'), findsOneWidget);
+    },
+  );
 }

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lujayn/app/app.dart';
+import 'package:lujayn/app/shell/app_shell.dart';
 import 'package:lujayn/app/theme/app_theme.dart';
 import 'package:lujayn/app/theme/app_theme_choice.dart';
 import 'package:lujayn/core/database/app_database.dart';
@@ -348,6 +349,54 @@ void main() {
 
       expect(find.text('1. Privacy by default'), findsNothing);
     });
+
+    testWidgets(
+      'Bottom navigation bar is floating with a stroked active indicator',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(_testApp());
+        await tester.pumpAndSettle();
+
+        // Verify Scaffold extends body behind the floating navigation bar
+        final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
+        expect(scaffold.extendBody, isTrue);
+
+        // Verify FloatingNavBar is rendered
+        expect(find.byType(FloatingNavBar), findsOneWidget);
+
+        // Verify destinations
+        expect(find.text('Reminders'), findsOneWidget);
+        expect(find.text('Settings'), findsOneWidget);
+
+        // Verify active indicator has a stroke border
+        final activeContainer = tester.widget<AnimatedContainer>(
+          find
+              .ancestor(
+                of: find.text('Reminders'),
+                matching: find.byType(AnimatedContainer),
+              )
+              .first,
+        );
+        final decoration = activeContainer.decoration as BoxDecoration;
+        expect(decoration.border, isNotNull);
+        expect(decoration.border!.top.width, greaterThan(0));
+
+        // Tap Settings tab and verify selection switches
+        await tester.tap(find.text('Settings'));
+        await tester.pumpAndSettle();
+
+        final settingsContainer = tester.widget<AnimatedContainer>(
+          find
+              .ancestor(
+                of: find.text('Settings'),
+                matching: find.byType(AnimatedContainer),
+              )
+              .first,
+        );
+        final settingsDec = settingsContainer.decoration as BoxDecoration;
+        expect(settingsDec.border, isNotNull);
+        expect(settingsDec.border!.top.width, greaterThan(0));
+      },
+    );
 
     testWidgets('Can open New Reminder screen from FAB', (
       WidgetTester tester,

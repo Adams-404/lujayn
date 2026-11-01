@@ -29,12 +29,17 @@ class HomeScreen extends ConsumerWidget {
             slivers: [
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(22, 28, 22, 18),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.gutter,
+                    AppSpacing.xl,
+                    AppSpacing.gutter,
+                    AppSpacing.md,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Expanded(
                             child: Column(
@@ -46,29 +51,47 @@ class HomeScreen extends ConsumerWidget {
                                   ),
                                   style: theme.textTheme.labelMedium?.copyWith(
                                     color: theme.colorScheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.w600,
                                     letterSpacing: 0.3,
                                   ),
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: AppSpacing.xxs),
                                 Text(
                                   'Today',
-                                  style: theme.textTheme.displayLarge,
+                                  style: theme.textTheme.displayMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: -0.6,
+                                      ),
                                 ),
                               ],
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          LujaynMark(
-                            size: 34,
-                            color: theme.colorScheme.onSurfaceVariant,
+                          const SizedBox(width: AppSpacing.md),
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surfaceContainerLow,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: theme.colorScheme.outlineVariant,
+                              ),
+                            ),
+                            alignment: Alignment.center,
+                            child: LujaynMark(
+                              size: 24,
+                              color: theme.colorScheme.primary,
+                            ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 5),
+                      const SizedBox(height: AppSpacing.xs),
                       Text(
                         'Here’s what you’ve set aside to remember.',
-                        style: theme.textTheme.bodyLarge?.copyWith(
+                        style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
+                          height: 1.4,
                         ),
                       ),
                     ],
@@ -77,7 +100,9 @@ class HomeScreen extends ConsumerWidget {
               ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 22),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.gutter,
+                  ),
                   child: _ReminderFilters(
                     selected: filter,
                     onSelected: (next) => ref
@@ -114,10 +139,13 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _navigateToCreate(context),
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Add reminder'),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 60),
+        child: FloatingActionButton.extended(
+          onPressed: () => _navigateToCreate(context),
+          icon: const Icon(Icons.add_rounded),
+          label: const Text('Add reminder'),
+        ),
       ),
     );
   }
@@ -188,7 +216,7 @@ class HomeScreen extends ConsumerWidget {
         ],
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 22),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.gutter),
             child: _NextReminderPanel(
               reminder: next,
               onTap: () => _navigateToDetail(context, next.id),
@@ -224,7 +252,12 @@ class HomeScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(22, 22, 22, 6),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.gutter,
+          AppSpacing.lg,
+          AppSpacing.gutter,
+          AppSpacing.xs,
+        ),
         child: Text(
           title,
           style: theme.textTheme.labelMedium?.copyWith(
@@ -244,7 +277,7 @@ class HomeScreen extends ConsumerWidget {
   ) {
     return [
       SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: 22),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.gutter),
         sliver: SliverList(
           delegate: SliverChildBuilderDelegate((context, index) {
             final reminder = reminders[index];
@@ -437,33 +470,59 @@ class _ReminderFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final textScaler = MediaQuery.textScalerOf(context);
+    final isLargeText = textScaler.scale(14) > 17;
+
     final options = [
       (ReminderFilter.upcoming, 'Upcoming'),
       (ReminderFilter.completed, 'Completed'),
       (ReminderFilter.all, 'All'),
     ];
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      // Large text and narrow screens must not clip the filters.
+    final segments = Container(
+      padding: const EdgeInsets.all(AppSpacing.xxs),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(AppRadius.surface),
+        border: Border.all(color: colors.outlineVariant),
+      ),
       child: Row(
+        mainAxisSize: isLargeText ? MainAxisSize.min : MainAxisSize.max,
         children: [
-          for (var index = 0; index < options.length; index++) ...[
-            if (index > 0) const SizedBox(width: AppSpacing.gutter),
-            _FilterTab(
-              label: options[index].$2,
-              selected: selected == options[index].$1,
-              onTap: () => onSelected(options[index].$1),
-            ),
-          ],
+          for (final option in options)
+            if (isLargeText)
+              _SegmentTab(
+                label: option.$2,
+                selected: selected == option.$1,
+                onTap: () => onSelected(option.$1),
+              )
+            else
+              Expanded(
+                child: _SegmentTab(
+                  label: option.$2,
+                  selected: selected == option.$1,
+                  onTap: () => onSelected(option.$1),
+                ),
+              ),
         ],
       ),
     );
+
+    if (isLargeText) {
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: segments,
+      );
+    }
+
+    return segments;
   }
 }
 
-class _FilterTab extends StatelessWidget {
-  const _FilterTab({
+class _SegmentTab extends StatelessWidget {
+  const _SegmentTab({
     required this.label,
     required this.selected,
     required this.onTap,
@@ -476,35 +535,56 @@ class _FilterTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = selected
-        ? theme.colorScheme.primary
-        : theme.colorScheme.onSurfaceVariant;
+    final colors = theme.colorScheme;
 
     return Semantics(
       button: true,
       selected: selected,
-      child: InkWell(
-        onTap: onTap,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                label,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: color,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                ),
+      label: '$label reminders',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.control),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeInOut,
+            constraints: const BoxConstraints(
+              minHeight: AppSpacing.minTouchTarget,
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.xs,
+            ),
+            decoration: BoxDecoration(
+              color: selected
+                  ? colors.surfaceContainerHighest
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(AppRadius.control),
+              border: Border.all(
+                color: selected ? colors.outline : Colors.transparent,
+                width: 1,
               ),
-              const SizedBox(height: 7),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 160),
-                width: selected ? 24 : 0,
-                height: 2,
-                color: theme.colorScheme.primary,
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.06),
+                        blurRadius: 3,
+                        offset: const Offset(0, 1),
+                      ),
+                    ]
+                  : null,
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              label,
+              maxLines: 1,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: selected ? colors.primary : colors.onSurfaceVariant,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                letterSpacing: 0.2,
               ),
-            ],
+            ),
           ),
         ),
       ),
