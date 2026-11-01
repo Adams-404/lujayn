@@ -1,8 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/database/app_database.dart';
 import '../../data/repositories/drift_reminder_repository.dart';
+import '../../data/services/android_reminder_alarm_scheduler.dart';
+import '../../data/services/noop_reminder_alarm_scheduler.dart';
 import '../../domain/models/reminder.dart';
 import '../../domain/models/reminder_status.dart';
+import '../../domain/services/reminder_alarm_scheduler.dart';
+import '../../domain/services/reminder_schedule_planner.dart';
 import '../../domain/repositories/reminder_repository.dart';
 
 /// Filter selection for reminder list.
@@ -19,6 +24,20 @@ final appDatabaseProvider = Provider<AppDatabase>((ref) {
 final reminderRepositoryProvider = Provider<ReminderRepository>((ref) {
   return DriftReminderRepository(ref.watch(appDatabaseProvider));
 });
+
+/// Platform alarm scheduler. Android uses AlarmManager; other targets
+/// keep the reminder data usable without invoking an unavailable channel.
+final reminderAlarmSchedulerProvider = Provider<ReminderAlarmScheduler>((ref) {
+  if (defaultTargetPlatform == TargetPlatform.android) {
+    return AndroidReminderAlarmScheduler();
+  }
+  return const NoopReminderAlarmScheduler();
+});
+
+/// Pure planner shared by scheduling actions and tests.
+final reminderSchedulePlannerProvider = Provider<ReminderSchedulePlanner>(
+  (ref) => const ReminderSchedulePlanner(),
+);
 
 /// Reactive stream of reminders from the repository.
 final remindersStreamProvider = StreamProvider<List<Reminder>>((ref) {
