@@ -69,9 +69,8 @@ class ReminderTimelineTile extends StatelessWidget {
                     AppDateFormatters.formatTime(reminder.scheduledDateTime),
                     style: theme.textTheme.labelLarge?.copyWith(
                       color: completed ? colors.onSurfaceVariant : colors.onSurface,
-                      fontWeight: FontWeight.w650,
-                      fontFeatures: const [],
-                    ),
+                      fontWeight: FontWeight.w600,
+                        ),
                   ),
                 ),
               ),
