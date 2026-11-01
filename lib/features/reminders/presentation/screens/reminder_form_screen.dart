@@ -127,9 +127,20 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
       completedAt: widget.initialReminder?.completedAt,
     );
 
-    await ref
-        .read(reminderActionControllerProvider)
-        .createOrUpdateReminder(reminder);
+    try {
+      await ref
+          .read(reminderActionControllerProvider)
+          .createOrUpdateReminder(reminder);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not save this reminder. Please try again.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
