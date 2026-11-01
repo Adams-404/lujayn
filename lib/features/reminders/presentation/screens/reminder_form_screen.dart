@@ -89,11 +89,12 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
     final today = DateTime(now.year, now.month, now.day);
     final firstDate = _isEditing ? DateTime(now.year - 1) : today;
     final lastDate = DateTime(now.year + 5);
-    final initialDate = _selectedDate.isBefore(firstDate)
-        ? firstDate
-        : _selectedDate.isAfter(lastDate)
-        ? lastDate
-        : _selectedDate;
+    var initialDate = _selectedDate;
+    if (initialDate.isBefore(firstDate)) {
+      initialDate = firstDate;
+    } else if (initialDate.isAfter(lastDate)) {
+      initialDate = lastDate;
+    }
 
     final picked = await showDatePicker(
       context: context,
@@ -374,7 +375,7 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
                 ],
               ),
               const SizedBox(height: 28),
-              _FormSectionLabel(label: 'Repeat'),
+              _FormSectionLabel(label: 'Repeat schedule'),
               const SizedBox(height: 6),
               Text(
                 'Choose how often this reminder should repeat.',
