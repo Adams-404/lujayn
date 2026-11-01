@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+
 import '../../../../core/utilities/date_formatters.dart';
 import '../../../../core/widgets/honest_notice_card.dart';
 import '../../../../core/widgets/responsive_center.dart';
@@ -28,6 +29,7 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
   late DateTime _selectedDate;
   late TimeOfDay _selectedTime;
   late RecurrenceRule _selectedRecurrence;
+  bool _isSaving = false;
 
   bool get _isEditing => widget.initialReminder != null;
 
@@ -53,10 +55,9 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
       );
       _selectedRecurrence = initial.recurrence;
     } else {
-      // Default: scheduled for today or tomorrow, 1 hour from now or 09:00
-      final now = DateTime.now();
-      _selectedDate = DateTime(now.year, now.month, now.day);
-      _selectedTime = TimeOfDay(hour: (now.hour + 1).clamp(0, 23), minute: 0);
+      final suggested = DateTime.now().add(const Duration(hours: 1));
+      _selectedDate = DateTime(suggested.year, suggested.month, suggested.day);
+      _selectedTime = TimeOfDay(hour: suggested.hour, minute: suggested.minute);
       _selectedRecurrence = RecurrenceRule.none;
     }
   }
@@ -68,28 +69,34 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
     super.dispose();
   }
 
-  DateTime get _scheduledDateTime {
-    return DateTime(
-      _selectedDate.year,
-      _selectedDate.month,
-      _selectedDate.day,
-      _selectedTime.hour,
-      _selectedTime.minute,
-    );
-  }
+  DateTime get _scheduledDateTime => DateTime(
+    _selectedDate.year,
+    _selectedDate.month,
+    _selectedDate.day,
+    _selectedTime.hour,
+    _selectedTime.minute,
+  );
 
   Future<void> _pickCustomDate() async {
     final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final firstDate = _isEditing ? DateTime(now.year - 1) : today;
+    final lastDate = DateTime(now.year + 5);
+    var initialDate = _selectedDate;
+    if (initialDate.isBefore(firstDate)) {
+      initialDate = firstDate;
+    } else if (initialDate.isAfter(lastDate)) {
+      initialDate = lastDate;
+    }
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate.isBefore(now) ? now : _selectedDate,
-      firstDate: DateTime(now.year - 1),
-      lastDate: DateTime(now.year + 5),
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
     );
-    if (picked != null) {
-      setState(() {
-        _selectedDate = picked;
-      });
+    if (picked != null && mounted) {
+      setState(() => _selectedDate = picked);
     }
   }
 
@@ -98,16 +105,15 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
       context: context,
       initialTime: _selectedTime,
     );
-    if (picked != null) {
-      setState(() {
-        _selectedTime = picked;
-      });
+    if (picked != null && mounted) {
+      setState(() => _selectedTime = picked);
     }
   }
 
-  void _save() {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _save() async {
+    if (_isSaving || !_formKey.currentState!.validate()) return;
 
+    setState(() => _isSaving = true);
     final now = DateTime.now();
     final reminder = Reminder(
       id: widget.initialReminder?.id ?? const Uuid().v4(),
@@ -123,66 +129,80 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
       completedAt: widget.initialReminder?.completedAt,
     );
 
-    ref.read(reminderActionControllerProvider).createOrUpdateReminder(reminder);
+    try {
+      await ref
+          .read(reminderActionControllerProvider)
+          .createOrUpdateReminder(reminder);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(_isEditing ? 'Reminder updated' : 'Reminder created'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-
-    Navigator.of(context).pop();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_isEditing ? 'Reminder updated' : 'Reminder saved'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      Navigator.of(context).pop();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not save your reminder. Please try again.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final tomorrow = today.add(const Duration(days: 1));
 
-    final isDateToday =
-        _selectedDate.year == today.year &&
-        _selectedDate.month == today.month &&
-        _selectedDate.day == today.day;
-
-    final isDateTomorrow =
-        _selectedDate.year == tomorrow.year &&
-        _selectedDate.month == tomorrow.month &&
-        _selectedDate.day == tomorrow.day;
+    final isDateToday = _sameDate(_selectedDate, today);
+    final isDateTomorrow = _sameDate(_selectedDate, tomorrow);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Reminder' : 'New Reminder'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: FilledButton(onPressed: _save, child: const Text('Save')),
-          ),
-        ],
+        title: Text(_isEditing ? 'Edit reminder' : 'New reminder'),
       ),
-      body: ResponsiveCenter(
-        child: Form(
-          key: _formKey,
+      body: Form(
+        key: _formKey,
+        child: ResponsiveCenter(
+          maxWidth: 640,
           child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.fromLTRB(22, 20, 22, 28),
             children: [
-              // Title Input
               Text(
-                'What would you like to remember?',
-                style: theme.textTheme.titleMedium?.copyWith(
+                'What do you need to remember?',
+                style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
+              Text(
+                'Give it a name. You can add details and choose when it should happen.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 24),
+              _FormSectionLabel(label: 'Reminder'),
+              const SizedBox(height: 9),
               TextFormField(
                 controller: _titleController,
-                autofocus: !_isEditing,
                 textCapitalization: TextCapitalization.sentences,
+                textInputAction: TextInputAction.next,
+                maxLength: 80,
                 style: theme.textTheme.bodyLarge,
                 decoration: const InputDecoration(
-                  hintText: 'e.g. Morning medication, Call Dad, Water plants',
+                  hintText: 'e.g. Take medication',
+                  counterText: '',
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -191,198 +211,283 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
                   return null;
                 },
               ),
-
               const SizedBox(height: 20),
-
-              // Description Input (Optional)
+              _FormSectionLabel(label: 'Notes'),
+              const SizedBox(height: 4),
               Text(
-                'Notes or details (optional)',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+                'Optional details that may help when the reminder appears.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 9),
               TextFormField(
                 controller: _descriptionController,
                 maxLines: 3,
+                minLines: 2,
                 textCapitalization: TextCapitalization.sentences,
-                style: theme.textTheme.bodyMedium,
+                textInputAction: TextInputAction.newline,
                 decoration: const InputDecoration(
-                  hintText: 'Add helpful instructions, context, or notes...',
+                  hintText: 'Add instructions or a little context...',
+                  alignLabelWithHint: true,
                 ),
               ),
-
-              const SizedBox(height: 24),
-
-              // Date Selection
+              const SizedBox(height: 28),
+              _FormSectionLabel(label: 'When'),
+              const SizedBox(height: 12),
               Text(
                 'Date',
-                style: theme.textTheme.titleMedium?.copyWith(
+                style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 9),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  ChoiceChip(
-                    label: const Text('Today'),
+                  _DateChoice(
+                    label: 'Today',
                     selected: isDateToday,
-                    selectedColor: theme.colorScheme.primary,
-                    labelStyle: TextStyle(
-                      color: isDateToday
-                          ? Colors.white
-                          : (theme.colorScheme.onSurface),
-                      fontWeight: isDateToday
-                          ? FontWeight.w600
-                          : FontWeight.w500,
-                    ),
-                    onSelected: (selected) {
-                      if (selected) setState(() => _selectedDate = today);
-                    },
+                    onPressed: () => setState(() => _selectedDate = today),
                   ),
-                  ChoiceChip(
-                    label: const Text('Tomorrow'),
+                  _DateChoice(
+                    label: 'Tomorrow',
                     selected: isDateTomorrow,
-                    selectedColor: theme.colorScheme.primary,
-                    labelStyle: TextStyle(
-                      color: isDateTomorrow
-                          ? Colors.white
-                          : (theme.colorScheme.onSurface),
-                      fontWeight: isDateTomorrow
-                          ? FontWeight.w600
-                          : FontWeight.w500,
-                    ),
-                    onSelected: (selected) {
-                      if (selected) setState(() => _selectedDate = tomorrow);
-                    },
+                    onPressed: () => setState(() => _selectedDate = tomorrow),
                   ),
-                  ActionChip(
-                    avatar: const Icon(Icons.calendar_today_rounded, size: 16),
+                  OutlinedButton.icon(
+                    onPressed: _pickCustomDate,
+                    icon: const Icon(Icons.calendar_today_outlined, size: 17),
                     label: Text(
                       isDateToday || isDateTomorrow
-                          ? 'Other date...'
+                          ? 'Choose date'
                           : AppDateFormatters.formatFullDate(_selectedDate),
                     ),
-                    onPressed: _pickCustomDate,
                   ),
                 ],
               ),
-
-              const SizedBox(height: 24),
-
-              // Time Selection
+              const SizedBox(height: 22),
               Text(
                 'Time',
-                style: theme.textTheme.titleMedium?.copyWith(
+                style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 10),
-              Card(
+              const SizedBox(height: 9),
+              Material(
+                color: colors.surfaceContainerLow,
                 child: InkWell(
                   onTap: _pickCustomTime,
-                  borderRadius: BorderRadius.circular(16),
-                  child: Padding(
+                  child: Container(
+                    constraints: const BoxConstraints(minHeight: 76),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
-                      vertical: 14,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: colors.outlineVariant),
                     ),
                     child: Row(
                       children: [
                         Icon(
-                          Icons.access_time_rounded,
-                          size: 22,
-                          color: theme.colorScheme.secondary,
+                          Icons.schedule_rounded,
+                          color: colors.primary,
+                          size: 23,
                         ),
-                        const SizedBox(width: 12),
-                        Text(
-                          _selectedTime.format(context),
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            color: theme.colorScheme.onSurface,
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                _selectedTime.format(context),
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                AppDateFormatters.formatFullDate(_selectedDate),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colors.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const Spacer(),
                         Text(
                           'Change',
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: theme.colorScheme.primary,
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: colors.primary,
                             fontWeight: FontWeight.w600,
                           ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: colors.onSurfaceVariant,
                         ),
                       ],
                     ),
                   ),
                 ),
               ),
-
               const SizedBox(height: 12),
-              // Quick time presets
+              Text(
+                'Quick times',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  ActionChip(
-                    label: const Text('Morning (08:00)'),
-                    onPressed: () => setState(
-                      () => _selectedTime = const TimeOfDay(hour: 8, minute: 0),
-                    ),
+                  _TimeChoice(
+                    label: 'Morning',
+                    time: const TimeOfDay(hour: 8, minute: 0),
+                    onPressed: (time) => setState(() => _selectedTime = time),
                   ),
-                  ActionChip(
-                    label: const Text('Afternoon (14:00)'),
-                    onPressed: () => setState(
-                      () =>
-                          _selectedTime = const TimeOfDay(hour: 14, minute: 0),
-                    ),
+                  _TimeChoice(
+                    label: 'Afternoon',
+                    time: const TimeOfDay(hour: 14, minute: 0),
+                    onPressed: (time) => setState(() => _selectedTime = time),
                   ),
-                  ActionChip(
-                    label: const Text('Evening (19:00)'),
-                    onPressed: () => setState(
-                      () =>
-                          _selectedTime = const TimeOfDay(hour: 19, minute: 0),
-                    ),
+                  _TimeChoice(
+                    label: 'Evening',
+                    time: const TimeOfDay(hour: 19, minute: 0),
+                    onPressed: (time) => setState(() => _selectedTime = time),
                   ),
-                  ActionChip(
-                    label: const Text('Night (21:30)'),
-                    onPressed: () => setState(
-                      () =>
-                          _selectedTime = const TimeOfDay(hour: 21, minute: 30),
-                    ),
+                  _TimeChoice(
+                    label: 'Night',
+                    time: const TimeOfDay(hour: 21, minute: 30),
+                    onPressed: (time) => setState(() => _selectedTime = time),
                   ),
                 ],
               ),
-
-              const SizedBox(height: 24),
-
-              // Recurrence
+              const SizedBox(height: 28),
+              _FormSectionLabel(label: 'Repeat schedule'),
+              const SizedBox(height: 6),
               Text(
-                'Repeat schedule',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+                'Choose how often this reminder should repeat.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               RecurrenceChipSelector(
                 selectedRule: _selectedRecurrence,
                 onChanged: (rule) => setState(() => _selectedRecurrence = rule),
               ),
-
               const SizedBox(height: 28),
-
-              // Honest development notice
-              const HonestNoticeCard(
-                title: 'Phase 0 Development Note',
+              HonestNoticeCard(
+                title: 'Saved on this device',
                 message:
-                    'Reminders are stored locally in the mock repository during this initialization stage. '
-                    'Native Android exact alarms and simulated call presentations will be wired in Phase 2.',
+                    'Your reminder is stored locally. Automatic alarms and notifications are still being built, so Lujayn cannot alert you at the scheduled time yet.',
+                icon: Icons.lock_outline_rounded,
               ),
-
-              const SizedBox(height: 32),
+              const SizedBox(height: 12),
             ],
           ),
         ),
       ),
+      // Scaffold lays this slot out with an unbounded height, so the content
+      // must shrink-wrap vertically or it would take the whole screen and
+      // collapse the form body to zero height.
+      bottomNavigationBar: SafeArea(
+        child: Center(
+          heightFactor: 1,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(22, 10, 22, 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _isSaving ? null : _save,
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(54),
+                  ),
+                  icon: _isSaving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.check_rounded),
+                  label: Text(_isSaving ? 'Saving...' : 'Save'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
+  }
+
+  bool _sameDate(DateTime first, DateTime second) =>
+      first.year == second.year &&
+      first.month == second.month &&
+      first.day == second.day;
+}
+
+class _FormSectionLabel extends StatelessWidget {
+  const _FormSectionLabel({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Text(
+      label,
+      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+    );
+  }
+}
+
+class _DateChoice extends StatelessWidget {
+  const _DateChoice({
+    required this.label,
+    required this.selected,
+    required this.onPressed,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return selected
+        ? FilledButton.tonal(
+            onPressed: onPressed,
+            style: FilledButton.styleFrom(minimumSize: const Size(88, 48)),
+            child: Text(label),
+          )
+        : OutlinedButton(
+            onPressed: onPressed,
+            style: OutlinedButton.styleFrom(minimumSize: const Size(88, 48)),
+            child: Text(label),
+          );
+  }
+}
+
+class _TimeChoice extends StatelessWidget {
+  const _TimeChoice({
+    required this.label,
+    required this.time,
+    required this.onPressed,
+  });
+
+  final String label;
+  final TimeOfDay time;
+  final ValueChanged<TimeOfDay> onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return ActionChip(label: Text(label), onPressed: () => onPressed(time));
   }
 }
