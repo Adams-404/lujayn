@@ -40,22 +40,10 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           dart format lib test
-          if [[ -n "$(git status --porcelain)" ]]; then
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add lib test pubspec.lock
-            git commit -m 'chore: format tests and update lockfile'
-            git push origin HEAD:${{ github.event.pull_request.head.ref }}
-          fi
-
-      - name: Format Dart sources once
-        if: github.event_name == 'pull_request'
-        run: |
-          dart format lib test
-          git add lib test
+          git add lib test pubspec.lock
           if ! git diff --cached --quiet; then
             git config user.name 'github-actions[bot]'
-            git config user.email '41898282+actions-bot@users.noreply.github.com'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git commit -m 'style: format Flutter tests'
             git push origin HEAD:${{ github.event.pull_request.head.ref }}
           fi
