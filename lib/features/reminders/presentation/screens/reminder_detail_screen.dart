@@ -274,7 +274,7 @@ class ReminderDetailScreen extends ConsumerWidget {
                   ),
                   label: const Text(
                     'Delete Reminder',
-                    style: TextStyle(color: AppColors.statusDanger),
+                    style: TextStyle(color: theme.colorScheme.error),
                   ),
                 ),
 
