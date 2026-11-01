@@ -23,6 +23,17 @@ class AndroidReminderAlarmScheduler implements ReminderAlarmScheduler {
   }
 
   @override
+  Future<bool> canPostNotifications() async {
+    return await _channel.invokeMethod<bool>('canPostNotifications') ?? false;
+  }
+
+  @override
+  Future<bool> requestNotificationPermission() async {
+    return await _channel.invokeMethod<bool>('requestNotificationPermission') ??
+        false;
+  }
+
+  @override
   Future<void> schedule(ReminderSchedule schedule) {
     return _channel.invokeMethod<void>('schedule', {
       'id': schedule.reminderId,
