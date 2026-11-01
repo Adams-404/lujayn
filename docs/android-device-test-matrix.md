@@ -85,6 +85,28 @@ what the user saw.
 | Notification small icon renders (not a white square) | | | |
 | Adaptive icon is not cropped on the launcher | | | |
 
+### 6. Speech and downloaded voices
+
+Nothing here has run on hardware yet. The install pipeline is covered by unit
+tests, but no engine has ever generated audio on a device.
+
+| Case | Device 1 | Device 2 | Device 3 |
+| --- | --- | --- | --- |
+| Device voice reads a reminder aloud from the call screen | | | |
+| "Read aloud" is hidden when no speech engine is installed | | | |
+| Leaving the alert stops speech | | | |
+| Speech stops when the screen is locked mid-sentence | | | |
+| Light pack downloads over Wi-Fi and finishes | | | |
+| Light pack downloads over mobile data and finishes | | | |
+| Natural pack downloads over Wi-Fi and finishes | | | |
+| Install survives the screen turning off mid-download | | | |
+| A cancelled install leaves no pack behind | | | |
+| A downloaded voice is still selected after a restart | | | |
+| Removing a pack falls back to the device voice | | | |
+| A downloaded voice speaks without any network connection | | | |
+| Time from alert to first sound is acceptable on a mid-range phone | | | |
+| Speech does not fight music playing in another app | | | |
+
 ## Reporting
 
 Copy this file into the pull request description, fill in the devices and
