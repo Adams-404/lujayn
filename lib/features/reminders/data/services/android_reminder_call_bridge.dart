@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 
+import '../../domain/models/reminder_alarm_id.dart';
 import '../../domain/services/reminder_call_bridge.dart';
 
 /// Android bridge for reminders the system opened from an alarm notification.
@@ -34,6 +35,6 @@ class AndroidReminderCallBridge implements ReminderCallBridge {
   ReminderCallRequest? _parse(Map<Object?, Object?>? payload) {
     final id = payload?['id'];
     if (id is! String || id.isEmpty) return null;
-    return ReminderCallRequest(reminderId: id);
+    return ReminderCallRequest(reminderId: reminderIdFromAlarmId(id));
   }
 }

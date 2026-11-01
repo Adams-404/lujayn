@@ -8,6 +8,7 @@ import '../../data/services/noop_reminder_alarm_scheduler.dart';
 import '../../data/services/noop_reminder_call_bridge.dart';
 import '../../domain/models/recurrence_rule.dart';
 import '../../domain/models/reminder.dart';
+import '../../domain/models/reminder_alarm_id.dart';
 import '../../domain/models/reminder_status.dart';
 import '../../domain/services/reminder_alarm_scheduler.dart';
 import '../../domain/services/reminder_call_bridge.dart';
@@ -159,7 +160,7 @@ class ReminderActionNotifier {
 
     await _scheduler.schedule(
       ReminderSchedule(
-        reminderId: _snoozeAlarmId(id),
+        reminderId: snoozeAlarmId(id),
         title: reminder.title,
         description: reminder.description,
         recurrence: RecurrenceRule.none,
@@ -173,7 +174,7 @@ class ReminderActionNotifier {
   /// A one-time reminder becomes completed. A recurring reminder keeps its
   /// series intact and only re-syncs the next alarm.
   Future<void> dismissOccurrence(String id) async {
-    await _scheduler.cancel(_snoozeAlarmId(id));
+    await _scheduler.cancel(snoozeAlarmId(id));
     final reminder = await _repository.getReminderById(id);
     if (reminder == null) {
       await _scheduler.cancel(id);
@@ -198,7 +199,7 @@ class ReminderActionNotifier {
   Future<void> deleteReminder(String id) async {
     await _repository.deleteReminder(id);
     await _scheduler.cancel(id);
-    await _scheduler.cancel(_snoozeAlarmId(id));
+    await _scheduler.cancel(snoozeAlarmId(id));
   }
 
   Future<void> clearAll() async {
@@ -210,13 +211,11 @@ class ReminderActionNotifier {
     final schedule = _planner.plan(reminder, now: DateTime.now());
     if (schedule == null) {
       await _scheduler.cancel(reminder.id);
-      await _scheduler.cancel(_snoozeAlarmId(reminder.id));
+      await _scheduler.cancel(snoozeAlarmId(reminder.id));
     } else {
       await _scheduler.schedule(schedule);
     }
   }
-
-  static String _snoozeAlarmId(String reminderId) => '$reminderId::snooze';
 }
 
 final reminderActionControllerProvider = Provider<ReminderActionNotifier>((
