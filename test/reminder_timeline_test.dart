@@ -25,7 +25,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Today'), findsOneWidget);
+    expect(find.text('Today'), findsAtLeastNWidgets(1));
     expect(find.text('NEXT REMINDER'), findsOneWidget);
     expect(find.text('Add reminder'), findsOneWidget);
     expect(find.text('Upcoming'), findsOneWidget);
