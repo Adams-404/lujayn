@@ -4,6 +4,7 @@ import 'package:lujayn/app/theme/app_theme_choice.dart';
 import 'package:lujayn/core/widgets/lujayn_mark.dart';
 import 'package:lujayn/core/widgets/responsive_center.dart';
 import 'package:lujayn/features/reminders/presentation/controllers/reminder_providers.dart';
+import 'package:lujayn/features/voice/presentation/screens/voice_settings_screen.dart';
 import '../controllers/settings_providers.dart';
 import '../widgets/principles_dialog.dart';
 import '../widgets/theme_picker.dart';
@@ -227,17 +228,35 @@ class SettingsScreen extends ConsumerWidget {
             _SectionTitle(title: 'Audio'),
             Card(
               clipBehavior: Clip.antiAlias,
-              child: SwitchListTile(
-                secondary: const Icon(Icons.volume_up_outlined),
-                title: const Text('Read reminders aloud'),
-                subtitle: const Text(
-                  'Speaks the reminder when it arrives, using this device’s own '
-                  'text-to-speech engine. Nothing is sent anywhere.',
-                ),
-                value: spokenAloud,
-                onChanged: (value) => ref
-                    .read(spokenRemindersEnabledProvider.notifier)
-                    .setEnabled(value),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.record_voice_over_outlined),
+                    title: const Text('Reminder voice'),
+                    subtitle: const Text(
+                      'Use this phone’s voice, or download a more natural one.',
+                    ),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const VoiceSettingsScreen(),
+                      ),
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    secondary: const Icon(Icons.volume_up_outlined),
+                    title: const Text('Read reminders aloud'),
+                    subtitle: const Text(
+                      'Speaks the reminder when it arrives. Nothing is sent '
+                      'anywhere.',
+                    ),
+                    value: spokenAloud,
+                    onChanged: (value) => ref
+                        .read(spokenRemindersEnabledProvider.notifier)
+                        .setEnabled(value),
+                  ),
+                ],
               ),
             ),
 

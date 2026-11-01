@@ -1,0 +1,385 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/widgets/empty_state_view.dart';
+import '../../domain/models/voice_install_progress.dart';
+import '../../domain/models/voice_pack.dart';
+import '../../domain/models/voice_selection.dart';
+import '../controllers/voice_providers.dart';
+
+/// Lets the user choose how Lujayn speaks, including downloading a better
+/// voice once and using it forever without a connection.
+class VoiceSettingsScreen extends ConsumerWidget {
+  const VoiceSettingsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final libraryAsync = ref.watch(voiceLibraryProvider);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Reminder voice')),
+      body: libraryAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, _) => EmptyStateView(
+          icon: Icons.record_voice_over_outlined,
+          title: 'Voice settings didn’t load',
+          description:
+              'Lujayn could not read the voice settings on this device. '
+              'Your reminders are unaffected.',
+          actionLabel: 'Try again',
+          actionIcon: Icons.refresh_rounded,
+          onAction: () => ref.invalidate(voiceLibraryProvider),
+        ),
+        data: (library) => ListView(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.gutter,
+            AppSpacing.md,
+            AppSpacing.gutter,
+            AppSpacing.xxl,
+          ),
+          children: [
+            Text(
+              'Lujayn can speak with your phone’s own voice, or with a more '
+              'natural voice you download once. Downloads stay on this device '
+              'and keep working with no connection.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            _SectionTitle('This phone’s voice'),
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: _VoiceTile(
+                title: 'Device voice',
+                subtitle:
+                    'Android’s built-in text-to-speech. No download and no '
+                    'extra storage.',
+                selected: library.selection is DeviceVoice,
+                onTap: () => ref
+                    .read(voiceLibraryProvider.notifier)
+                    .select(VoiceSelection.device),
+              ),
+            ),
+            for (final pack in ref.watch(voiceCatalogProvider)) ...[
+              const SizedBox(height: AppSpacing.xl),
+              _SectionTitle(pack.name),
+              _PackCard(pack: pack, library: library),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PackCard extends ConsumerWidget {
+  const _PackCard({required this.pack, required this.library});
+
+  final VoicePack pack;
+  final VoiceLibraryState library;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final notifier = ref.read(voiceLibraryProvider.notifier);
+    final installed = library.isInstalled(pack.id);
+    final installing = library.isInstalling(pack.id);
+    final progress = library.progress[pack.id];
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.sm,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${pack.downloadLabel} download',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      pack.licence,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xxs),
+                Text(
+                  pack.summary,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                    height: 1.4,
+                  ),
+                ),
+                if (!installed) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Needs about ${pack.installedLabel} of storage.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (installing) _InstallProgress(progress: progress!),
+          if (!installed && !installing)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                0,
+                AppSpacing.md,
+                AppSpacing.md,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (progress?.isFailed ?? false) ...[
+                    Text(
+                      progress!.message ??
+                          'The voice could not be installed. Please try again.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.error,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                  ],
+                  FilledButton.icon(
+                    onPressed: () {
+                      notifier.dismissProgress(pack.id);
+                      notifier.install(pack);
+                    },
+                    icon: const Icon(Icons.download_rounded, size: 18),
+                    label: Text(
+                      progress?.isFailed ?? false ? 'Try again' : 'Download',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (installed) ...[
+            const Divider(height: 1),
+            for (final group in _groups(pack))
+              ..._voiceRows(context, ref, group.$1, group.$2),
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xxs,
+              ),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton.icon(
+                  onPressed: () => _confirmRemove(context, ref, notifier),
+                  icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                  label: Text('Remove download (frees ${pack.installedLabel})'),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmRemove(
+    BuildContext context,
+    WidgetRef ref,
+    VoiceLibraryNotifier notifier,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Remove this voice?'),
+        content: Text(
+          'The ${pack.name} voices will be deleted from this device. '
+          'You can download them again later. Your reminders are not affected.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Keep'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed ?? false) {
+      await notifier.remove(pack);
+    }
+  }
+
+  /// Female voices first, then male. Grouping keeps a long list scannable
+  /// without adding a filter control nobody asked for.
+  List<(String, List<VoiceOption>)> _groups(VoicePack pack) {
+    return [
+      ('Female', pack.femaleVoices.toList()),
+      ('Male', pack.maleVoices.toList()),
+    ].where((group) => group.$2.isNotEmpty).toList();
+  }
+
+  List<Widget> _voiceRows(
+    BuildContext context,
+    WidgetRef ref,
+    String label,
+    List<VoiceOption> voices,
+  ) {
+    final theme = Theme.of(context);
+    final selectedId = switch (library.selection) {
+      PackVoice(voice: final selected) => selected.id,
+      DeviceVoice() => null,
+    };
+    return [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          AppSpacing.sm,
+          AppSpacing.md,
+          AppSpacing.xxs,
+        ),
+        child: Text(
+          label,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      for (final voice in voices)
+        _VoiceTile(
+          title: voice.name,
+          // The group header already says Female or Male, so repeating it under
+          // every name is noise. Only an accent is worth the second line.
+          subtitle: voice.accent,
+          selected: selectedId == voice.id,
+          onTap: () =>
+              ref.read(voiceLibraryProvider.notifier).select(PackVoice(voice)),
+        ),
+    ];
+  }
+}
+
+class _VoiceTile extends StatelessWidget {
+  const _VoiceTile({
+    required this.title,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String title;
+  final String? subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+    return ListTile(
+      onTap: onTap,
+      selected: selected,
+      selectedTileColor: colors.primaryContainer.withValues(alpha: 0.35),
+      leading: Icon(
+        selected ? Icons.check_circle_rounded : Icons.circle_outlined,
+        color: selected ? colors.primary : colors.outline,
+      ),
+      title: Text(title),
+      subtitle: subtitle == null ? null : Text(subtitle!),
+      trailing: selected
+          ? Semantics(
+              label: 'In use',
+              child: Icon(Icons.graphic_eq_rounded, color: colors.primary),
+            )
+          : null,
+    );
+  }
+}
+
+class _InstallProgress extends StatelessWidget {
+  const _InstallProgress({required this.progress});
+
+  final VoiceInstallProgress progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final fraction = progress.fraction;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        0,
+        AppSpacing.md,
+        AppSpacing.md,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LinearProgressIndicator(value: fraction),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            fraction == null
+                ? progress.stageLabel
+                : '${progress.stageLabel} · ${(fraction * 100).round()}%',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle(this.title);
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(
+        left: AppSpacing.xxs,
+        bottom: AppSpacing.xs,
+      ),
+      child: Text(
+        title.toUpperCase(),
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          letterSpacing: 1.2,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
