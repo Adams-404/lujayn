@@ -6,8 +6,7 @@ import '../../domain/repositories/reminder_repository.dart';
 
 /// In-memory mock implementation of [ReminderRepository].
 ///
-/// Used during Phase 0 foundation development to power UI interactions
-/// with realistic, isolated data before the Drift SQLite layer is connected in Phase 1.
+/// Used only in tests and previews. Production uses the local Drift SQLite repository.
 class MockReminderRepository implements ReminderRepository {
   MockReminderRepository({bool preloadSampleData = true}) {
     if (preloadSampleData) {
@@ -91,7 +90,6 @@ class MockReminderRepository implements ReminderRepository {
     }
   }
 
-  @override
   Future<void> resetToSampleData() async {
     _reminders
       ..clear()
