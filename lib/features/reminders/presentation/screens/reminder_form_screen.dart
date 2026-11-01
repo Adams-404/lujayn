@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+
 import '../../../../core/utilities/date_formatters.dart';
-import '../../../../core/widgets/honest_notice_card.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../domain/models/recurrence_rule.dart';
 import '../../domain/models/reminder.dart';
@@ -10,7 +10,7 @@ import '../../domain/models/reminder_status.dart';
 import '../controllers/reminder_providers.dart';
 import '../widgets/recurrence_chip_selector.dart';
 
-/// Screen for creating or editing a reminder.
+/// A short, guided form for creating or editing a personal reminder.
 class ReminderFormScreen extends ConsumerStatefulWidget {
   const ReminderFormScreen({super.key, this.initialReminder});
 
@@ -53,10 +53,16 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
       );
       _selectedRecurrence = initial.recurrence;
     } else {
-      // Default: scheduled for today or tomorrow, 1 hour from now or 09:00
-      final now = DateTime.now();
-      _selectedDate = DateTime(now.year, now.month, now.day);
-      _selectedTime = TimeOfDay(hour: (now.hour + 1).clamp(0, 23), minute: 0);
+      final suggested = DateTime.now().add(const Duration(hours: 1));
+      _selectedDate = DateTime(
+        suggested.year,
+        suggested.month,
+        suggested.day,
+      );
+      _selectedTime = TimeOfDay(
+        hour: suggested.hour,
+        minute: suggested.minute,
+      );
       _selectedRecurrence = RecurrenceRule.none;
     }
   }
@@ -68,28 +74,28 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
     super.dispose();
   }
 
-  DateTime get _scheduledDateTime {
-    return DateTime(
-      _selectedDate.year,
-      _selectedDate.month,
-      _selectedDate.day,
-      _selectedTime.hour,
-      _selectedTime.minute,
-    );
-  }
+  DateTime get _scheduledDateTime => DateTime(
+    _selectedDate.year,
+    _selectedDate.month,
+    _selectedDate.day,
+    _selectedTime.hour,
+    _selectedTime.minute,
+  );
 
   Future<void> _pickCustomDate() async {
     final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final firstAllowedDate = _selectedDate.isBefore(today)
+        ? _selectedDate
+        : today;
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate.isBefore(now) ? now : _selectedDate,
-      firstDate: DateTime(now.year - 1),
+      initialDate: _selectedDate,
+      firstDate: firstAllowedDate,
       lastDate: DateTime(now.year + 5),
     );
-    if (picked != null) {
-      setState(() {
-        _selectedDate = picked;
-      });
+    if (picked != null && mounted) {
+      setState(() => _selectedDate = picked);
     }
   }
 
@@ -98,14 +104,12 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
       context: context,
       initialTime: _selectedTime,
     );
-    if (picked != null) {
-      setState(() {
-        _selectedTime = picked;
-      });
+    if (picked != null && mounted) {
+      setState(() => _selectedTime = picked);
     }
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
     final now = DateTime.now();
@@ -123,42 +127,34 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
       completedAt: widget.initialReminder?.completedAt,
     );
 
-    ref.read(reminderActionControllerProvider).createOrUpdateReminder(reminder);
+    await ref
+        .read(reminderActionControllerProvider)
+        .createOrUpdateReminder(reminder);
 
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(_isEditing ? 'Reminder updated' : 'Reminder created'),
         behavior: SnackBarBehavior.floating,
       ),
     );
-
     Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final tomorrow = today.add(const Duration(days: 1));
-
-    final isDateToday =
-        _selectedDate.year == today.year &&
-        _selectedDate.month == today.month &&
-        _selectedDate.day == today.day;
-
-    final isDateTomorrow =
-        _selectedDate.year == tomorrow.year &&
-        _selectedDate.month == tomorrow.month &&
-        _selectedDate.day == tomorrow.day;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Reminder' : 'New Reminder'),
+        title: Text(_isEditing ? 'Edit reminder' : 'New reminder'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12),
-            child: FilledButton(onPressed: _save, child: const Text('Save')),
+            child: FilledButton(
+              onPressed: _save,
+              child: const Text('Save'),
+            ),
           ),
         ],
       ),
@@ -166,23 +162,25 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.fromLTRB(22, 12, 22, 36),
             children: [
-              // Title Input
               Text(
                 'What would you like to remember?',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 9),
               TextFormField(
                 controller: _titleController,
                 autofocus: !_isEditing,
                 textCapitalization: TextCapitalization.sentences,
+                textInputAction: TextInputAction.next,
+                maxLength: 100,
                 style: theme.textTheme.bodyLarge,
                 decoration: const InputDecoration(
-                  hintText: 'e.g. Morning medication, Call Dad, Water plants',
+                  hintText: 'e.g. Call Mum, take medication, water plants',
+                  counterText: '',
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -191,174 +189,50 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
                   return null;
                 },
               ),
-
-              const SizedBox(height: 20),
-
-              // Description Input (Optional)
+              const SizedBox(height: 23),
               Text(
                 'Notes or details (optional)',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 9),
               TextFormField(
                 controller: _descriptionController,
                 maxLines: 3,
+                minLines: 2,
                 textCapitalization: TextCapitalization.sentences,
                 style: theme.textTheme.bodyMedium,
                 decoration: const InputDecoration(
-                  hintText: 'Add helpful instructions, context, or notes...',
+                  hintText: 'Add a little context or anything you might need...',
+                  alignLabelWithHint: true,
                 ),
               ),
-
-              const SizedBox(height: 24),
-
-              // Date Selection
+              const SizedBox(height: 30),
               Text(
-                'Date',
-                style: theme.textTheme.titleMedium?.copyWith(
+                'When',
+                style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  ChoiceChip(
-                    label: const Text('Today'),
-                    selected: isDateToday,
-                    selectedColor: theme.colorScheme.primary,
-                    labelStyle: TextStyle(
-                      color: isDateToday
-                          ? Colors.white
-                          : (theme.colorScheme.onSurface),
-                      fontWeight: isDateToday
-                          ? FontWeight.w600
-                          : FontWeight.w500,
-                    ),
-                    onSelected: (selected) {
-                      if (selected) setState(() => _selectedDate = today);
-                    },
-                  ),
-                  ChoiceChip(
-                    label: const Text('Tomorrow'),
-                    selected: isDateTomorrow,
-                    selectedColor: theme.colorScheme.primary,
-                    labelStyle: TextStyle(
-                      color: isDateTomorrow
-                          ? Colors.white
-                          : (theme.colorScheme.onSurface),
-                      fontWeight: isDateTomorrow
-                          ? FontWeight.w600
-                          : FontWeight.w500,
-                    ),
-                    onSelected: (selected) {
-                      if (selected) setState(() => _selectedDate = tomorrow);
-                    },
-                  ),
-                  ActionChip(
-                    avatar: const Icon(Icons.calendar_today_rounded, size: 16),
-                    label: Text(
-                      isDateToday || isDateTomorrow
-                          ? 'Other date...'
-                          : AppDateFormatters.formatFullDate(_selectedDate),
-                    ),
-                    onPressed: _pickCustomDate,
-                  ),
-                ],
+              const SizedBox(height: 7),
+              _ScheduleOption(
+                icon: Icons.calendar_today_outlined,
+                label: 'Date',
+                value: AppDateFormatters.formatRelativeDate(_selectedDate),
+                onTap: _pickCustomDate,
               ),
-
-              const SizedBox(height: 24),
-
-              // Time Selection
-              Text(
-                'Time',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+              Divider(color: theme.colorScheme.outlineVariant),
+              _ScheduleOption(
+                icon: Icons.schedule_rounded,
+                label: 'Time',
+                value: _selectedTime.format(context),
+                onTap: _pickCustomTime,
               ),
-              const SizedBox(height: 10),
-              Card(
-                child: InkWell(
-                  onTap: _pickCustomTime,
-                  borderRadius: BorderRadius.circular(16),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.access_time_rounded,
-                          size: 22,
-                          color: theme.colorScheme.secondary,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          _selectedTime.format(context),
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            color: theme.colorScheme.onSurface,
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          'Change',
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 12),
-              // Quick time presets
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  ActionChip(
-                    label: const Text('Morning (08:00)'),
-                    onPressed: () => setState(
-                      () => _selectedTime = const TimeOfDay(hour: 8, minute: 0),
-                    ),
-                  ),
-                  ActionChip(
-                    label: const Text('Afternoon (14:00)'),
-                    onPressed: () => setState(
-                      () =>
-                          _selectedTime = const TimeOfDay(hour: 14, minute: 0),
-                    ),
-                  ),
-                  ActionChip(
-                    label: const Text('Evening (19:00)'),
-                    onPressed: () => setState(
-                      () =>
-                          _selectedTime = const TimeOfDay(hour: 19, minute: 0),
-                    ),
-                  ),
-                  ActionChip(
-                    label: const Text('Night (21:30)'),
-                    onPressed: () => setState(
-                      () =>
-                          _selectedTime = const TimeOfDay(hour: 21, minute: 30),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // Recurrence
+              const SizedBox(height: 30),
               Text(
                 'Repeat schedule',
-                style: theme.textTheme.titleMedium?.copyWith(
+                style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -367,20 +241,75 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
                 selectedRule: _selectedRecurrence,
                 onChanged: (rule) => setState(() => _selectedRecurrence = rule),
               ),
-
               const SizedBox(height: 28),
-
-              // Honest development notice
-              const HonestNoticeCard(
-                title: 'Phase 0 Development Note',
-                message:
-                    'Reminders are stored locally in the mock repository during this initialization stage. '
-                    'Native Android exact alarms and simulated call presentations will be wired in Phase 2.',
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.lock_outline_rounded,
+                    size: 17,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Text(
+                      'Your reminder stays on this device. You can change or delete it whenever you need.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        height: 1.45,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-
-              const SizedBox(height: 32),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ScheduleOption extends StatelessWidget {
+  const _ScheduleOption({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return InkWell(
+      onTap: onTap,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 68),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: theme.colorScheme.primary),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(label, style: theme.textTheme.bodyLarge),
+            ),
+            Text(
+              value,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ],
         ),
       ),
     );
