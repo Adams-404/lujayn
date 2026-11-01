@@ -67,7 +67,7 @@ class HomeScreen extends ConsumerWidget {
                 loading: () => const SliverFillRemaining(
                   child: Center(child: CircularProgressIndicator()),
                 ),
-                error: (error, _) => SliverFillRemaining(
+                error: (_, _) => SliverFillRemaining(
                   hasScrollBody: false,
                   child: Center(
                     child: Padding(
