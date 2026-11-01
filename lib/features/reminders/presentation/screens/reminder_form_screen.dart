@@ -291,7 +291,7 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.access_time_rounded,
                           size: 22,
                           color: theme.colorScheme.secondary,
