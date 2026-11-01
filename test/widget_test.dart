@@ -368,6 +368,7 @@ void main() {
       expect(find.text('What do you need to remember?'), findsOneWidget);
       expect(find.text('Notes'), findsOneWidget);
       expect(find.text('Repeat schedule'), findsOneWidget);
+      expect(find.text('Saved on this device'), findsOneWidget);
       expect(find.text('Save'), findsOneWidget);
 
       // Try saving without entering title -> validation fails
