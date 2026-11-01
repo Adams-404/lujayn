@@ -32,7 +32,7 @@ class ReminderCard extends StatelessWidget {
           color: theme.colorScheme.error.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(16),
         ),
-        child: const Icon(
+        child: Icon(
           Icons.delete_outline_rounded,
           color: theme.colorScheme.error,
           size: 24,
