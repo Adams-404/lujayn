@@ -32,6 +32,7 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # Generate the database source before formatting and tests.
       - name: Generate Drift code
         run: dart run build_runner build --delete-conflicting-outputs
 
