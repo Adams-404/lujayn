@@ -1,7 +1,10 @@
 package com.lujayn.lujayn
 
+import android.Manifest
 import android.app.AlarmManager
+import android.app.NotificationManager
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
@@ -11,6 +14,10 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private val alarmChannelName = "com.lujayn/reminder_alarms"
+
+    companion object {
+        private const val NOTIFICATION_PERMISSION_REQUEST = 4301
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -24,6 +31,32 @@ class MainActivity : FlutterActivity() {
             when (call.method) {
                 "canScheduleExactAlarms" -> {
                     result.success(ReminderAlarmScheduler.canScheduleExactAlarms(this))
+                }
+
+                "canPostNotifications" -> {
+                    val enabled = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+                        true
+                    } else {
+                        getSystemService(NotificationManager::class.java)
+                            .areNotificationsEnabled()
+                    }
+                    result.success(enabled)
+                }
+
+                "requestNotificationPermission" -> {
+                    if (
+                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                        checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
+                            PackageManager.PERMISSION_GRANTED
+                    ) {
+                        requestPermissions(
+                            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                            NOTIFICATION_PERMISSION_REQUEST,
+                        )
+                        result.success(false)
+                    } else {
+                        result.success(true)
+                    }
                 }
 
                 "requestExactAlarmPermission" -> {
