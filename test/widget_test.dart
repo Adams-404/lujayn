@@ -11,7 +11,6 @@ import 'package:lujayn/features/reminders/domain/models/reminder_status.dart';
 import 'package:lujayn/features/settings/presentation/controllers/settings_providers.dart';
 
 void main() {
-
   group('Theme selection', () {
     test('AMOLED uses a true black app background', () {
       final theme = AppTheme.forChoice(AppThemeChoice.amoled);
