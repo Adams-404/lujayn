@@ -365,8 +365,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify form screen
-      expect(find.text('What would you like to remember?'), findsOneWidget);
-      expect(find.text('Notes or details (optional)'), findsOneWidget);
+      expect(find.text('What do you need to remember?'), findsOneWidget);
+      expect(find.text('Notes'), findsOneWidget);
       expect(find.text('Repeat schedule'), findsOneWidget);
       expect(find.text('Save'), findsOneWidget);
 
