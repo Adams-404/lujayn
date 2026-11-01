@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../app/theme/app_colors.dart';
 import '../../../../core/utilities/date_formatters.dart';
 import '../../domain/models/reminder.dart';
 
@@ -21,7 +20,6 @@ class ReminderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final isCompleted = reminder.isCompleted;
 
     return Dismissible(
@@ -31,7 +29,7 @@ class ReminderCard extends StatelessWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 24),
         decoration: BoxDecoration(
-          color: AppColors.statusDanger.withValues(alpha: 0.15),
+          color: theme.colorScheme.error.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(16),
         ),
         child: const Icon(
@@ -93,16 +91,12 @@ class ReminderCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: isCompleted
-                              ? (isDark
-                                    ? AppColors.darkSurfaceSubtle
-                                    : AppColors.lightSurfaceSubtle)
+                              ? (theme.colorScheme.surfaceContainerHighest)
                               : Colors.transparent,
                           border: Border.all(
                             color: isCompleted
-                                ? (isDark
-                                      ? AppColors.darkBorder
-                                      : AppColors.lightBorder)
-                                : AppColors.slateTeal,
+                                ? (theme.colorScheme.outline)
+                                : theme.colorScheme.primary,
                             width: 2,
                           ),
                         ),
@@ -110,9 +104,7 @@ class ReminderCard extends StatelessWidget {
                             ? Icon(
                                 Icons.check_rounded,
                                 size: 16,
-                                color: isDark
-                                    ? AppColors.darkTextTertiary
-                                    : AppColors.lightTextTertiary,
+                                color: theme.colorScheme.onSurfaceVariant,
                               )
                             : null,
                       ),
@@ -138,10 +130,8 @@ class ReminderCard extends StatelessWidget {
                                 Icons.schedule_rounded,
                                 size: 14,
                                 color: isCompleted
-                                    ? (isDark
-                                          ? AppColors.darkTextTertiary
-                                          : AppColors.lightTextTertiary)
-                                    : AppColors.warmAmber,
+                                    ? (theme.colorScheme.onSurfaceVariant)
+                                    : theme.colorScheme.secondary,
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -168,9 +158,7 @@ class ReminderCard extends StatelessWidget {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: isDark
-                                    ? AppColors.darkSurfaceSubtle
-                                    : AppColors.calmSageSubtle,
+                                color: theme.colorScheme.tertiaryContainer,
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -195,12 +183,8 @@ class ReminderCard extends StatelessWidget {
                               ? TextDecoration.lineThrough
                               : null,
                           color: isCompleted
-                              ? (isDark
-                                    ? AppColors.darkTextTertiary
-                                    : AppColors.lightTextTertiary)
-                              : (isDark
-                                    ? AppColors.darkTextPrimary
-                                    : AppColors.lightTextPrimary),
+                              ? (theme.colorScheme.onSurfaceVariant)
+                              : (theme.colorScheme.onSurface),
                         ),
                       ),
 
@@ -214,12 +198,8 @@ class ReminderCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: isCompleted
-                                ? (isDark
-                                      ? AppColors.darkTextTertiary
-                                      : AppColors.lightTextTertiary)
-                                : (isDark
-                                      ? AppColors.darkTextSecondary
-                                      : AppColors.lightTextSecondary),
+                                ? (theme.colorScheme.onSurfaceVariant)
+                                : (theme.colorScheme.onSurfaceVariant),
                           ),
                         ),
                       ],
@@ -231,9 +211,7 @@ class ReminderCard extends StatelessWidget {
                 Icon(
                   Icons.chevron_right_rounded,
                   size: 20,
-                  color: isDark
-                      ? AppColors.darkTextTertiary
-                      : AppColors.lightTextTertiary,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ],
             ),
