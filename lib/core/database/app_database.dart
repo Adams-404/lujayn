@@ -1,53 +1,51 @@
-import 'dart:async';
+import 'package:drift/drift.dart';
+import 'package:drift_flutter/drift_flutter.dart';
 
-/// Database architecture interface for Lujayn.
-///
-/// In Phase 1, Lujayn uses SQLite via Drift.
-///
-/// Architecture overview:
-/// ```
-/// +-------------------------------------------------------------+
-/// |                      Presentation                           |
-/// | (Riverpod Providers -> ReminderListController)              |
-/// +-------------------------------------------------------------+
-///                                |
-///                                v
-/// +-------------------------------------------------------------+
-/// |                         Domain                              |
-/// | (ReminderRepository Interface, Reminder, RecurrenceRule)    |
-/// +-------------------------------------------------------------+
-///                                |
-///                 +--------------+--------------+
-///                 |                             |
-///                 v                             v
-/// +-------------------------------+  +--------------------------+
-/// | Phase 0: Mock Repository      |  | Phase 1: Drift SQLite    |
-/// | (MockReminderRepository)      |  | (DriftReminderRepository)|
-/// +-------------------------------+  +--------------------------+
-///                                               |
-///                                               v
-///                                    +--------------------------+
-///                                    | AppDatabase (Drift)      |
-///                                    | - reminders_table.dart   |
-///                                    | - sqlite3 engine         |
-///                                    +--------------------------+
-/// ```
-///
-/// Drift table schema planned for Phase 1:
-/// - `id`: TextColumn (UUID primary key)
-/// - `title`: TextColumn (max 255 chars, not empty)
-/// - `description`: TextColumn (nullable)
-/// - `scheduled_timestamp`: DateTimeColumn
-/// - `recurrence_type`: IntColumn (enum index)
-/// - `recurrence_days`: TextColumn (comma-separated days of week)
-/// - `status`: IntColumn (enum index)
-/// - `created_at`: DateTimeColumn
-/// - `updated_at`: DateTimeColumn
-/// - `completed_at`: DateTimeColumn (nullable)
-abstract class AppDatabaseContract {
-  /// Ensures the database is open and schemas/migrations are up to date.
-  Future<void> initialize();
+part 'app_database.g.dart';
 
-  /// Closes database connection safely.
-  Future<void> close();
+@DataClassName('ReminderRecord')
+class Reminders extends Table {
+  TextColumn get id => text()();
+  TextColumn get title => text().withLength(min: 1, max: 255)();
+  TextColumn get description => text().nullable()();
+  DateTimeColumn get scheduledDateTime => dateTime()();
+  TextColumn get recurrenceType => text()();
+  TextColumn get recurrenceDays =>
+      text().withDefault(const Constant('[]'))();
+  TextColumn get status => text()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  DateTimeColumn get completedAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Local SQLite database for user reminders.
+///
+/// Enum values are stored by their stable names, never by enum indexes.
+/// This keeps persisted data safe if enum declaration order changes.
+@DriftDatabase(tables: [Reminders])
+class AppDatabase extends _$AppDatabase {
+  AppDatabase([QueryExecutor? executor])
+    : super(executor ?? driftDatabase(name: 'lujayn'));
+
+  /// In-memory or file-backed database constructor for tests.
+  AppDatabase.forTesting(QueryExecutor executor) : super(executor);
+
+  @override
+  int get schemaVersion => 1;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (migrator) async {
+      await migrator.createAll();
+    },
+    onUpgrade: (migrator, from, to) async {
+      // Schema changes must be added here with explicit version steps.
+    },
+    beforeOpen: (details) async {
+      await customStatement('PRAGMA foreign_keys = ON');
+    },
+  );
 }
