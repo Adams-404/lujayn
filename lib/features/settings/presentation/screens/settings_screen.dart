@@ -98,7 +98,7 @@ class SettingsScreen extends ConsumerWidget {
                     leading: const Icon(Icons.storage_outlined),
                     title: const Text('Data persistence'),
                     subtitle: const Text(
-                      'Phase 0: In-memory mock • Phase 1: Drift SQLite',
+                      'SQLite on this device. Works offline; no account or cloud storage.',
                     ),
                   ),
                   const Divider(),
