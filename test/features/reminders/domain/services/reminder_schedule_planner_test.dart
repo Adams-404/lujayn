@@ -63,6 +63,36 @@ void main() {
       ));
     });
 
+    test('advances weekly reminders by one week', () {
+      final result = planner.plan(
+        reminder(
+          scheduledAt: DateTime(2026, 11, 1, 8),
+          recurrence: RecurrenceRule.weekly,
+        ),
+        now: now,
+      );
+
+      expect(result, isNotNull);
+      expect(result!.scheduledAt, DateTime(2026, 11, 8, 8));
+      expect(result.recurrence, RecurrenceRule.weekly);
+    });
+
+    test('selects the next configured custom weekday', () {
+      final result = planner.plan(
+        reminder(
+          scheduledAt: DateTime(2026, 11, 1, 8),
+          recurrence: RecurrenceRule(
+            type: RecurrenceType.customDays,
+            daysOfWeek: [2, 4],
+          ),
+        ),
+        now: now,
+      );
+
+      expect(result, isNotNull);
+      expect(result!.scheduledAt, DateTime(2026, 11, 3, 8));
+    });
+
     test('does not schedule completed or inactive reminders', () {
       final completed = planner.plan(
         reminder(status: ReminderStatus.completed),
