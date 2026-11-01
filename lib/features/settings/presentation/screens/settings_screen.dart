@@ -17,6 +17,8 @@ class SettingsScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final currentThemeChoice =
         ref.watch(themeChoiceProvider).asData?.value ?? AppThemeChoice.system;
+    final spokenAloud =
+        ref.watch(spokenRemindersEnabledProvider).asData?.value ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -192,7 +194,9 @@ class SettingsScreen extends ConsumerWidget {
                     leading: const Icon(Icons.alarm_on_outlined),
                     title: const Text('Exact alarms (Android 12+)'),
                     subtitle: const Text(
-                      'Required to deliver timely reminders at the exact scheduled minute. Wired in Phase 2.',
+                      'Android delivers a reminder at the exact minute only when '
+                      'this is allowed. Without it Lujayn still reminds you, '
+                      'possibly a few minutes late.',
                     ),
                   ),
                   const Divider(),
@@ -200,7 +204,9 @@ class SettingsScreen extends ConsumerWidget {
                     leading: const Icon(Icons.ring_volume_outlined),
                     title: const Text('Call-style presentation'),
                     subtitle: const Text(
-                      'Full-screen simulated incoming call reminder. Planned for Android in Phase 2.',
+                      'A due reminder appears as a full-screen call when Android '
+                      'allows it, and as a notification otherwise. Battery '
+                      'restrictions and some manufacturers may limit this.',
                     ),
                   ),
                   const Divider(),
@@ -212,6 +218,26 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ),
                 ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Section: Audio
+            _SectionTitle(title: 'Audio'),
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: SwitchListTile(
+                secondary: const Icon(Icons.volume_up_outlined),
+                title: const Text('Read reminders aloud'),
+                subtitle: const Text(
+                  'Speaks the reminder when it arrives, using this device’s own '
+                  'text-to-speech engine. Nothing is sent anywhere.',
+                ),
+                value: spokenAloud,
+                onChanged: (value) => ref
+                    .read(spokenRemindersEnabledProvider.notifier)
+                    .setEnabled(value),
               ),
             ),
 

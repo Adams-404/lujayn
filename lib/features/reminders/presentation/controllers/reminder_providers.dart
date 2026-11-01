@@ -4,8 +4,10 @@ import '../../../../core/database/app_database.dart';
 import '../../data/repositories/drift_reminder_repository.dart';
 import '../../data/services/android_reminder_alarm_scheduler.dart';
 import '../../data/services/android_reminder_call_bridge.dart';
+import '../../data/services/flutter_reminder_speech_service.dart';
 import '../../data/services/noop_reminder_alarm_scheduler.dart';
 import '../../data/services/noop_reminder_call_bridge.dart';
+import '../../data/services/noop_reminder_speech_service.dart';
 import '../../domain/models/recurrence_rule.dart';
 import '../../domain/models/reminder.dart';
 import '../../domain/models/reminder_alarm_id.dart';
@@ -13,6 +15,7 @@ import '../../domain/models/reminder_status.dart';
 import '../../domain/services/reminder_alarm_scheduler.dart';
 import '../../domain/services/reminder_call_bridge.dart';
 import '../../domain/services/reminder_schedule_planner.dart';
+import '../../domain/services/reminder_speech_service.dart';
 import '../../domain/repositories/reminder_repository.dart';
 
 /// Filter selection for reminder list.
@@ -43,6 +46,17 @@ final reminderAlarmSchedulerProvider = Provider<ReminderAlarmScheduler>((ref) {
 final reminderSchedulePlannerProvider = Provider<ReminderSchedulePlanner>(
   (ref) => const ReminderSchedulePlanner(),
 );
+
+/// On-device speech for reading a reminder aloud.
+///
+/// Speech is optional and never required to receive a reminder, so targets
+/// without an engine fall back to a no-op instead of failing.
+final reminderSpeechServiceProvider = Provider<ReminderSpeechService>((ref) {
+  if (defaultTargetPlatform == TargetPlatform.android) {
+    return FlutterReminderSpeechService();
+  }
+  return const NoopReminderSpeechService();
+});
 
 /// Whether the device will actually deliver reminders right now.
 ///

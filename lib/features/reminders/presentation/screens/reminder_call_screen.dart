@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/utilities/date_formatters.dart';
+import '../../../settings/presentation/controllers/settings_providers.dart';
 import '../../domain/models/reminder.dart';
+import '../../domain/services/reminder_speech_service.dart';
 import '../controllers/reminder_providers.dart';
 
 /// The focused, call-style surface shown when a reminder becomes due.
@@ -58,28 +60,95 @@ class ReminderCallScreen extends ConsumerWidget {
   }
 }
 
-class _CallBody extends ConsumerWidget {
+class _CallBody extends ConsumerStatefulWidget {
   const _CallBody({required this.reminder});
 
   final Reminder reminder;
 
-  Future<void> _snooze(BuildContext context, WidgetRef ref) async {
-    await ref.read(reminderActionControllerProvider).snooze(reminder.id);
-    if (context.mounted) Navigator.of(context).maybePop();
-  }
+  @override
+  ConsumerState<_CallBody> createState() => _CallBodyState();
+}
 
-  Future<void> _dismiss(BuildContext context, WidgetRef ref) async {
-    await ref
-        .read(reminderActionControllerProvider)
-        .dismissOccurrence(reminder.id);
-    if (context.mounted) Navigator.of(context).maybePop();
+class _CallBodyState extends ConsumerState<_CallBody> {
+  ReminderSpeechService? _speech;
+  bool _speechAvailable = false;
+  bool _speaking = false;
+
+  Reminder get _reminder => widget.reminder;
+
+  @override
+  void initState() {
+    super.initState();
+    // Ask after the first frame: the screen should be visible before it starts
+    // talking, and providers must not be read during build.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _prepareSpeech());
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void dispose() {
+    // Leaving the screen must never leave a voice talking to an empty room.
+    _speech?.stop();
+    super.dispose();
+  }
+
+  Future<void> _prepareSpeech() async {
+    final speech = ref.read(reminderSpeechServiceProvider);
+    final available = await speech.isAvailable();
+    if (!mounted) return;
+    setState(() {
+      _speech = speech;
+      _speechAvailable = available;
+    });
+
+    final autoSpeak =
+        ref.read(spokenRemindersEnabledProvider).asData?.value ?? false;
+    if (available && autoSpeak) await _speak();
+  }
+
+  Future<void> _speak() async {
+    final speech = _speech;
+    if (speech == null || !_speechAvailable || _speaking) return;
+    setState(() => _speaking = true);
+    try {
+      await speech.speak(_spokenText);
+    } finally {
+      if (mounted) setState(() => _speaking = false);
+    }
+  }
+
+  Future<void> _stopSpeech() async {
+    await _speech?.stop();
+    if (mounted) setState(() => _speaking = false);
+  }
+
+  /// What the user hears: the reminder itself, then the note that goes with it.
+  /// Recurrence summaries are deliberately left out — they are visual context,
+  /// not something useful to hear while the alert is ringing.
+  String get _spokenText {
+    final note = _reminder.description;
+    if (note == null || note.trim().isEmpty) return _reminder.title;
+    return '${_reminder.title}. $note';
+  }
+
+  Future<void> _snooze() async {
+    await ref.read(reminderActionControllerProvider).snooze(_reminder.id);
+    if (mounted) Navigator.of(context).maybePop();
+  }
+
+  Future<void> _dismiss() async {
+    await ref
+        .read(reminderActionControllerProvider)
+        .dismissOccurrence(_reminder.id);
+    if (mounted) Navigator.of(context).maybePop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final time = AppDateFormatters.formatTime(reminder.scheduledDateTime);
+    final time = AppDateFormatters.formatTime(_reminder.scheduledDateTime);
+    final autoSpeak =
+        ref.watch(spokenRemindersEnabledProvider).asData?.value ?? false;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
@@ -105,17 +174,17 @@ class _CallBody extends ConsumerWidget {
               child: Column(
                 children: [
                   const SizedBox(height: 36),
-                  _CallerBadge(label: _initials(reminder.title)),
+                  _CallerBadge(label: _initials(_reminder.title)),
                   const SizedBox(height: 26),
                   Text(
-                    reminder.title,
+                    _reminder.title,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                       height: 1.2,
                     ),
                   ),
-                  if (reminder.description case final note?
+                  if (_reminder.description case final note?
                       when note.isNotEmpty) ...[
                     const SizedBox(height: 14),
                     Text(
@@ -129,11 +198,35 @@ class _CallBody extends ConsumerWidget {
                   ],
                   const SizedBox(height: 18),
                   Text(
-                    reminder.recurrence.summary,
+                    _reminder.recurrence.summary,
                     style: theme.textTheme.labelLarge?.copyWith(
                       color: colors.onSurfaceVariant,
                     ),
                   ),
+                  if (_speechAvailable) ...[
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: _speaking ? _stopSpeech : _speak,
+                      icon: Icon(
+                        _speaking
+                            ? Icons.stop_circle_outlined
+                            : Icons.volume_up_rounded,
+                      ),
+                      label: Text(_speaking ? 'Stop reading' : 'Read aloud'),
+                    ),
+                  ] else if (autoSpeak) ...[
+                    // The setting is on but the device cannot speak. Say so
+                    // rather than failing silently.
+                    const SizedBox(height: 12),
+                    Text(
+                      'Reading aloud is on, but this device has no speech '
+                      'engine installed.',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -142,7 +235,7 @@ class _CallBody extends ConsumerWidget {
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: () => _dismiss(context, ref),
+              onPressed: _dismiss,
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(56),
               ),
@@ -154,7 +247,7 @@ class _CallBody extends ConsumerWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () => _snooze(context, ref),
+              onPressed: _snooze,
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(56),
               ),

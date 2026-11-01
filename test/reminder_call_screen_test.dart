@@ -6,16 +6,22 @@ import 'package:lujayn/features/reminders/domain/models/reminder.dart';
 import 'package:lujayn/features/reminders/domain/models/reminder_status.dart';
 import 'package:lujayn/features/reminders/domain/services/reminder_alarm_scheduler.dart';
 import 'package:lujayn/features/reminders/domain/services/reminder_schedule_planner.dart';
+import 'package:lujayn/features/reminders/domain/services/reminder_speech_service.dart';
 import 'package:lujayn/features/reminders/presentation/controllers/reminder_providers.dart';
 import 'package:lujayn/features/reminders/presentation/screens/reminder_call_screen.dart';
+import 'package:lujayn/features/settings/presentation/controllers/settings_providers.dart';
 
 void main() {
   late MockReminderRepository repository;
   late _RecordingAlarmScheduler scheduler;
+  late _FakeSpeech speech;
+  late _FakeSpeechPreferenceStore speechPreferenceStore;
 
   setUp(() {
     repository = MockReminderRepository(preloadSampleData: false);
     scheduler = _RecordingAlarmScheduler();
+    speech = _FakeSpeech();
+    speechPreferenceStore = _FakeSpeechPreferenceStore();
   });
 
   tearDown(() {
@@ -39,6 +45,8 @@ void main() {
       overrides: [
         reminderRepositoryProvider.overrideWithValue(repository),
         reminderAlarmSchedulerProvider.overrideWithValue(scheduler),
+        reminderSpeechServiceProvider.overrideWithValue(speech),
+        speechPreferenceStoreProvider.overrideWithValue(speechPreferenceStore),
       ],
       child: MaterialApp(home: child),
     );
@@ -96,6 +104,132 @@ void main() {
     expect(find.text('Reminder not found'), findsOneWidget);
     expect(find.text('Close'), findsOneWidget);
   });
+
+  group('reading a reminder aloud', () {
+    testWidgets('speaks the title and its note when asked', (tester) async {
+      final reminder = dueReminder();
+      await repository.saveReminder(reminder);
+
+      await tester.pumpWidget(
+        wrap(ReminderCallScreen(reminderId: reminder.id)),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Read aloud'));
+      await tester.tap(find.text('Read aloud'));
+      await tester.pumpAndSettle();
+
+      expect(speech.spoken, [
+        'Take evening medication. With a full glass of water',
+      ]);
+    });
+
+    testWidgets('stays quiet until asked by default', (tester) async {
+      final reminder = dueReminder();
+      await repository.saveReminder(reminder);
+
+      await tester.pumpWidget(
+        wrap(ReminderCallScreen(reminderId: reminder.id)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(speech.spoken, isEmpty);
+    });
+
+    testWidgets('speaks automatically when the setting is on', (tester) async {
+      speechPreferenceStore.enabled = true;
+      final reminder = dueReminder();
+      await repository.saveReminder(reminder);
+
+      await tester.pumpWidget(
+        wrap(ReminderCallScreen(reminderId: reminder.id)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(speech.spoken, [
+        'Take evening medication. With a full glass of water',
+      ]);
+    });
+
+    testWidgets('hides the control when the device cannot speak', (
+      tester,
+    ) async {
+      speech.available = false;
+      final reminder = dueReminder();
+      await repository.saveReminder(reminder);
+
+      await tester.pumpWidget(
+        wrap(ReminderCallScreen(reminderId: reminder.id)),
+      );
+      await tester.pumpAndSettle();
+
+      // No dead button, and no unexplained silence either.
+      expect(find.text('Read aloud'), findsNothing);
+      expect(find.textContaining('no speech engine installed'), findsNothing);
+    });
+
+    testWidgets('explains when the setting is on but the device cannot speak', (
+      tester,
+    ) async {
+      speech.available = false;
+      speechPreferenceStore.enabled = true;
+      final reminder = dueReminder();
+      await repository.saveReminder(reminder);
+
+      await tester.pumpWidget(
+        wrap(ReminderCallScreen(reminderId: reminder.id)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('no speech engine installed'), findsOneWidget);
+    });
+
+    testWidgets('stops speaking when the alert is closed', (tester) async {
+      final reminder = dueReminder();
+      await repository.saveReminder(reminder);
+
+      await tester.pumpWidget(
+        wrap(ReminderCallScreen(reminderId: reminder.id)),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+
+      expect(speech.stops, greaterThanOrEqualTo(1));
+    });
+  });
+}
+
+class _FakeSpeech implements ReminderSpeechService {
+  bool available = true;
+  final List<String> spoken = [];
+  int stops = 0;
+
+  @override
+  Future<bool> isAvailable() async => available;
+
+  @override
+  Future<void> speak(String text) async {
+    spoken.add(text);
+  }
+
+  @override
+  Future<void> stop() async {
+    stops++;
+  }
+}
+
+class _FakeSpeechPreferenceStore implements SpeechPreferenceStore {
+  bool? enabled;
+
+  @override
+  Future<bool?> readSpokenRemindersEnabled() async => enabled;
+
+  @override
+  Future<void> writeSpokenRemindersEnabled(bool value) async {
+    enabled = value;
+  }
 }
 
 class _RecordingAlarmScheduler implements ReminderAlarmScheduler {
