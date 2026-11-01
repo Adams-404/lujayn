@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 import '../../domain/models/recurrence_rule.dart';
 
 /// Interactive chip selector for recurrence options.
@@ -70,6 +72,7 @@ class RecurrenceChipSelector extends StatelessWidget {
               ),
               onSelected: (selected) {
                 if (selected) {
+                  HapticFeedback.selectionClick();
                   onChanged(rule);
                 }
               },
@@ -108,6 +111,7 @@ class RecurrenceChipSelector extends StatelessWidget {
                   label: fullDayNames[index],
                   child: InkWell(
                     onTap: () {
+                      HapticFeedback.selectionClick();
                       final updatedDays = List<int>.from(
                         selectedRule.daysOfWeek,
                       );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../../../app/theme/app_theme_choice.dart';
@@ -53,7 +54,12 @@ class _ThemeOption extends StatelessWidget {
       selected: selected,
       button: true,
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          if (!selected) {
+            HapticFeedback.selectionClick();
+          }
+          onTap();
+        },
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(

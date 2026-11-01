@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/app_spacing.dart';
@@ -169,6 +170,7 @@ class _PackCard extends ConsumerWidget {
                   ],
                   FilledButton.icon(
                     onPressed: () {
+                      HapticFeedback.mediumImpact();
                       notifier.dismissProgress(pack.id);
                       notifier.install(pack);
                     },
@@ -231,6 +233,7 @@ class _PackCard extends ConsumerWidget {
       ),
     );
     if (confirmed ?? false) {
+      HapticFeedback.mediumImpact();
       await notifier.remove(pack);
     }
   }
@@ -304,7 +307,12 @@ class _VoiceTile extends StatelessWidget {
     final colors = theme.colorScheme;
 
     return ListTile(
-      onTap: onTap,
+      onTap: () {
+        if (!selected) {
+          HapticFeedback.selectionClick();
+        }
+        onTap();
+      },
       selected: selected,
       selectedTileColor: colors.primaryContainer.withValues(alpha: 0.35),
       leading: Icon(

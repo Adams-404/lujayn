@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -98,6 +99,7 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
       lastDate: lastDate,
     );
     if (picked != null && mounted) {
+      HapticFeedback.selectionClick();
       setState(() => _selectedDate = picked);
     }
   }
@@ -108,6 +110,7 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
       initialTime: _selectedTime,
     );
     if (picked != null && mounted) {
+      HapticFeedback.selectionClick();
       setState(() => _selectedTime = picked);
     }
   }
@@ -199,6 +202,7 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
     }
 
     setState(() => _isSaving = true);
+    HapticFeedback.mediumImpact();
     try {
       await _prepareDeliveryPermissions();
       if (!mounted) return;
@@ -564,14 +568,19 @@ class _DateChoice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    void handlePressed() {
+      HapticFeedback.selectionClick();
+      onPressed();
+    }
+
     return selected
         ? FilledButton.tonal(
-            onPressed: onPressed,
+            onPressed: handlePressed,
             style: FilledButton.styleFrom(minimumSize: const Size(88, 48)),
             child: Text(label),
           )
         : OutlinedButton(
-            onPressed: onPressed,
+            onPressed: handlePressed,
             style: OutlinedButton.styleFrom(minimumSize: const Size(88, 48)),
             child: Text(label),
           );
@@ -591,6 +600,12 @@ class _TimeChoice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ActionChip(label: Text(label), onPressed: () => onPressed(time));
+    return ActionChip(
+      label: Text(label),
+      onPressed: () {
+        HapticFeedback.selectionClick();
+        onPressed(time);
+      },
+    );
   }
 }

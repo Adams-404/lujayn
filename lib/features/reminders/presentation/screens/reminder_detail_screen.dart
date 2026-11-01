@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/app_spacing.dart';
@@ -275,6 +276,7 @@ class ReminderDetailScreen extends ConsumerWidget {
                   height: AppSpacing.minTouchTarget,
                   child: FilledButton.icon(
                     onPressed: () {
+                      HapticFeedback.mediumImpact();
                       ref
                           .read(reminderActionControllerProvider)
                           .toggleStatus(reminder.id);
@@ -350,6 +352,7 @@ class ReminderDetailScreen extends ConsumerWidget {
     );
 
     if (confirm == true && context.mounted) {
+      HapticFeedback.mediumImpact();
       await ref.read(reminderActionControllerProvider).deleteReminder(id);
       if (context.mounted) {
         Navigator.of(context).pop();

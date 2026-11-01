@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/app_spacing.dart';
@@ -224,9 +225,12 @@ class SettingsScreen extends ConsumerWidget {
                       'Speaks the reminder when it arrives. Nothing is sent anywhere.',
                     ),
                     value: spokenAloud,
-                    onChanged: (value) => ref
-                        .read(spokenRemindersEnabledProvider.notifier)
-                        .setEnabled(value),
+                    onChanged: (value) {
+                      HapticFeedback.selectionClick();
+                      ref
+                          .read(spokenRemindersEnabledProvider.notifier)
+                          .setEnabled(value);
+                    },
                   ),
                 ],
               ),
@@ -360,6 +364,7 @@ class SettingsScreen extends ConsumerWidget {
     );
 
     if (confirmed == true && context.mounted) {
+      HapticFeedback.mediumImpact();
       try {
         await ref.read(reminderActionControllerProvider).clearAll();
         if (context.mounted) {

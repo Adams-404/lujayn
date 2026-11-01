@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/utilities/date_formatters.dart';
@@ -108,6 +109,7 @@ class _CallBodyState extends ConsumerState<_CallBody> {
   Future<void> _speak() async {
     final speech = _speech;
     if (speech == null || !_speechAvailable || _speaking) return;
+    HapticFeedback.lightImpact();
     setState(() => _speaking = true);
     try {
       await speech.speak(_spokenText);
@@ -117,6 +119,7 @@ class _CallBodyState extends ConsumerState<_CallBody> {
   }
 
   Future<void> _stopSpeech() async {
+    HapticFeedback.lightImpact();
     await _speech?.stop();
     if (mounted) setState(() => _speaking = false);
   }
@@ -131,11 +134,13 @@ class _CallBodyState extends ConsumerState<_CallBody> {
   }
 
   Future<void> _snooze() async {
+    HapticFeedback.mediumImpact();
     await ref.read(reminderActionControllerProvider).snooze(_reminder.id);
     if (mounted) Navigator.of(context).maybePop();
   }
 
   Future<void> _dismiss() async {
+    HapticFeedback.mediumImpact();
     await ref
         .read(reminderActionControllerProvider)
         .dismissOccurrence(_reminder.id);

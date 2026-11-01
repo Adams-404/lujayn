@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../features/reminders/presentation/screens/home_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
@@ -93,7 +94,12 @@ class FloatingNavBar extends StatelessWidget {
                     : destinations[i].$1,
                 label: destinations[i].$3,
                 isSelected: selectedIndex == i,
-                onTap: () => onDestinationSelected(i),
+                onTap: () {
+                  if (selectedIndex != i) {
+                    HapticFeedback.selectionClick();
+                  }
+                  onDestinationSelected(i);
+                },
               ),
             ),
         ],

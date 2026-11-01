@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/app_spacing.dart';
@@ -285,9 +286,12 @@ class HomeScreen extends ConsumerWidget {
               reminder: reminder,
               isLast: index == reminders.length - 1,
               onTap: () => _navigateToDetail(context, reminder.id),
-              onToggleStatus: () => ref
-                  .read(reminderActionControllerProvider)
-                  .toggleStatus(reminder.id),
+              onToggleStatus: () {
+                HapticFeedback.mediumImpact();
+                ref
+                    .read(reminderActionControllerProvider)
+                    .toggleStatus(reminder.id);
+              },
               onDelete: () => ref
                   .read(reminderActionControllerProvider)
                   .deleteReminder(reminder.id),
@@ -321,6 +325,7 @@ class HomeScreen extends ConsumerWidget {
   }
 
   void _navigateToCreate(BuildContext context) {
+    HapticFeedback.lightImpact();
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (_) => const ReminderFormScreen()));
@@ -544,7 +549,12 @@ class _SegmentTab extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onTap,
+          onTap: () {
+            if (!selected) {
+              HapticFeedback.selectionClick();
+            }
+            onTap();
+          },
           borderRadius: BorderRadius.circular(AppRadius.control),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
