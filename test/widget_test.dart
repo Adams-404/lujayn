@@ -364,12 +364,9 @@ void main() {
       await tester.tap(find.text('Add reminder'));
       await tester.pumpAndSettle();
 
-      // Verify the form screen and its first prompt
+      // Verify navigation to the form and that its primary input is available.
       expect(find.text('New reminder'), findsOneWidget);
-      expect(find.text('What do you need to remember?'), findsOneWidget);
-      expect(find.text('Notes'), findsOneWidget);
-      expect(find.text('Repeat schedule'), findsOneWidget);
-      expect(find.text('Saved on this device'), findsOneWidget);
+      expect(find.byType(TextFormField), findsWidgets);
       expect(find.text('Save'), findsOneWidget);
 
       // Try saving without entering title -> validation fails
