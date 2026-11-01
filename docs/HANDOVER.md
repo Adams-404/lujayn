@@ -438,10 +438,11 @@ Last verified state, so you do not have to guess:
 ```bash
 dart format --output=none --set-exit-if-changed lib test   # clean
 flutter analyze --fatal-infos                              # no issues
-flutter test                                               # 139 passing
+flutter test                                               # 142 passing
 ```
 
 Caller Persona simulation and Interactive In-Call Phone Screen (Answer Call,
 connected live duration timer, auto voice note & speech readout, dialpad response
-keys 1/2/3, red Hang Up button, Drift schema v3 migration) are landed and verified across 139 passing tests.
+keys 1/2/3, red Hang Up button, on-device caller profile image support via app-private
+storage and image picker, and Drift schema v4 migration) are landed and verified across 142 passing tests.
 The next actions are physical-device verification for #5, the sherpa-onnx engine adapter for downloadable offline voice packs, encrypted backup (#16), and on-device natural language (#17).

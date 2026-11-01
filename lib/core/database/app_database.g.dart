@@ -140,6 +140,17 @@ class $RemindersTable extends Reminders
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _callerImagePathMeta = const VerificationMeta(
+    'callerImagePath',
+  );
+  @override
+  late final GeneratedColumn<String> callerImagePath = GeneratedColumn<String>(
+    'caller_image_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -187,6 +198,7 @@ class $RemindersTable extends Reminders
     callerName,
     callerNumber,
     callerIcon,
+    callerImagePath,
     createdAt,
     updatedAt,
     completedAt,
@@ -303,6 +315,15 @@ class $RemindersTable extends Reminders
         callerIcon.isAcceptableOrUnknown(data['caller_icon']!, _callerIconMeta),
       );
     }
+    if (data.containsKey('caller_image_path')) {
+      context.handle(
+        _callerImagePathMeta,
+        callerImagePath.isAcceptableOrUnknown(
+          data['caller_image_path']!,
+          _callerImagePathMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -385,6 +406,10 @@ class $RemindersTable extends Reminders
         DriftSqlType.string,
         data['${effectivePrefix}caller_icon'],
       ),
+      callerImagePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}caller_image_path'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -419,6 +444,7 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
   final String? callerName;
   final String? callerNumber;
   final String? callerIcon;
+  final String? callerImagePath;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? completedAt;
@@ -435,6 +461,7 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
     this.callerName,
     this.callerNumber,
     this.callerIcon,
+    this.callerImagePath,
     required this.createdAt,
     required this.updatedAt,
     this.completedAt,
@@ -465,6 +492,9 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
     }
     if (!nullToAbsent || callerIcon != null) {
       map['caller_icon'] = Variable<String>(callerIcon);
+    }
+    if (!nullToAbsent || callerImagePath != null) {
+      map['caller_image_path'] = Variable<String>(callerImagePath);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -500,6 +530,9 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
       callerIcon: callerIcon == null && nullToAbsent
           ? const Value.absent()
           : Value(callerIcon),
+      callerImagePath: callerImagePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(callerImagePath),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       completedAt: completedAt == null && nullToAbsent
@@ -530,6 +563,7 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
       callerName: serializer.fromJson<String?>(json['callerName']),
       callerNumber: serializer.fromJson<String?>(json['callerNumber']),
       callerIcon: serializer.fromJson<String?>(json['callerIcon']),
+      callerImagePath: serializer.fromJson<String?>(json['callerImagePath']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
@@ -551,6 +585,7 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
       'callerName': serializer.toJson<String?>(callerName),
       'callerNumber': serializer.toJson<String?>(callerNumber),
       'callerIcon': serializer.toJson<String?>(callerIcon),
+      'callerImagePath': serializer.toJson<String?>(callerImagePath),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'completedAt': serializer.toJson<DateTime?>(completedAt),
@@ -570,6 +605,7 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
     Value<String?> callerName = const Value.absent(),
     Value<String?> callerNumber = const Value.absent(),
     Value<String?> callerIcon = const Value.absent(),
+    Value<String?> callerImagePath = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
     Value<DateTime?> completedAt = const Value.absent(),
@@ -590,6 +626,9 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
     callerName: callerName.present ? callerName.value : this.callerName,
     callerNumber: callerNumber.present ? callerNumber.value : this.callerNumber,
     callerIcon: callerIcon.present ? callerIcon.value : this.callerIcon,
+    callerImagePath: callerImagePath.present
+        ? callerImagePath.value
+        : this.callerImagePath,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     completedAt: completedAt.present ? completedAt.value : this.completedAt,
@@ -626,6 +665,9 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
       callerIcon: data.callerIcon.present
           ? data.callerIcon.value
           : this.callerIcon,
+      callerImagePath: data.callerImagePath.present
+          ? data.callerImagePath.value
+          : this.callerImagePath,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       completedAt: data.completedAt.present
@@ -649,6 +691,7 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
           ..write('callerName: $callerName, ')
           ..write('callerNumber: $callerNumber, ')
           ..write('callerIcon: $callerIcon, ')
+          ..write('callerImagePath: $callerImagePath, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('completedAt: $completedAt')
@@ -670,6 +713,7 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
     callerName,
     callerNumber,
     callerIcon,
+    callerImagePath,
     createdAt,
     updatedAt,
     completedAt,
@@ -690,6 +734,7 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
           other.callerName == this.callerName &&
           other.callerNumber == this.callerNumber &&
           other.callerIcon == this.callerIcon &&
+          other.callerImagePath == this.callerImagePath &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.completedAt == this.completedAt);
@@ -708,6 +753,7 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
   final Value<String?> callerName;
   final Value<String?> callerNumber;
   final Value<String?> callerIcon;
+  final Value<String?> callerImagePath;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<DateTime?> completedAt;
@@ -725,6 +771,7 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
     this.callerName = const Value.absent(),
     this.callerNumber = const Value.absent(),
     this.callerIcon = const Value.absent(),
+    this.callerImagePath = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.completedAt = const Value.absent(),
@@ -743,6 +790,7 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
     this.callerName = const Value.absent(),
     this.callerNumber = const Value.absent(),
     this.callerIcon = const Value.absent(),
+    this.callerImagePath = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.completedAt = const Value.absent(),
@@ -767,6 +815,7 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
     Expression<String>? callerName,
     Expression<String>? callerNumber,
     Expression<String>? callerIcon,
+    Expression<String>? callerImagePath,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<DateTime>? completedAt,
@@ -786,6 +835,7 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
       if (callerName != null) 'caller_name': callerName,
       if (callerNumber != null) 'caller_number': callerNumber,
       if (callerIcon != null) 'caller_icon': callerIcon,
+      if (callerImagePath != null) 'caller_image_path': callerImagePath,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (completedAt != null) 'completed_at': completedAt,
@@ -806,6 +856,7 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
     Value<String?>? callerName,
     Value<String?>? callerNumber,
     Value<String?>? callerIcon,
+    Value<String?>? callerImagePath,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<DateTime?>? completedAt,
@@ -824,6 +875,7 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
       callerName: callerName ?? this.callerName,
       callerNumber: callerNumber ?? this.callerNumber,
       callerIcon: callerIcon ?? this.callerIcon,
+      callerImagePath: callerImagePath ?? this.callerImagePath,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       completedAt: completedAt ?? this.completedAt,
@@ -870,6 +922,9 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
     if (callerIcon.present) {
       map['caller_icon'] = Variable<String>(callerIcon.value);
     }
+    if (callerImagePath.present) {
+      map['caller_image_path'] = Variable<String>(callerImagePath.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -900,6 +955,7 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
           ..write('callerName: $callerName, ')
           ..write('callerNumber: $callerNumber, ')
           ..write('callerIcon: $callerIcon, ')
+          ..write('callerImagePath: $callerImagePath, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('completedAt: $completedAt, ')
@@ -934,6 +990,7 @@ typedef $$RemindersTableCreateCompanionBuilder =
       Value<String?> callerName,
       Value<String?> callerNumber,
       Value<String?> callerIcon,
+      Value<String?> callerImagePath,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<DateTime?> completedAt,
@@ -953,6 +1010,7 @@ typedef $$RemindersTableUpdateCompanionBuilder =
       Value<String?> callerName,
       Value<String?> callerNumber,
       Value<String?> callerIcon,
+      Value<String?> callerImagePath,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<DateTime?> completedAt,
@@ -1025,6 +1083,11 @@ class $$RemindersTableFilterComposer
 
   ColumnFilters<String> get callerIcon => $composableBuilder(
     column: $table.callerIcon,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get callerImagePath => $composableBuilder(
+    column: $table.callerImagePath,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1113,6 +1176,11 @@ class $$RemindersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get callerImagePath => $composableBuilder(
+    column: $table.callerImagePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -1192,6 +1260,11 @@ class $$RemindersTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get callerImagePath => $composableBuilder(
+    column: $table.callerImagePath,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -1247,6 +1320,7 @@ class $$RemindersTableTableManager
                 Value<String?> callerName = const Value.absent(),
                 Value<String?> callerNumber = const Value.absent(),
                 Value<String?> callerIcon = const Value.absent(),
+                Value<String?> callerImagePath = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> completedAt = const Value.absent(),
@@ -1264,6 +1338,7 @@ class $$RemindersTableTableManager
                 callerName: callerName,
                 callerNumber: callerNumber,
                 callerIcon: callerIcon,
+                callerImagePath: callerImagePath,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 completedAt: completedAt,
@@ -1283,6 +1358,7 @@ class $$RemindersTableTableManager
                 Value<String?> callerName = const Value.absent(),
                 Value<String?> callerNumber = const Value.absent(),
                 Value<String?> callerIcon = const Value.absent(),
+                Value<String?> callerImagePath = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<DateTime?> completedAt = const Value.absent(),
@@ -1300,6 +1376,7 @@ class $$RemindersTableTableManager
                 callerName: callerName,
                 callerNumber: callerNumber,
                 callerIcon: callerIcon,
+                callerImagePath: callerImagePath,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 completedAt: completedAt,

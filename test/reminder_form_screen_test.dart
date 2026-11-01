@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lujayn/features/reminders/data/repositories/mock_reminder_repository.dart';
+import 'package:lujayn/features/reminders/data/services/noop_caller_image_service.dart';
 import 'package:lujayn/features/reminders/data/services/noop_voice_playback_service.dart';
 import 'package:lujayn/features/reminders/data/services/noop_voice_recording_service.dart';
 import 'package:lujayn/features/reminders/domain/models/recurrence_rule.dart';
@@ -172,6 +173,62 @@ void main() {
     expect(reminders.first.callerIcon, 'family');
     expect(reminders.first.hasCallerPersona, isTrue);
   });
+
+  testWidgets(
+    'saving reminder with caller persona and photo persists photo path',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            reminderRepositoryProvider.overrideWithValue(repository),
+            reminderAlarmSchedulerProvider.overrideWithValue(scheduler),
+            voiceNoteStorageServiceProvider.overrideWithValue(
+              _FakeFormStorage(),
+            ),
+            voiceRecordingServiceProvider.overrideWithValue(
+              const NoopVoiceRecordingService(),
+            ),
+            voicePlaybackServiceProvider.overrideWithValue(
+              NoopVoicePlaybackService(),
+            ),
+            callerImageServiceProvider.overrideWithValue(
+              const NoopCallerImageService(stubImagePath: 'selected_mom.jpg'),
+            ),
+          ],
+          child: const MaterialApp(home: ReminderFormScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'e.g. Take medication'),
+        'Call Mom back',
+      );
+
+      // Select Family / Mom preset
+      await tester.ensureVisible(find.text('Family / Mom'));
+      await tester.tap(find.text('Family / Mom'));
+      await tester.pumpAndSettle();
+
+      // Tap Choose photo
+      await tester.ensureVisible(find.text('Choose photo'));
+      await tester.tap(find.text('Choose photo'));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Save'));
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      final reminders = await repository.getReminders();
+      expect(reminders, hasLength(1));
+      expect(reminders.first.callerName, 'Mom ❤️');
+      expect(reminders.first.callerImagePath, 'selected_mom.jpg');
+    },
+  );
 }
 
 class _RecordingAlarmScheduler implements ReminderAlarmScheduler {

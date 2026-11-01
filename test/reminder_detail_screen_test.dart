@@ -259,6 +259,7 @@ void main() {
       callerName: 'Mom ❤️',
       callerNumber: 'Mobile • (555) 019-2831',
       callerIcon: 'family',
+      callerImagePath: 'mom_photo.jpg',
     );
     await repository.saveReminder(personaReminder);
 

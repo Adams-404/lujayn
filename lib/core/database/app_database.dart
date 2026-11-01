@@ -17,6 +17,7 @@ class Reminders extends Table {
   TextColumn get callerName => text().nullable()();
   TextColumn get callerNumber => text().nullable()();
   TextColumn get callerIcon => text().nullable()();
+  TextColumn get callerImagePath => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
   DateTimeColumn get completedAt => dateTime().nullable()();
@@ -37,7 +38,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -53,6 +54,9 @@ class AppDatabase extends _$AppDatabase {
         await migrator.addColumn(reminders, reminders.callerName);
         await migrator.addColumn(reminders, reminders.callerNumber);
         await migrator.addColumn(reminders, reminders.callerIcon);
+      }
+      if (from < 4) {
+        await migrator.addColumn(reminders, reminders.callerImagePath);
       }
     },
     beforeOpen: (details) async {

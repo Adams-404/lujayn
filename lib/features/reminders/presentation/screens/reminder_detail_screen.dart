@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -216,36 +218,7 @@ class ReminderDetailScreen extends ConsumerWidget {
 
                 if (reminder.hasCallerPersona) ...[
                   const SizedBox(height: AppSpacing.md),
-                  Material(
-                    color: colors.surface,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.surface),
-                      side: BorderSide(color: colors.outline),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: colors.primaryContainer,
-                        foregroundColor: colors.onPrimaryContainer,
-                        child: Icon(
-                          iconForCallerIcon(reminder.callerIcon),
-                          size: 20,
-                        ),
-                      ),
-                      title: Text(
-                        reminder.callerName ?? '',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      subtitle: Text(
-                        reminder.callerNumber ?? 'Simulated caller',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ),
+                  _CallerPersonaDetailTile(reminder: reminder),
                 ],
 
                 const SizedBox(height: AppSpacing.xl),
@@ -447,6 +420,88 @@ class _DetailRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CallerPersonaDetailTile extends ConsumerStatefulWidget {
+  const _CallerPersonaDetailTile({required this.reminder});
+
+  final dynamic reminder;
+
+  @override
+  ConsumerState<_CallerPersonaDetailTile> createState() =>
+      _CallerPersonaDetailTileState();
+}
+
+class _CallerPersonaDetailTileState
+    extends ConsumerState<_CallerPersonaDetailTile> {
+  String? _resolvedPath;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.reminder.callerImagePath != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _resolve());
+    }
+  }
+
+  @override
+  void didUpdateWidget(_CallerPersonaDetailTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.reminder.callerImagePath != widget.reminder.callerImagePath) {
+      if (widget.reminder.callerImagePath != null) {
+        _resolve();
+      } else {
+        setState(() => _resolvedPath = null);
+      }
+    }
+  }
+
+  Future<void> _resolve() async {
+    final imagePath = widget.reminder.callerImagePath;
+    if (imagePath == null) return;
+    final service = ref.read(callerImageServiceProvider);
+    final resolved = await service.resolvePath(imagePath);
+    if (mounted) setState(() => _resolvedPath = resolved);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final file = _resolvedPath != null ? File(_resolvedPath!) : null;
+    final hasImage = file != null && file.existsSync();
+
+    return Material(
+      color: colors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.surface),
+        side: BorderSide(color: colors.outline),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: colors.primaryContainer,
+          foregroundColor: colors.onPrimaryContainer,
+          backgroundImage: hasImage ? FileImage(file) : null,
+          child: !hasImage
+              ? Icon(iconForCallerIcon(widget.reminder.callerIcon), size: 20)
+              : null,
+        ),
+        title: Text(
+          widget.reminder.callerName ?? '',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        subtitle: Text(
+          widget.reminder.callerNumber ?? 'Simulated caller',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: colors.onSurfaceVariant,
+          ),
+        ),
       ),
     );
   }

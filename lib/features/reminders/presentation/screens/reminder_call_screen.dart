@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -234,12 +235,13 @@ class _CallBodyState extends ConsumerState<_CallBody> {
                   const SizedBox(height: 36),
                   if (_reminder.hasCallerPersona) ...[
                     _CallerBadge(
-                      label: _initials(_reminder.callerName!),
+                      label: _initials(_reminder.callerName ?? _reminder.title),
                       icon: iconForCallerIcon(_reminder.callerIcon),
+                      imagePath: _reminder.callerImagePath,
                     ),
                     const SizedBox(height: 22),
                     Text(
-                      _reminder.callerName!,
+                      _reminder.callerName ?? _reminder.title,
                       textAlign: TextAlign.center,
                       style: theme.textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.w600,
@@ -281,7 +283,10 @@ class _CallBodyState extends ConsumerState<_CallBody> {
                       ),
                     ),
                   ] else ...[
-                    _CallerBadge(label: _initials(_reminder.title)),
+                    _CallerBadge(
+                      label: _initials(_reminder.title),
+                      imagePath: _reminder.callerImagePath,
+                    ),
                     const SizedBox(height: 26),
                     Text(
                       _reminder.title,
@@ -483,18 +488,56 @@ class _CallBodyState extends ConsumerState<_CallBody> {
   }
 }
 
-class _CallerBadge extends StatelessWidget {
-  const _CallerBadge({required this.label, this.icon});
+class _CallerBadge extends ConsumerStatefulWidget {
+  const _CallerBadge({required this.label, this.icon, this.imagePath});
 
   final String label;
   final IconData? icon;
+  final String? imagePath;
+
+  @override
+  ConsumerState<_CallerBadge> createState() => _CallerBadgeState();
+}
+
+class _CallerBadgeState extends ConsumerState<_CallerBadge> {
+  String? _resolvedPath;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.imagePath != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _resolve());
+    }
+  }
+
+  @override
+  void didUpdateWidget(_CallerBadge oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.imagePath != widget.imagePath) {
+      if (widget.imagePath != null) {
+        _resolve();
+      } else {
+        setState(() => _resolvedPath = null);
+      }
+    }
+  }
+
+  Future<void> _resolve() async {
+    if (widget.imagePath == null) return;
+    final service = ref.read(callerImageServiceProvider);
+    final resolved = await service.resolvePath(widget.imagePath!);
+    if (mounted) setState(() => _resolvedPath = resolved);
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final file = _resolvedPath != null ? File(_resolvedPath!) : null;
+    final hasImage = file != null && file.existsSync();
+
     return Semantics(
-      label: 'Reminder icon',
+      label: hasImage ? 'Caller profile picture' : 'Reminder icon',
       child: Container(
         width: 112,
         height: 112,
@@ -502,17 +545,26 @@ class _CallerBadge extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: colors.primaryContainer,
-          border: Border.all(color: colors.outlineVariant, width: 1.5),
+          border: Border.all(color: colors.outlineVariant, width: 2),
+          image: hasImage
+              ? DecorationImage(image: FileImage(file), fit: BoxFit.cover)
+              : null,
         ),
-        child: icon != null
-            ? Icon(icon, size: 52, color: colors.onPrimaryContainer)
-            : Text(
-                label,
-                style: theme.textTheme.displaySmall?.copyWith(
-                  color: colors.onPrimaryContainer,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+        child: hasImage
+            ? null
+            : (widget.icon != null
+                  ? Icon(
+                      widget.icon,
+                      size: 52,
+                      color: colors.onPrimaryContainer,
+                    )
+                  : Text(
+                      widget.label,
+                      style: theme.textTheme.displaySmall?.copyWith(
+                        color: colors.onPrimaryContainer,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    )),
       ),
     );
   }

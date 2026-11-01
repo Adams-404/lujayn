@@ -4,9 +4,11 @@ import '../../../../core/database/app_database.dart';
 import '../../data/repositories/drift_reminder_repository.dart';
 import '../../data/services/android_reminder_alarm_scheduler.dart';
 import '../../data/services/android_reminder_call_bridge.dart';
+import '../../data/services/app_support_caller_image_service.dart';
 import '../../data/services/app_support_voice_note_storage.dart';
 import '../../data/services/audioplayers_voice_playback_service.dart';
 import '../../data/services/flutter_reminder_speech_service.dart';
+import '../../data/services/noop_caller_image_service.dart';
 import '../../data/services/noop_reminder_alarm_scheduler.dart';
 import '../../data/services/noop_reminder_call_bridge.dart';
 import '../../data/services/noop_reminder_speech_service.dart';
@@ -19,6 +21,7 @@ import '../../domain/models/reminder.dart';
 import '../../domain/models/reminder_alarm_id.dart';
 import '../../domain/models/reminder_status.dart';
 import '../../domain/repositories/reminder_repository.dart';
+import '../../domain/services/caller_image_service.dart';
 import '../../domain/services/reminder_alarm_scheduler.dart';
 import '../../domain/services/reminder_call_bridge.dart';
 import '../../domain/services/reminder_schedule_planner.dart';
@@ -100,6 +103,15 @@ final reminderSpeechServiceProvider = Provider<ReminderSpeechService>((ref) {
     return FlutterReminderSpeechService();
   }
   return const NoopReminderSpeechService();
+});
+
+/// Storage and image picking for caller profile photos.
+final callerImageServiceProvider = Provider<CallerImageService>((ref) {
+  if (defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS) {
+    return AppSupportCallerImageService();
+  }
+  return const NoopCallerImageService();
 });
 
 /// Whether the device will actually deliver reminders right now.
@@ -234,18 +246,25 @@ class ReminderActionNotifier {
     this._scheduler,
     this._planner, [
     VoiceNoteStorageService? voiceNoteStorage,
-  ]) : _voiceNoteStorage = voiceNoteStorage;
+    CallerImageService? callerImageService,
+  ]) : _voiceNoteStorage = voiceNoteStorage,
+       _callerImageService = callerImageService;
 
   final ReminderRepository _repository;
   final ReminderAlarmScheduler _scheduler;
   final ReminderSchedulePlanner _planner;
   final VoiceNoteStorageService? _voiceNoteStorage;
+  final CallerImageService? _callerImageService;
 
   Future<void> createOrUpdateReminder(Reminder reminder) async {
     final existing = await _repository.getReminderById(reminder.id);
     if (existing?.voiceNotePath != null &&
         existing!.voiceNotePath != reminder.voiceNotePath) {
       await _voiceNoteStorage?.deleteRecording(existing.voiceNotePath!);
+    }
+    if (existing?.callerImagePath != null &&
+        existing!.callerImagePath != reminder.callerImagePath) {
+      await _callerImageService?.deleteImage(existing.callerImagePath!);
     }
     await _repository.saveReminder(reminder);
     await _syncAlarm(reminder);
@@ -315,6 +334,9 @@ class ReminderActionNotifier {
     if (reminder?.voiceNotePath != null) {
       await _voiceNoteStorage?.deleteRecording(reminder!.voiceNotePath!);
     }
+    if (reminder?.callerImagePath != null) {
+      await _callerImageService?.deleteImage(reminder!.callerImagePath!);
+    }
     await _repository.deleteReminder(id);
     await _scheduler.cancel(id);
     await _scheduler.cancel(snoozeAlarmId(id));
@@ -322,6 +344,7 @@ class ReminderActionNotifier {
 
   Future<void> clearAll() async {
     await _voiceNoteStorage?.clearAllRecordings();
+    await _callerImageService?.clearAllImages();
     await _repository.clearAllReminders();
     await _scheduler.cancelAll();
   }
@@ -344,5 +367,12 @@ final reminderActionControllerProvider = Provider<ReminderActionNotifier>((
   final scheduler = ref.watch(reminderAlarmSchedulerProvider);
   final planner = ref.watch(reminderSchedulePlannerProvider);
   final storage = ref.watch(voiceNoteStorageServiceProvider);
-  return ReminderActionNotifier(repository, scheduler, planner, storage);
+  final imageService = ref.watch(callerImageServiceProvider);
+  return ReminderActionNotifier(
+    repository,
+    scheduler,
+    planner,
+    storage,
+    imageService,
+  );
 });

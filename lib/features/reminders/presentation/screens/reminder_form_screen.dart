@@ -38,6 +38,7 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
   String? _callerName;
   String? _callerNumber;
   String? _callerIcon;
+  String? _callerImagePath;
   final String _newReminderId = const Uuid().v4();
   bool _isSaving = false;
 
@@ -69,6 +70,7 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
       _callerName = initial.callerName;
       _callerNumber = initial.callerNumber;
       _callerIcon = initial.callerIcon;
+      _callerImagePath = initial.callerImagePath;
     } else {
       final suggested = DateTime.now().add(const Duration(hours: 1));
       _selectedDate = DateTime(suggested.year, suggested.month, suggested.day);
@@ -233,6 +235,7 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
         callerName: _callerName,
         callerNumber: _callerNumber,
         callerIcon: _callerIcon,
+        callerImagePath: _callerImagePath,
         createdAt: widget.initialReminder?.createdAt ?? now,
         updatedAt: now,
         completedAt: widget.initialReminder?.completedAt,
@@ -387,11 +390,14 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
                 initialName: _callerName,
                 initialNumber: _callerNumber,
                 initialIcon: _callerIcon,
-                onChanged: ({callerName, callerNumber, callerIcon}) {
-                  _callerName = callerName;
-                  _callerNumber = callerNumber;
-                  _callerIcon = callerIcon;
-                },
+                initialImagePath: _callerImagePath,
+                onChanged:
+                    ({callerName, callerNumber, callerIcon, callerImagePath}) {
+                      _callerName = callerName;
+                      _callerNumber = callerNumber;
+                      _callerIcon = callerIcon;
+                      _callerImagePath = callerImagePath;
+                    },
               ),
               const SizedBox(height: 28),
               _FormSectionLabel(label: 'When'),

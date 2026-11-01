@@ -182,6 +182,31 @@ void main() {
     expect(find.text('Answer Call'), findsOneWidget);
   });
 
+  testWidgets('renders incoming call simulation with caller profile photo', (
+    tester,
+  ) async {
+    final now = DateTime.now();
+    final reminder = Reminder(
+      id: 'photo-call',
+      title: 'Water the plants',
+      callerName: 'Mom ❤️',
+      callerNumber: 'Mobile',
+      callerIcon: 'family',
+      callerImagePath: 'mom_avatar.jpg',
+      scheduledDateTime: now,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await repository.saveReminder(reminder);
+
+    await tester.pumpWidget(wrap(ReminderCallScreen(reminderId: reminder.id)));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Mom ❤️'), findsOneWidget);
+    expect(find.text('Mobile'), findsOneWidget);
+    expect(find.text('Water the plants'), findsOneWidget);
+  });
+
   testWidgets('answering a call connects and shows dialpad and hang up', (
     tester,
   ) async {

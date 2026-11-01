@@ -17,7 +17,8 @@ entire user address book and triggers high-friction security prompts.
 To uphold Lujayn's privacy-first foundation:
 - **No device contact permissions are ever requested or queried.**
 - Users select from curated built-in presets (e.g. *Family / Mom*, *Doctor / Clinic*, *Work*, *Friend*) or type their own custom caller name and label.
-- Personas are persisted purely in the local SQLite database (`caller_name`, `caller_number`, `caller_icon`).
+- Users can optionally select a custom profile photo from their local device. Images are copied into private app storage (`<app support>/caller_images/`) using modern system photo picking without requiring broad storage permissions.
+- Personas are persisted purely in the local SQLite database (`caller_name`, `caller_number`, `caller_icon`, `caller_image_path`).
 
 ---
 
@@ -47,14 +48,17 @@ Tapping **Answer Call**:
 
 ---
 
-## 3. Database Schema Migration (v2 -> v3)
+## 3. Database Schema Migration (v2 -> v3 -> v4)
 
-Drift schema version was bumped from 2 to 3 with non-destructive migrations:
+Drift schema version was updated with non-destructive migrations:
 ```dart
 if (from < 3) {
   await migrator.addColumn(reminders, reminders.callerName);
   await migrator.addColumn(reminders, reminders.callerNumber);
   await migrator.addColumn(reminders, reminders.callerIcon);
+}
+if (from < 4) {
+  await migrator.addColumn(reminders, reminders.callerImagePath);
 }
 ```
 

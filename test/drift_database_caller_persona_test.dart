@@ -31,6 +31,7 @@ void main() {
       callerName: 'Dr. Collins',
       callerNumber: 'Clinic • (555) 234-5678',
       callerIcon: 'medical',
+      callerImagePath: 'caller_profile_photo.jpg',
       createdAt: now,
       updatedAt: now,
     );
@@ -42,6 +43,7 @@ void main() {
     expect(fetched!.callerName, 'Dr. Collins');
     expect(fetched.callerNumber, 'Clinic • (555) 234-5678');
     expect(fetched.callerIcon, 'medical');
+    expect(fetched.callerImagePath, 'caller_profile_photo.jpg');
     expect(fetched.hasCallerPersona, isTrue);
   });
 
@@ -54,6 +56,7 @@ void main() {
       callerName: 'Mom ❤️',
       callerNumber: 'Mobile',
       callerIcon: 'family',
+      callerImagePath: 'caller_mom.jpg',
       createdAt: now,
       updatedAt: now,
     );
@@ -68,6 +71,7 @@ void main() {
     expect(fetched!.callerName, isNull);
     expect(fetched.callerNumber, isNull);
     expect(fetched.callerIcon, isNull);
+    expect(fetched.callerImagePath, isNull);
     expect(fetched.hasCallerPersona, isFalse);
   });
 }

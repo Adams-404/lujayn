@@ -17,6 +17,7 @@ class Reminder {
     this.callerName,
     this.callerNumber,
     this.callerIcon,
+    this.callerImagePath,
     required this.createdAt,
     required this.updatedAt,
     this.completedAt,
@@ -33,13 +34,15 @@ class Reminder {
   final String? callerName;
   final String? callerNumber;
   final String? callerIcon;
+  final String? callerImagePath;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? completedAt;
 
   bool get hasVoiceNote => voiceNotePath != null && voiceNotePath!.isNotEmpty;
   bool get hasCallerPersona =>
-      callerName != null && callerName!.trim().isNotEmpty;
+      (callerName != null && callerName!.trim().isNotEmpty) ||
+      (callerImagePath != null && callerImagePath!.trim().isNotEmpty);
 
   bool get isCompleted => status == ReminderStatus.completed;
   bool get isActive => status == ReminderStatus.active;
@@ -76,6 +79,7 @@ class Reminder {
     String? callerName,
     String? callerNumber,
     String? callerIcon,
+    String? callerImagePath,
     bool clearCallerPersona = false,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -100,6 +104,9 @@ class Reminder {
           ? null
           : (callerNumber ?? this.callerNumber),
       callerIcon: clearCallerPersona ? null : (callerIcon ?? this.callerIcon),
+      callerImagePath: clearCallerPersona
+          ? null
+          : (callerImagePath ?? this.callerImagePath),
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       completedAt: clearCompletedAt ? null : (completedAt ?? this.completedAt),
@@ -122,6 +129,7 @@ class Reminder {
           callerName == other.callerName &&
           callerNumber == other.callerNumber &&
           callerIcon == other.callerIcon &&
+          callerImagePath == other.callerImagePath &&
           createdAt == other.createdAt &&
           updatedAt == other.updatedAt &&
           completedAt == other.completedAt;
@@ -133,5 +141,6 @@ class Reminder {
       scheduledDateTime.hashCode ^
       status.hashCode ^
       voiceNotePath.hashCode ^
-      callerName.hashCode;
+      callerName.hashCode ^
+      callerImagePath.hashCode;
 }
