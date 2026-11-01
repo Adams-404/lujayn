@@ -15,7 +15,7 @@ internal class ReminderAlarmReceiver : BroadcastReceiver() {
         val description = intent.getStringExtra(EXTRA_DESCRIPTION).orEmpty()
 
         ReminderNotifications.show(context, id, title, description)
-        ReminderAlarmScheduler.removeStored(context, id)
+        ReminderAlarmScheduler.onAlarmDelivered(context, id)
     }
 
     companion object {
