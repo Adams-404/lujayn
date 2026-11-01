@@ -12,6 +12,8 @@ class Reminder {
     required this.scheduledDateTime,
     this.recurrence = RecurrenceRule.none,
     this.status = ReminderStatus.active,
+    this.voiceNotePath,
+    this.voiceNoteDuration,
     required this.createdAt,
     required this.updatedAt,
     this.completedAt,
@@ -23,9 +25,13 @@ class Reminder {
   final DateTime scheduledDateTime;
   final RecurrenceRule recurrence;
   final ReminderStatus status;
+  final String? voiceNotePath;
+  final Duration? voiceNoteDuration;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? completedAt;
+
+  bool get hasVoiceNote => voiceNotePath != null && voiceNotePath!.isNotEmpty;
 
   bool get isCompleted => status == ReminderStatus.completed;
   bool get isActive => status == ReminderStatus.active;
@@ -56,6 +62,9 @@ class Reminder {
     DateTime? scheduledDateTime,
     RecurrenceRule? recurrence,
     ReminderStatus? status,
+    String? voiceNotePath,
+    Duration? voiceNoteDuration,
+    bool clearVoiceNote = false,
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? completedAt,
@@ -68,6 +77,12 @@ class Reminder {
       scheduledDateTime: scheduledDateTime ?? this.scheduledDateTime,
       recurrence: recurrence ?? this.recurrence,
       status: status ?? this.status,
+      voiceNotePath: clearVoiceNote
+          ? null
+          : (voiceNotePath ?? this.voiceNotePath),
+      voiceNoteDuration: clearVoiceNote
+          ? null
+          : (voiceNoteDuration ?? this.voiceNoteDuration),
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       completedAt: clearCompletedAt ? null : (completedAt ?? this.completedAt),
@@ -85,6 +100,8 @@ class Reminder {
           scheduledDateTime == other.scheduledDateTime &&
           recurrence == other.recurrence &&
           status == other.status &&
+          voiceNotePath == other.voiceNotePath &&
+          voiceNoteDuration == other.voiceNoteDuration &&
           createdAt == other.createdAt &&
           updatedAt == other.updatedAt &&
           completedAt == other.completedAt;
@@ -94,5 +111,6 @@ class Reminder {
       id.hashCode ^
       title.hashCode ^
       scheduledDateTime.hashCode ^
-      status.hashCode;
+      status.hashCode ^
+      voiceNotePath.hashCode;
 }

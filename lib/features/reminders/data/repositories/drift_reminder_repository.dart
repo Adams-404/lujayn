@@ -93,6 +93,8 @@ class DriftReminderRepository implements ReminderRepository {
       recurrenceType: reminder.recurrence.type.name,
       recurrenceDays: Value(jsonEncode(reminder.recurrence.daysOfWeek)),
       status: reminder.status.name,
+      voiceNotePath: Value(reminder.voiceNotePath),
+      voiceNoteDurationMs: Value(reminder.voiceNoteDuration?.inMilliseconds),
       createdAt: reminder.createdAt,
       updatedAt: reminder.updatedAt,
       completedAt: Value(reminder.completedAt),
@@ -118,6 +120,10 @@ class DriftReminderRepository implements ReminderRepository {
         record.status,
         ReminderStatus.active,
       ),
+      voiceNotePath: record.voiceNotePath,
+      voiceNoteDuration: record.voiceNoteDurationMs != null
+          ? Duration(milliseconds: record.voiceNoteDurationMs!)
+          : null,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
       completedAt: record.completedAt,

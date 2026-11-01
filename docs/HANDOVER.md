@@ -17,11 +17,11 @@ yet** — that is the one honest gap in the delivery work, and it now covers the
 voices too. `docs/android-device-test-matrix.md` is the checklist.
 
 What is left: the sherpa-onnx engine adapter that actually speaks with a
-downloaded pack (#6), voice recording and playback (#6), encrypted backup (#16),
+downloaded pack (#6), encrypted backup (#16),
 on-device natural language (#17). #18 is out of scope until Android is settled.
 
-**Milestone 2026-11-01 (later):** text-to-speech landed, the voice pack system
-landed, and PR #23 redesigned Reminder Detail and Settings, completing #3.
+**Milestone 2026-11-01 (latest):** local voice recording, private audio storage,
+audio playback, Drift schema v2 migration, and orphan cleanup landed (124 tests passing).
 
 ---
 
@@ -440,11 +440,9 @@ Last verified state, so you do not have to guess:
 ```bash
 dart format --output=none --set-exit-if-changed lib test   # clean
 flutter analyze --fatal-infos                              # no issues
-flutter test                                               # 107 passing
+flutter test                                               # 124 passing
 ```
 
-`main` is at `1692450`, pushed and verified. Issue #3 is closed, floating nav
-capsule + segmented filters + full tactile haptic feedback across interactive controls
-are landed.
-Nothing was left half-written. The next action is to continue with Issue #6
-(voice engine adapter, audio playback, voice recording/playback).
+Local voice recording, app-private storage, audio playback, Drift schema v2 migration,
+and orphan cleanup are landed and verified across 124 passing tests.
+The next action on Issue #6 is the sherpa-onnx engine adapter for downloadable offline voice packs.

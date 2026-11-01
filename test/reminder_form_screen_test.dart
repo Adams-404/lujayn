@@ -2,12 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lujayn/features/reminders/data/repositories/mock_reminder_repository.dart';
+import 'package:lujayn/features/reminders/data/services/noop_voice_playback_service.dart';
+import 'package:lujayn/features/reminders/data/services/noop_voice_recording_service.dart';
 import 'package:lujayn/features/reminders/domain/models/recurrence_rule.dart';
 import 'package:lujayn/features/reminders/domain/models/reminder.dart';
 import 'package:lujayn/features/reminders/domain/services/reminder_alarm_scheduler.dart';
 import 'package:lujayn/features/reminders/domain/services/reminder_schedule_planner.dart';
+import 'package:lujayn/features/reminders/domain/services/voice_note_storage_service.dart';
 import 'package:lujayn/features/reminders/presentation/controllers/reminder_providers.dart';
 import 'package:lujayn/features/reminders/presentation/screens/reminder_form_screen.dart';
+import 'package:lujayn/features/reminders/presentation/widgets/voice_note_player_widget.dart';
+
+class _FakeFormStorage implements VoiceNoteStorageService {
+  @override
+  Future<void> clearAllRecordings() async {}
+  @override
+  Future<int> cleanupOrphanedRecordings(List<String> activeFileNames) async =>
+      0;
+  @override
+  Future<void> deleteRecording(String fileName) async {}
+  @override
+  Future<String> generateNewRecordingPath({String? reminderId}) async =>
+      '/mock/path.m4a';
+  @override
+  Future<String> getRecordingsDirectory() async => '/mock/recordings';
+  @override
+  Future<String> resolvePath(String fileName) async => '/mock/$fileName';
+}
 
 void main() {
   late MockReminderRepository repository;
@@ -27,6 +48,13 @@ void main() {
       overrides: [
         reminderRepositoryProvider.overrideWithValue(repository),
         reminderAlarmSchedulerProvider.overrideWithValue(scheduler),
+        voiceNoteStorageServiceProvider.overrideWithValue(_FakeFormStorage()),
+        voiceRecordingServiceProvider.overrideWithValue(
+          const NoopVoiceRecordingService(),
+        ),
+        voicePlaybackServiceProvider.overrideWithValue(
+          NoopVoicePlaybackService(),
+        ),
       ],
       child: MaterialApp(home: child),
     );
@@ -89,6 +117,29 @@ void main() {
       isTrue,
     );
   });
+
+  testWidgets(
+    'editing reminder with voice note renders preview player with duration',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 2000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final future = DateTime.now().add(const Duration(hours: 3));
+      final reminder = reminderAt(future).copyWith(
+        voiceNotePath: 'voice_clip.m4a',
+        voiceNoteDuration: const Duration(seconds: 18),
+      );
+
+      await tester.pumpWidget(
+        wrap(ReminderFormScreen(initialReminder: reminder)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(VoiceNotePlayerWidget), findsOneWidget);
+      expect(find.text('0:18'), findsOneWidget);
+    },
+  );
 }
 
 class _RecordingAlarmScheduler implements ReminderAlarmScheduler {

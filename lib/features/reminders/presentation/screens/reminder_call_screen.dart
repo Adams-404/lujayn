@@ -7,6 +7,7 @@ import '../../../settings/presentation/controllers/settings_providers.dart';
 import '../../domain/models/reminder.dart';
 import '../../domain/services/reminder_speech_service.dart';
 import '../controllers/reminder_providers.dart';
+import '../widgets/voice_note_player_widget.dart';
 
 /// The focused, call-style surface shown when a reminder becomes due.
 ///
@@ -208,7 +209,14 @@ class _CallBodyState extends ConsumerState<_CallBody> {
                       color: colors.onSurfaceVariant,
                     ),
                   ),
-                  if (_speechAvailable) ...[
+                  if (_reminder.hasVoiceNote) ...[
+                    const SizedBox(height: 14),
+                    VoiceNotePlayerWidget(
+                      fileNameOrPath: _reminder.voiceNotePath!,
+                      totalDuration: _reminder.voiceNoteDuration,
+                      autoPlay: autoSpeak,
+                    ),
+                  ] else if (_speechAvailable) ...[
                     const SizedBox(height: 8),
                     TextButton.icon(
                       onPressed: _speaking ? _stopSpeech : _speak,

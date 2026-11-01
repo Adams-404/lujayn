@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lujayn/app/theme/app_theme.dart';
 import 'package:lujayn/app/theme/app_theme_choice.dart';
 import 'package:lujayn/features/reminders/data/repositories/mock_reminder_repository.dart';
+import 'package:lujayn/features/reminders/data/services/noop_voice_note_storage_service.dart';
 import 'package:lujayn/features/reminders/domain/services/reminder_alarm_scheduler.dart';
 import 'package:lujayn/features/reminders/domain/services/reminder_schedule_planner.dart';
 import 'package:lujayn/features/reminders/presentation/controllers/reminder_providers.dart';
@@ -34,6 +35,9 @@ void main() {
         reminderRepositoryProvider.overrideWithValue(repository),
         reminderAlarmSchedulerProvider.overrideWithValue(
           const _StubAlarmScheduler(),
+        ),
+        voiceNoteStorageServiceProvider.overrideWithValue(
+          const NoopVoiceNoteStorageService(),
         ),
         themePreferenceStoreProvider.overrideWithValue(themeStore),
         speechPreferenceStoreProvider.overrideWithValue(speechStore),

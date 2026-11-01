@@ -4,19 +4,28 @@ import '../../../../core/database/app_database.dart';
 import '../../data/repositories/drift_reminder_repository.dart';
 import '../../data/services/android_reminder_alarm_scheduler.dart';
 import '../../data/services/android_reminder_call_bridge.dart';
+import '../../data/services/app_support_voice_note_storage.dart';
+import '../../data/services/audioplayers_voice_playback_service.dart';
 import '../../data/services/flutter_reminder_speech_service.dart';
 import '../../data/services/noop_reminder_alarm_scheduler.dart';
 import '../../data/services/noop_reminder_call_bridge.dart';
 import '../../data/services/noop_reminder_speech_service.dart';
+import '../../data/services/noop_voice_note_storage_service.dart';
+import '../../data/services/noop_voice_playback_service.dart';
+import '../../data/services/noop_voice_recording_service.dart';
+import '../../data/services/record_voice_recording_service.dart';
 import '../../domain/models/recurrence_rule.dart';
 import '../../domain/models/reminder.dart';
 import '../../domain/models/reminder_alarm_id.dart';
 import '../../domain/models/reminder_status.dart';
+import '../../domain/repositories/reminder_repository.dart';
 import '../../domain/services/reminder_alarm_scheduler.dart';
 import '../../domain/services/reminder_call_bridge.dart';
 import '../../domain/services/reminder_schedule_planner.dart';
 import '../../domain/services/reminder_speech_service.dart';
-import '../../domain/repositories/reminder_repository.dart';
+import '../../domain/services/voice_note_storage_service.dart';
+import '../../domain/services/voice_playback_service.dart';
+import '../../domain/services/voice_recording_service.dart';
 
 /// Filter selection for reminder list.
 enum ReminderFilter { upcoming, completed, all }
@@ -45,6 +54,41 @@ final reminderAlarmSchedulerProvider = Provider<ReminderAlarmScheduler>((ref) {
 /// Pure planner shared by scheduling actions and tests.
 final reminderSchedulePlannerProvider = Provider<ReminderSchedulePlanner>(
   (ref) => const ReminderSchedulePlanner(),
+);
+
+/// Storage for reminder voice recordings.
+final voiceNoteStorageServiceProvider = Provider<VoiceNoteStorageService>((
+  ref,
+) {
+  if (defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS) {
+    return AppSupportVoiceNoteStorage();
+  }
+  return const NoopVoiceNoteStorageService();
+});
+
+/// Voice recording engine.
+final voiceRecordingServiceProvider = Provider<VoiceRecordingService>((ref) {
+  if (defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS) {
+    return RecordVoiceRecordingService();
+  }
+  return const NoopVoiceRecordingService();
+});
+
+/// Creates a fresh voice playback instance for audio playback in UI.
+final voicePlaybackServiceProvider = Provider.autoDispose<VoicePlaybackService>(
+  (ref) {
+    if (defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS) {
+      final service = AudioplayersVoicePlaybackService();
+      ref.onDispose(service.dispose);
+      return service;
+    }
+    final service = NoopVoicePlaybackService();
+    ref.onDispose(service.dispose);
+    return service;
+  },
 );
 
 /// On-device speech for reading a reminder aloud.
@@ -185,13 +229,24 @@ final completedRemindersProvider = Provider<AsyncValue<List<Reminder>>>((ref) {
 
 /// Controller handling reminder user mutations.
 class ReminderActionNotifier {
-  ReminderActionNotifier(this._repository, this._scheduler, this._planner);
+  ReminderActionNotifier(
+    this._repository,
+    this._scheduler,
+    this._planner, [
+    VoiceNoteStorageService? voiceNoteStorage,
+  ]) : _voiceNoteStorage = voiceNoteStorage;
 
   final ReminderRepository _repository;
   final ReminderAlarmScheduler _scheduler;
   final ReminderSchedulePlanner _planner;
+  final VoiceNoteStorageService? _voiceNoteStorage;
 
   Future<void> createOrUpdateReminder(Reminder reminder) async {
+    final existing = await _repository.getReminderById(reminder.id);
+    if (existing?.voiceNotePath != null &&
+        existing!.voiceNotePath != reminder.voiceNotePath) {
+      await _voiceNoteStorage?.deleteRecording(existing.voiceNotePath!);
+    }
     await _repository.saveReminder(reminder);
     await _syncAlarm(reminder);
   }
@@ -256,12 +311,17 @@ class ReminderActionNotifier {
   }
 
   Future<void> deleteReminder(String id) async {
+    final reminder = await _repository.getReminderById(id);
+    if (reminder?.voiceNotePath != null) {
+      await _voiceNoteStorage?.deleteRecording(reminder!.voiceNotePath!);
+    }
     await _repository.deleteReminder(id);
     await _scheduler.cancel(id);
     await _scheduler.cancel(snoozeAlarmId(id));
   }
 
   Future<void> clearAll() async {
+    await _voiceNoteStorage?.clearAllRecordings();
     await _repository.clearAllReminders();
     await _scheduler.cancelAll();
   }
@@ -283,5 +343,6 @@ final reminderActionControllerProvider = Provider<ReminderActionNotifier>((
   final repository = ref.watch(reminderRepositoryProvider);
   final scheduler = ref.watch(reminderAlarmSchedulerProvider);
   final planner = ref.watch(reminderSchedulePlannerProvider);
-  return ReminderActionNotifier(repository, scheduler, planner);
+  final storage = ref.watch(voiceNoteStorageServiceProvider);
+  return ReminderActionNotifier(repository, scheduler, planner, storage);
 });

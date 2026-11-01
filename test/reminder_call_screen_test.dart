@@ -1,15 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lujayn/features/reminders/data/services/noop_voice_playback_service.dart';
 import 'package:lujayn/features/reminders/data/repositories/mock_reminder_repository.dart';
 import 'package:lujayn/features/reminders/domain/models/reminder.dart';
 import 'package:lujayn/features/reminders/domain/models/reminder_status.dart';
 import 'package:lujayn/features/reminders/domain/services/reminder_alarm_scheduler.dart';
 import 'package:lujayn/features/reminders/domain/services/reminder_schedule_planner.dart';
 import 'package:lujayn/features/reminders/domain/services/reminder_speech_service.dart';
+import 'package:lujayn/features/reminders/domain/services/voice_note_storage_service.dart';
 import 'package:lujayn/features/reminders/presentation/controllers/reminder_providers.dart';
 import 'package:lujayn/features/reminders/presentation/screens/reminder_call_screen.dart';
+import 'package:lujayn/features/reminders/presentation/widgets/voice_note_player_widget.dart';
 import 'package:lujayn/features/settings/presentation/controllers/settings_providers.dart';
+
+class _FakeStorage implements VoiceNoteStorageService {
+  @override
+  Future<void> clearAllRecordings() async {}
+  @override
+  Future<int> cleanupOrphanedRecordings(List<String> activeFileNames) async =>
+      0;
+  @override
+  Future<void> deleteRecording(String fileName) async {}
+  @override
+  Future<String> generateNewRecordingPath({String? reminderId}) async =>
+      '/mock/path.m4a';
+  @override
+  Future<String> getRecordingsDirectory() async => '/mock/recordings';
+  @override
+  Future<String> resolvePath(String fileName) async => '/mock/$fileName';
+}
 
 void main() {
   late MockReminderRepository repository;
@@ -47,10 +67,36 @@ void main() {
         reminderAlarmSchedulerProvider.overrideWithValue(scheduler),
         reminderSpeechServiceProvider.overrideWithValue(speech),
         speechPreferenceStoreProvider.overrideWithValue(speechPreferenceStore),
+        voiceNoteStorageServiceProvider.overrideWithValue(_FakeStorage()),
+        voicePlaybackServiceProvider.overrideWithValue(
+          NoopVoicePlaybackService(),
+        ),
       ],
       child: MaterialApp(home: child),
     );
   }
+
+  testWidgets('shows voice note player when reminder has voice note', (
+    tester,
+  ) async {
+    final now = DateTime.now();
+    final reminder = Reminder(
+      id: 'voice-call-1',
+      title: 'Call Doctor',
+      scheduledDateTime: now,
+      voiceNotePath: 'doctor_note.m4a',
+      voiceNoteDuration: const Duration(seconds: 15),
+      createdAt: now,
+      updatedAt: now,
+    );
+    await repository.saveReminder(reminder);
+
+    await tester.pumpWidget(wrap(ReminderCallScreen(reminderId: reminder.id)));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(VoiceNotePlayerWidget), findsOneWidget);
+    expect(find.text('0:15'), findsOneWidget);
+  });
 
   testWidgets('shows the due reminder with both actions', (tester) async {
     final reminder = dueReminder();

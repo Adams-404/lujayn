@@ -12,6 +12,7 @@ import '../../domain/models/reminder.dart';
 import '../../domain/models/reminder_status.dart';
 import '../controllers/reminder_providers.dart';
 import '../widgets/recurrence_chip_selector.dart';
+import '../widgets/voice_note_recorder_control.dart';
 
 /// Screen for creating or editing a reminder.
 class ReminderFormScreen extends ConsumerStatefulWidget {
@@ -31,6 +32,8 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
   late DateTime _selectedDate;
   late TimeOfDay _selectedTime;
   late RecurrenceRule _selectedRecurrence;
+  String? _voiceNotePath;
+  Duration? _voiceNoteDuration;
   final String _newReminderId = const Uuid().v4();
   bool _isSaving = false;
 
@@ -57,6 +60,8 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
         minute: initial.scheduledDateTime.minute,
       );
       _selectedRecurrence = initial.recurrence;
+      _voiceNotePath = initial.voiceNotePath;
+      _voiceNoteDuration = initial.voiceNoteDuration;
     } else {
       final suggested = DateTime.now().add(const Duration(hours: 1));
       _selectedDate = DateTime(suggested.year, suggested.month, suggested.day);
@@ -216,6 +221,8 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
         scheduledDateTime: _scheduledDateTime,
         recurrence: _selectedRecurrence,
         status: widget.initialReminder?.status ?? ReminderStatus.active,
+        voiceNotePath: _voiceNotePath,
+        voiceNoteDuration: _voiceNoteDuration,
         createdAt: widget.initialReminder?.createdAt ?? now,
         updatedAt: now,
         completedAt: widget.initialReminder?.completedAt,
@@ -335,6 +342,26 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
                   hintText: 'Add instructions or a little context...',
                   alignLabelWithHint: true,
                 ),
+              ),
+              const SizedBox(height: 20),
+              _FormSectionLabel(label: 'Voice Note'),
+              const SizedBox(height: 4),
+              Text(
+                'Optional voice clip that will play when this reminder alerts.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 9),
+              VoiceNoteRecorderControl(
+                initialVoiceNotePath: _voiceNotePath,
+                initialDuration: _voiceNoteDuration,
+                onChanged: (path, duration) {
+                  setState(() {
+                    _voiceNotePath = path;
+                    _voiceNoteDuration = duration;
+                  });
+                },
               ),
               const SizedBox(height: 28),
               _FormSectionLabel(label: 'When'),

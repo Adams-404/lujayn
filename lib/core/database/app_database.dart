@@ -12,6 +12,8 @@ class Reminders extends Table {
   TextColumn get recurrenceType => text()();
   TextColumn get recurrenceDays => text().withDefault(const Constant('[]'))();
   TextColumn get status => text()();
+  TextColumn get voiceNotePath => text().nullable()();
+  IntColumn get voiceNoteDurationMs => integer().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
   DateTimeColumn get completedAt => dateTime().nullable()();
@@ -32,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -40,7 +42,10 @@ class AppDatabase extends _$AppDatabase {
       await migrator.createAll();
     },
     onUpgrade: (migrator, from, to) async {
-      // Schema changes must be added here with explicit version steps.
+      if (from < 2) {
+        await migrator.addColumn(reminders, reminders.voiceNotePath);
+        await migrator.addColumn(reminders, reminders.voiceNoteDurationMs);
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');

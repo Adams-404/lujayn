@@ -7,6 +7,7 @@ import '../../../../core/utilities/date_formatters.dart';
 import '../../../../core/widgets/empty_state_view.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../controllers/reminder_providers.dart';
+import '../widgets/voice_note_player_widget.dart';
 import 'reminder_form_screen.dart';
 
 /// A calm, focused view of a reminder's details and actions.
@@ -201,6 +202,14 @@ class ReminderDetailScreen extends ConsumerWidget {
                         style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
                       ),
                     ),
+                  ),
+                ],
+
+                if (reminder.hasVoiceNote) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  VoiceNotePlayerWidget(
+                    fileNameOrPath: reminder.voiceNotePath!,
+                    totalDuration: reminder.voiceNoteDuration,
                   ),
                 ],
 

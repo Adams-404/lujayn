@@ -86,6 +86,27 @@ class $RemindersTable extends Reminders
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _voiceNotePathMeta = const VerificationMeta(
+    'voiceNotePath',
+  );
+  @override
+  late final GeneratedColumn<String> voiceNotePath = GeneratedColumn<String>(
+    'voice_note_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _voiceNoteDurationMsMeta =
+      const VerificationMeta('voiceNoteDurationMs');
+  @override
+  late final GeneratedColumn<int> voiceNoteDurationMs = GeneratedColumn<int>(
+    'voice_note_duration_ms',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -128,6 +149,8 @@ class $RemindersTable extends Reminders
     recurrenceType,
     recurrenceDays,
     status,
+    voiceNotePath,
+    voiceNoteDurationMs,
     createdAt,
     updatedAt,
     completedAt,
@@ -205,6 +228,24 @@ class $RemindersTable extends Reminders
     } else if (isInserting) {
       context.missing(_statusMeta);
     }
+    if (data.containsKey('voice_note_path')) {
+      context.handle(
+        _voiceNotePathMeta,
+        voiceNotePath.isAcceptableOrUnknown(
+          data['voice_note_path']!,
+          _voiceNotePathMeta,
+        ),
+      );
+    }
+    if (data.containsKey('voice_note_duration_ms')) {
+      context.handle(
+        _voiceNoteDurationMsMeta,
+        voiceNoteDurationMs.isAcceptableOrUnknown(
+          data['voice_note_duration_ms']!,
+          _voiceNoteDurationMsMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -267,6 +308,14 @@ class $RemindersTable extends Reminders
         DriftSqlType.string,
         data['${effectivePrefix}status'],
       )!,
+      voiceNotePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}voice_note_path'],
+      ),
+      voiceNoteDurationMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}voice_note_duration_ms'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -296,6 +345,8 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
   final String recurrenceType;
   final String recurrenceDays;
   final String status;
+  final String? voiceNotePath;
+  final int? voiceNoteDurationMs;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? completedAt;
@@ -307,6 +358,8 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
     required this.recurrenceType,
     required this.recurrenceDays,
     required this.status,
+    this.voiceNotePath,
+    this.voiceNoteDurationMs,
     required this.createdAt,
     required this.updatedAt,
     this.completedAt,
@@ -323,6 +376,12 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
     map['recurrence_type'] = Variable<String>(recurrenceType);
     map['recurrence_days'] = Variable<String>(recurrenceDays);
     map['status'] = Variable<String>(status);
+    if (!nullToAbsent || voiceNotePath != null) {
+      map['voice_note_path'] = Variable<String>(voiceNotePath);
+    }
+    if (!nullToAbsent || voiceNoteDurationMs != null) {
+      map['voice_note_duration_ms'] = Variable<int>(voiceNoteDurationMs);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     if (!nullToAbsent || completedAt != null) {
@@ -342,6 +401,12 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
       recurrenceType: Value(recurrenceType),
       recurrenceDays: Value(recurrenceDays),
       status: Value(status),
+      voiceNotePath: voiceNotePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(voiceNotePath),
+      voiceNoteDurationMs: voiceNoteDurationMs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(voiceNoteDurationMs),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       completedAt: completedAt == null && nullToAbsent
@@ -365,6 +430,10 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
       recurrenceType: serializer.fromJson<String>(json['recurrenceType']),
       recurrenceDays: serializer.fromJson<String>(json['recurrenceDays']),
       status: serializer.fromJson<String>(json['status']),
+      voiceNotePath: serializer.fromJson<String?>(json['voiceNotePath']),
+      voiceNoteDurationMs: serializer.fromJson<int?>(
+        json['voiceNoteDurationMs'],
+      ),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
@@ -381,6 +450,8 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
       'recurrenceType': serializer.toJson<String>(recurrenceType),
       'recurrenceDays': serializer.toJson<String>(recurrenceDays),
       'status': serializer.toJson<String>(status),
+      'voiceNotePath': serializer.toJson<String?>(voiceNotePath),
+      'voiceNoteDurationMs': serializer.toJson<int?>(voiceNoteDurationMs),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'completedAt': serializer.toJson<DateTime?>(completedAt),
@@ -395,6 +466,8 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
     String? recurrenceType,
     String? recurrenceDays,
     String? status,
+    Value<String?> voiceNotePath = const Value.absent(),
+    Value<int?> voiceNoteDurationMs = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
     Value<DateTime?> completedAt = const Value.absent(),
@@ -406,6 +479,12 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
     recurrenceType: recurrenceType ?? this.recurrenceType,
     recurrenceDays: recurrenceDays ?? this.recurrenceDays,
     status: status ?? this.status,
+    voiceNotePath: voiceNotePath.present
+        ? voiceNotePath.value
+        : this.voiceNotePath,
+    voiceNoteDurationMs: voiceNoteDurationMs.present
+        ? voiceNoteDurationMs.value
+        : this.voiceNoteDurationMs,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     completedAt: completedAt.present ? completedAt.value : this.completedAt,
@@ -427,6 +506,12 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
           ? data.recurrenceDays.value
           : this.recurrenceDays,
       status: data.status.present ? data.status.value : this.status,
+      voiceNotePath: data.voiceNotePath.present
+          ? data.voiceNotePath.value
+          : this.voiceNotePath,
+      voiceNoteDurationMs: data.voiceNoteDurationMs.present
+          ? data.voiceNoteDurationMs.value
+          : this.voiceNoteDurationMs,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       completedAt: data.completedAt.present
@@ -445,6 +530,8 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
           ..write('recurrenceType: $recurrenceType, ')
           ..write('recurrenceDays: $recurrenceDays, ')
           ..write('status: $status, ')
+          ..write('voiceNotePath: $voiceNotePath, ')
+          ..write('voiceNoteDurationMs: $voiceNoteDurationMs, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('completedAt: $completedAt')
@@ -461,6 +548,8 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
     recurrenceType,
     recurrenceDays,
     status,
+    voiceNotePath,
+    voiceNoteDurationMs,
     createdAt,
     updatedAt,
     completedAt,
@@ -476,6 +565,8 @@ class ReminderRecord extends DataClass implements Insertable<ReminderRecord> {
           other.recurrenceType == this.recurrenceType &&
           other.recurrenceDays == this.recurrenceDays &&
           other.status == this.status &&
+          other.voiceNotePath == this.voiceNotePath &&
+          other.voiceNoteDurationMs == this.voiceNoteDurationMs &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.completedAt == this.completedAt);
@@ -489,6 +580,8 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
   final Value<String> recurrenceType;
   final Value<String> recurrenceDays;
   final Value<String> status;
+  final Value<String?> voiceNotePath;
+  final Value<int?> voiceNoteDurationMs;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<DateTime?> completedAt;
@@ -501,6 +594,8 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
     this.recurrenceType = const Value.absent(),
     this.recurrenceDays = const Value.absent(),
     this.status = const Value.absent(),
+    this.voiceNotePath = const Value.absent(),
+    this.voiceNoteDurationMs = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.completedAt = const Value.absent(),
@@ -514,6 +609,8 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
     required String recurrenceType,
     this.recurrenceDays = const Value.absent(),
     required String status,
+    this.voiceNotePath = const Value.absent(),
+    this.voiceNoteDurationMs = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.completedAt = const Value.absent(),
@@ -533,6 +630,8 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
     Expression<String>? recurrenceType,
     Expression<String>? recurrenceDays,
     Expression<String>? status,
+    Expression<String>? voiceNotePath,
+    Expression<int>? voiceNoteDurationMs,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<DateTime>? completedAt,
@@ -546,6 +645,9 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
       if (recurrenceType != null) 'recurrence_type': recurrenceType,
       if (recurrenceDays != null) 'recurrence_days': recurrenceDays,
       if (status != null) 'status': status,
+      if (voiceNotePath != null) 'voice_note_path': voiceNotePath,
+      if (voiceNoteDurationMs != null)
+        'voice_note_duration_ms': voiceNoteDurationMs,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (completedAt != null) 'completed_at': completedAt,
@@ -561,6 +663,8 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
     Value<String>? recurrenceType,
     Value<String>? recurrenceDays,
     Value<String>? status,
+    Value<String?>? voiceNotePath,
+    Value<int?>? voiceNoteDurationMs,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<DateTime?>? completedAt,
@@ -574,6 +678,8 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
       recurrenceType: recurrenceType ?? this.recurrenceType,
       recurrenceDays: recurrenceDays ?? this.recurrenceDays,
       status: status ?? this.status,
+      voiceNotePath: voiceNotePath ?? this.voiceNotePath,
+      voiceNoteDurationMs: voiceNoteDurationMs ?? this.voiceNoteDurationMs,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       completedAt: completedAt ?? this.completedAt,
@@ -605,6 +711,12 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
+    if (voiceNotePath.present) {
+      map['voice_note_path'] = Variable<String>(voiceNotePath.value);
+    }
+    if (voiceNoteDurationMs.present) {
+      map['voice_note_duration_ms'] = Variable<int>(voiceNoteDurationMs.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -630,6 +742,8 @@ class RemindersCompanion extends UpdateCompanion<ReminderRecord> {
           ..write('recurrenceType: $recurrenceType, ')
           ..write('recurrenceDays: $recurrenceDays, ')
           ..write('status: $status, ')
+          ..write('voiceNotePath: $voiceNotePath, ')
+          ..write('voiceNoteDurationMs: $voiceNoteDurationMs, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('completedAt: $completedAt, ')
@@ -659,6 +773,8 @@ typedef $$RemindersTableCreateCompanionBuilder =
       required String recurrenceType,
       Value<String> recurrenceDays,
       required String status,
+      Value<String?> voiceNotePath,
+      Value<int?> voiceNoteDurationMs,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<DateTime?> completedAt,
@@ -673,6 +789,8 @@ typedef $$RemindersTableUpdateCompanionBuilder =
       Value<String> recurrenceType,
       Value<String> recurrenceDays,
       Value<String> status,
+      Value<String?> voiceNotePath,
+      Value<int?> voiceNoteDurationMs,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<DateTime?> completedAt,
@@ -720,6 +838,16 @@ class $$RemindersTableFilterComposer
 
   ColumnFilters<String> get status => $composableBuilder(
     column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get voiceNotePath => $composableBuilder(
+    column: $table.voiceNotePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get voiceNoteDurationMs => $composableBuilder(
+    column: $table.voiceNoteDurationMs,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -783,6 +911,16 @@ class $$RemindersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get voiceNotePath => $composableBuilder(
+    column: $table.voiceNotePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get voiceNoteDurationMs => $composableBuilder(
+    column: $table.voiceNoteDurationMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -837,6 +975,16 @@ class $$RemindersTableAnnotationComposer
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
 
+  GeneratedColumn<String> get voiceNotePath => $composableBuilder(
+    column: $table.voiceNotePath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get voiceNoteDurationMs => $composableBuilder(
+    column: $table.voiceNoteDurationMs,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -887,6 +1035,8 @@ class $$RemindersTableTableManager
                 Value<String> recurrenceType = const Value.absent(),
                 Value<String> recurrenceDays = const Value.absent(),
                 Value<String> status = const Value.absent(),
+                Value<String?> voiceNotePath = const Value.absent(),
+                Value<int?> voiceNoteDurationMs = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> completedAt = const Value.absent(),
@@ -899,6 +1049,8 @@ class $$RemindersTableTableManager
                 recurrenceType: recurrenceType,
                 recurrenceDays: recurrenceDays,
                 status: status,
+                voiceNotePath: voiceNotePath,
+                voiceNoteDurationMs: voiceNoteDurationMs,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 completedAt: completedAt,
@@ -913,6 +1065,8 @@ class $$RemindersTableTableManager
                 required String recurrenceType,
                 Value<String> recurrenceDays = const Value.absent(),
                 required String status,
+                Value<String?> voiceNotePath = const Value.absent(),
+                Value<int?> voiceNoteDurationMs = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<DateTime?> completedAt = const Value.absent(),
@@ -925,6 +1079,8 @@ class $$RemindersTableTableManager
                 recurrenceType: recurrenceType,
                 recurrenceDays: recurrenceDays,
                 status: status,
+                voiceNotePath: voiceNotePath,
+                voiceNoteDurationMs: voiceNoteDurationMs,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 completedAt: completedAt,
