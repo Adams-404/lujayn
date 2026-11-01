@@ -403,22 +403,29 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
       ),
       ),
       bottomNavigationBar: SafeArea(
-        child: ResponsiveCenter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(22, 10, 22, 16),
-            child: FilledButton.icon(
-              onPressed: _isSaving ? null : _save,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(54),
+        child: Align(
+          heightFactor: 1,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(22, 10, 22, 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _isSaving ? null : _save,
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(54),
+                  ),
+                  icon: _isSaving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.check_rounded),
+                  label: Text(_isSaving ? 'Saving...' : 'Save'),
+                ),
               ),
-              icon: _isSaving
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.check_rounded),
-              label: Text(_isSaving ? 'Saving...' : 'Save'),
             ),
           ),
         ),
