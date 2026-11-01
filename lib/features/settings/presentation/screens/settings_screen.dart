@@ -15,7 +15,7 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final currentThemeChoice =
-        ref.watch(themeChoiceProvider).valueOrNull ?? AppThemeChoice.system;
+        ref.watch(themeChoiceProvider).asData?.value ?? AppThemeChoice.system;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -260,7 +260,7 @@ class SettingsScreen extends ConsumerWidget {
                             color: theme.colorScheme.primary,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.alarm_rounded,
                             color: theme.colorScheme.onPrimary,
                             size: 18,
