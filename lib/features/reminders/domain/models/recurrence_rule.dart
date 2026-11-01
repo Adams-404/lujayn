@@ -59,6 +59,12 @@ class RecurrenceRule {
   }
 
   /// Calculates the next occurrence based on a base scheduled date.
+  ///
+  /// This runs against persisted data, including anything restored from a
+  /// backup, so it must never loop forever. Every rule terminates: the day
+  /// loops are bounded by [_maxLookaheadDays] and an unusable custom day list
+  /// falls back to no recurrence instead of searching for a day that does not
+  /// exist.
   DateTime calculateNextOccurrence(
     DateTime scheduledDateTime, {
     DateTime? after,
@@ -70,40 +76,53 @@ class RecurrenceRule {
     }
 
     var candidate = scheduledDateTime;
+    var steps = 0;
 
     switch (type) {
       case RecurrenceType.none:
         return scheduledDateTime;
 
       case RecurrenceType.daily:
-        while (!candidate.isAfter(reference)) {
+        while (!candidate.isAfter(reference) && steps++ < _maxLookaheadDays) {
           candidate = _addDays(candidate, 1);
         }
         return candidate;
 
       case RecurrenceType.weekdays:
-        while (!candidate.isAfter(reference) ||
-            candidate.weekday == DateTime.saturday ||
-            candidate.weekday == DateTime.sunday) {
+        while ((!candidate.isAfter(reference) ||
+                candidate.weekday == DateTime.saturday ||
+                candidate.weekday == DateTime.sunday) &&
+            steps++ < _maxLookaheadDays) {
           candidate = _addDays(candidate, 1);
         }
         return candidate;
 
       case RecurrenceType.weekly:
-        while (!candidate.isAfter(reference)) {
+        while (!candidate.isAfter(reference) &&
+            steps++ < _maxLookaheadDays ~/ 7) {
           candidate = _addDays(candidate, 7);
         }
         return candidate;
 
       case RecurrenceType.customDays:
-        if (daysOfWeek.isEmpty) return candidate;
-        while (!candidate.isAfter(reference) ||
-            !daysOfWeek.contains(candidate.weekday)) {
+        final validDays = daysOfWeek
+            .where((day) => day >= DateTime.monday && day <= DateTime.sunday)
+            .toSet();
+        if (validDays.isEmpty) return candidate;
+        while ((!candidate.isAfter(reference) ||
+                !validDays.contains(candidate.weekday)) &&
+            steps++ < _maxLookaheadDays) {
           candidate = _addDays(candidate, 1);
         }
         return candidate;
     }
   }
+
+  /// Upper bound on the days searched for a next occurrence.
+  ///
+  /// A reminder more than four years overdue is not useful to re-arm, and the
+  /// bound guarantees a corrupt rule cannot freeze the app.
+  static const _maxLookaheadDays = 366 * 4;
 
   /// Advances by whole calendar days while keeping the local wall-clock time.
   ///
