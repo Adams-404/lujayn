@@ -319,6 +319,24 @@ void main() {
     expect(find.textContaining('Done'), findsWidgets);
   });
 
+  testWidgets('autoAnswer opens call screen directly in connected state', (
+    tester,
+  ) async {
+    useCallScreenWindow(tester);
+    final reminder = dueReminder();
+    await repository.saveReminder(reminder);
+
+    await tester.pumpWidget(
+      wrap(ReminderCallScreen(reminderId: reminder.id, autoAnswer: true)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Keypad'), findsOneWidget);
+    expect(find.text('Answer'), findsNothing);
+    expect(find.text('Decline'), findsNothing);
+    expect(ringtone.started, isEmpty);
+  });
+
   testWidgets('dialpad key 1 marks reminder completed', (tester) async {
     useCallScreenWindow(tester);
     final reminder = dueReminder();

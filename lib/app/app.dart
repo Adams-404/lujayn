@@ -98,7 +98,10 @@ class _LujaynAppState extends ConsumerState<LujaynApp>
         .push(
           MaterialPageRoute<void>(
             fullscreenDialog: true,
-            builder: (_) => ReminderCallScreen(reminderId: request.reminderId),
+            builder: (_) => ReminderCallScreen(
+              reminderId: request.reminderId,
+              autoAnswer: request.autoAnswer,
+            ),
           ),
         )
         .whenComplete(() => _visibleReminderId = null);

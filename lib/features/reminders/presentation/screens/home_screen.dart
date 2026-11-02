@@ -147,19 +147,29 @@ class HomeScreen extends ConsumerWidget {
                 data: (reminders) =>
                     _buildContent(context, ref, reminders, filter),
               ),
-              const SliverToBoxAdapter(
-                child: SizedBox(height: AppSpacing.fabClearance),
-              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 160)),
             ],
           ),
         ),
       ),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 60),
+        padding: const EdgeInsets.only(bottom: 100),
         child: FloatingActionButton.extended(
           onPressed: () => _navigateToCreate(context),
-          icon: const Icon(Icons.add_rounded),
-          label: const Text('Add reminder'),
+          elevation: 3,
+          highlightElevation: 6,
+          shape: const StadiumBorder(),
+          backgroundColor: theme.colorScheme.primaryContainer,
+          foregroundColor: theme.colorScheme.onPrimaryContainer,
+          icon: const Icon(Icons.add_rounded, size: 22),
+          label: const Text(
+            'Add reminder',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              letterSpacing: 0.2,
+            ),
+          ),
         ),
       ),
     );

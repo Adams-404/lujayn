@@ -45,6 +45,10 @@ class AndroidReminderCallBridge implements ReminderCallBridge {
   ReminderCallRequest? _parse(Map<Object?, Object?>? payload) {
     final id = payload?['id'];
     if (id is! String || id.isEmpty) return null;
-    return ReminderCallRequest(reminderId: reminderIdFromAlarmId(id));
+    final autoAnswer = payload?['autoAnswer'] == true;
+    return ReminderCallRequest(
+      reminderId: reminderIdFromAlarmId(id),
+      autoAnswer: autoAnswer,
+    );
   }
 }

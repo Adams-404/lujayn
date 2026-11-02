@@ -24,6 +24,7 @@ internal object ReminderAlarmScheduler {
         id: String,
         title: String,
         description: String?,
+        callerName: String?,
         scheduledAtMillis: Long,
         recurrenceType: String,
         daysOfWeek: List<Int>,
@@ -37,6 +38,7 @@ internal object ReminderAlarmScheduler {
             .put("id", id)
             .put("title", title)
             .put("description", description ?: "")
+            .put("callerName", callerName ?: "")
             .put("scheduledAtMillis", scheduledAtMillis)
             .put("recurrenceType", recurrenceType)
             .put("daysOfWeek", JSONArray(daysOfWeek))
@@ -98,17 +100,19 @@ internal object ReminderAlarmScheduler {
             data.optString("id"),
             data.optString("title"),
             data.optString("description"),
+            data.optString("callerName"),
             missed = true,
         )
     }
 
-    /** Title and description stored for an alarm, for the ringing service. */
-    fun alarmInfo(context: Context, id: String): Pair<String, String>? {
+    /** Title, description, and caller persona stored for an alarm, for the ringing service. */
+    fun alarmInfo(context: Context, id: String): Triple<String, String, String>? {
         val encoded = preferences(context).getString(id, null) ?: return null
         val data = runCatching { JSONObject(encoded) }.getOrNull() ?: return null
-        return Pair(
+        return Triple(
             data.optString("title", "Reminder"),
             data.optString("description", ""),
+            data.optString("callerName", ""),
         )
     }
 
@@ -136,6 +140,7 @@ internal object ReminderAlarmScheduler {
             putExtra(ReminderAlarmReceiver.EXTRA_ID, id)
             putExtra(ReminderAlarmReceiver.EXTRA_TITLE, data.optString("title"))
             putExtra(ReminderAlarmReceiver.EXTRA_DESCRIPTION, data.optString("description"))
+            putExtra(ReminderAlarmReceiver.EXTRA_CALLER_NAME, data.optString("callerName"))
         }
         intent.action = alarmAction(id)
         val broadcast = PendingIntent.getBroadcast(

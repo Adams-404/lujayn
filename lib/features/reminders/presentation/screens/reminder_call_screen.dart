@@ -31,9 +31,14 @@ abstract final class AppCallColors {
 /// user taps, depending on the OS version, permissions and OEM restrictions.
 /// The layout therefore never assumes it is already the only thing on screen.
 class ReminderCallScreen extends ConsumerWidget {
-  const ReminderCallScreen({super.key, required this.reminderId});
+  const ReminderCallScreen({
+    super.key,
+    required this.reminderId,
+    this.autoAnswer = false,
+  });
 
   final String reminderId;
+  final bool autoAnswer;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -68,7 +73,7 @@ class ReminderCallScreen extends ConsumerWidget {
                   onAction: () => Navigator.of(context).maybePop(),
                 );
               }
-              return _CallBody(reminder: reminder);
+              return _CallBody(reminder: reminder, autoAnswer: autoAnswer);
             },
           ),
         ),
@@ -78,9 +83,10 @@ class ReminderCallScreen extends ConsumerWidget {
 }
 
 class _CallBody extends ConsumerStatefulWidget {
-  const _CallBody({required this.reminder});
+  const _CallBody({required this.reminder, this.autoAnswer = false});
 
   final Reminder reminder;
+  final bool autoAnswer;
 
   @override
   ConsumerState<_CallBody> createState() => _CallBodyState();
@@ -93,10 +99,10 @@ class _CallBodyState extends ConsumerState<_CallBody> {
   ReminderSpeechService? _speech;
   ReminderRingtoneService? _ringtone;
   bool _speechAvailable = false;
-  bool _speakerEnabled = false;
+  bool _speakerEnabled = true;
   bool _speaking = false;
-  bool _isAnswered = false;
-  bool _ringing = true;
+  late bool _isAnswered;
+  late bool _ringing;
   bool _showKeypad = false;
   String _dialed = '';
   int _callSeconds = 0;
@@ -108,15 +114,40 @@ class _CallBodyState extends ConsumerState<_CallBody> {
   @override
   void initState() {
     super.initState();
+    _isAnswered = widget.autoAnswer;
+    _ringing = !widget.autoAnswer;
+    if (_isAnswered) {
+      _startCallTimer();
+    }
     // Ask after the first frame: the screen should be visible before it starts
     // talking or ringing, and providers must not be read during build.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _startRinging();
-      _prepareSpeech();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!_isAnswered) {
+        _startRinging();
+        _prepareSpeech();
+      } else {
+        await _prepareSpeech();
+        if (mounted && !_reminder.hasVoiceNote) {
+          _speak();
+        }
+      }
     });
-    _ringTimer = Timer(_ringDuration, () {
-      if (!mounted || _isAnswered) return;
-      setState(() => _ringing = false);
+    if (!_isAnswered) {
+      _ringTimer = Timer(_ringDuration, () {
+        if (!mounted || _isAnswered) return;
+        setState(() => _ringing = false);
+      });
+    }
+  }
+
+  void _startCallTimer() {
+    _callTimer?.cancel();
+    _callTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() => _callSeconds++);
+      } else {
+        timer.cancel();
+      }
     });
   }
 
@@ -149,26 +180,25 @@ class _CallBodyState extends ConsumerState<_CallBody> {
       _ringing = false;
       _callSeconds = 0;
     });
-    unawaited(_stopRinging());
-    _callTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) {
-        setState(() => _callSeconds++);
-      } else {
-        timer.cancel();
-      }
-    });
 
-    // Route first, but do not make the user wait for Android's audio stack
-    // before hearing the reminder. A call that answers in silence feels broken.
-    unawaited(_setSpeakerphone(false));
+    _ringTimer?.cancel();
+    _startCallTimer();
+
+    await _stopRinging();
     if (_reminder.hasVoiceNote) {
       // The recording is the message. Reading the text over it would talk
       // across the person the user recorded.
       return;
     }
-    if (_speechAvailable) {
-      await _stopSpeech();
-      unawaited(_speak());
+
+    final speech = _speech ?? ref.read(reminderSpeechServiceProvider);
+    if (speech == null) return;
+    _speech = speech;
+    if (!_speechAvailable) {
+      _speechAvailable = await speech.isAvailable();
+    }
+    if (_speechAvailable && mounted) {
+      _speak();
     }
   }
 
@@ -251,12 +281,14 @@ class _CallBodyState extends ConsumerState<_CallBody> {
 
     final autoSpeak =
         ref.read(spokenRemindersEnabledProvider).asData?.value ?? false;
-    if (available && autoSpeak && !_reminder.hasVoiceNote) await _speak();
+    if (available && autoSpeak && !_reminder.hasVoiceNote && !_isAnswered) {
+      await _speak();
+    }
   }
 
   Future<void> _speak() async {
-    final speech = _speech;
-    if (speech == null || !_speechAvailable || _speaking) return;
+    final speech = _speech ?? ref.read(reminderSpeechServiceProvider);
+    if (speech == null || !mounted || _speaking) return;
     HapticFeedback.lightImpact();
     setState(() => _speaking = true);
     try {

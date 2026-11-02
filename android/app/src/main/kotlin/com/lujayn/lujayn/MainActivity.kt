@@ -75,6 +75,8 @@ class MainActivity : FlutterActivity() {
             "id" to id,
             "title" to intent.getStringExtra(ReminderAlarmReceiver.EXTRA_TITLE),
             "description" to intent.getStringExtra(ReminderAlarmReceiver.EXTRA_DESCRIPTION),
+            "callerName" to intent.getStringExtra(ReminderAlarmReceiver.EXTRA_CALLER_NAME),
+            "autoAnswer" to intent.getBooleanExtra(ReminderAlarmReceiver.EXTRA_AUTO_ANSWER, false),
         )
     }
 
@@ -96,50 +98,118 @@ class MainActivity : FlutterActivity() {
      * communication-device API; older versions use the legacy speaker switch.
      */
     private fun setReminderAudioRoute(useSpeaker: Boolean): Boolean {
-        val audioManager = getSystemService(AudioManager::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
-            reminderAudioFocusRequest == null
-        ) {
-            val attributes = AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                .build()
-            val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
-                .setAudioAttributes(attributes)
-                .setOnAudioFocusChangeListener { }
-                .build()
-            audioManager.requestAudioFocus(request)
-            reminderAudioFocusRequest = request
-        }
-        audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val wantedType = if (useSpeaker) {
-                android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
+        try {
+            val audioManager = getSystemService(AudioManager::class.java) ?: return false
+            if (useSpeaker) {
+                // Speaker is the default and reliable playback path for reminders.
+                // Clear any communication device and reset to normal media mode.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    try {
+                        audioManager.clearCommunicationDevice()
+                    } catch (e: Exception) {
+                        android.util.Log.w("LujaynAudio", "Could not clear communication device", e)
+                    }
+                }
+                try {
+                    @Suppress("DEPRECATION")
+                    audioManager.isSpeakerphoneOn = false
+                } catch (e: Exception) {
+                    android.util.Log.w("LujaynAudio", "Could not reset speakerphone", e)
+                }
+                try {
+                    audioManager.mode = AudioManager.MODE_NORMAL
+                } catch (e: Exception) {
+                    android.util.Log.w("LujaynAudio", "Could not set audio mode to MODE_NORMAL", e)
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    try {
+                        reminderAudioFocusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
+                    } catch (e: Exception) {
+                        android.util.Log.w("LujaynAudio", "Could not abandon audio focus request", e)
+                    }
+                    reminderAudioFocusRequest = null
+                }
+                return true
             } else {
-                android.media.AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
+                // Earpiece route requested
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && reminderAudioFocusRequest == null) {
+                    try {
+                        val attributes = AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                            .build()
+                        val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                            .setAudioAttributes(attributes)
+                            .setOnAudioFocusChangeListener { }
+                            .build()
+                        audioManager.requestAudioFocus(request)
+                        reminderAudioFocusRequest = request
+                    } catch (e: Exception) {
+                        android.util.Log.w("LujaynAudio", "Could not request audio focus", e)
+                    }
+                }
+                try {
+                    audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+                } catch (e: Exception) {
+                    android.util.Log.w("LujaynAudio", "Could not set audio mode to MODE_IN_COMMUNICATION", e)
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    val device = audioManager.availableCommunicationDevices
+                        .firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_BUILTIN_EARPIECE }
+                    if (device != null) {
+                        try {
+                            return audioManager.setCommunicationDevice(device)
+                        } catch (e: Exception) {
+                            android.util.Log.w("LujaynAudio", "Could not set communication device", e)
+                        }
+                    }
+                }
+                @Suppress("DEPRECATION")
+                try {
+                    audioManager.isSpeakerphoneOn = false
+                    return true
+                } catch (e: Exception) {
+                    android.util.Log.w("LujaynAudio", "Could not toggle speakerphone", e)
+                    return false
+                }
             }
-            val device = audioManager.availableCommunicationDevices
-                .firstOrNull { it.type == wantedType } ?: return false
-            return audioManager.setCommunicationDevice(device)
+        } catch (e: Exception) {
+            android.util.Log.w("LujaynAudio", "Audio route setting failed", e)
+            return false
         }
-
-        @Suppress("DEPRECATION")
-        audioManager.isSpeakerphoneOn = useSpeaker
-        return true
     }
 
     private fun resetReminderAudioRoute() {
-        val audioManager = getSystemService(AudioManager::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            audioManager.clearCommunicationDevice()
-        }
-        @Suppress("DEPRECATION")
-        audioManager.isSpeakerphoneOn = false
-        audioManager.mode = AudioManager.MODE_NORMAL
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            reminderAudioFocusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
-            reminderAudioFocusRequest = null
+        try {
+            val audioManager = getSystemService(AudioManager::class.java) ?: return
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                try {
+                    audioManager.clearCommunicationDevice()
+                } catch (e: Exception) {
+                    android.util.Log.w("LujaynAudio", "Could not clear communication device", e)
+                }
+            }
+            try {
+                @Suppress("DEPRECATION")
+                audioManager.isSpeakerphoneOn = false
+            } catch (e: Exception) {
+                android.util.Log.w("LujaynAudio", "Could not reset speakerphone", e)
+            }
+            try {
+                audioManager.mode = AudioManager.MODE_NORMAL
+            } catch (e: Exception) {
+                android.util.Log.w("LujaynAudio", "Could not reset audio mode", e)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                try {
+                    reminderAudioFocusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
+                } catch (e: Exception) {
+                    android.util.Log.w("LujaynAudio", "Could not abandon audio focus request", e)
+                }
+                reminderAudioFocusRequest = null
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("LujaynAudio", "Reset audio route failed", e)
         }
     }
 
@@ -243,12 +313,20 @@ class MainActivity : FlutterActivity() {
                     if (enabled == null) {
                         result.error("INVALID_ARGUMENTS", "Missing speaker state.", null)
                     } else {
-                        result.success(setReminderAudioRoute(enabled))
+                        try {
+                            result.success(setReminderAudioRoute(enabled))
+                        } catch (e: Exception) {
+                            result.success(false)
+                        }
                     }
                 }
                 "resetAudioRoute" -> {
-                    resetReminderAudioRoute()
-                    result.success(null)
+                    try {
+                        resetReminderAudioRoute()
+                        result.success(null)
+                    } catch (e: Exception) {
+                        result.success(null)
+                    }
                 }
                 "playDialTone" -> {
                     playDialTone(call.argument<String>("key") ?: "")
@@ -278,6 +356,7 @@ class MainActivity : FlutterActivity() {
                                 id,
                                 info?.first ?: "Reminder",
                                 info?.second ?: "",
+                                info?.third ?: "",
                             )
                         }
                         result.success(null)
@@ -385,6 +464,7 @@ class MainActivity : FlutterActivity() {
                     val id = call.argument<String>("id")
                     val title = call.argument<String>("title")
                     val description = call.argument<String>("description")
+                    val callerName = call.argument<String>("callerName")
                     val scheduledAtMillis = call.argument<Number>("scheduledAtMillis")
                     val recurrenceType = call.argument<String>("recurrenceType") ?: "none"
                     val daysOfWeek = call.argument<List<Int>>("daysOfWeek") ?: emptyList()
@@ -405,6 +485,7 @@ class MainActivity : FlutterActivity() {
                             id,
                             title,
                             description,
+                            callerName,
                             scheduledAtMillis.toLong(),
                             recurrenceType,
                             daysOfWeek,

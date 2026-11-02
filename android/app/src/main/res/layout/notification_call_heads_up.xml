@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <!-- Caller info row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <!-- Avatar with caller initial -->
+        <TextView
+            android:id="@+id/caller_initial"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_caller_avatar"
+            android:gravity="center"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:text="L" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/caller_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:text="Lujayn" />
+
+            <TextView
+                android:id="@+id/reminder_task"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:textSize="13sp"
+                android:maxLines="2"
+                android:ellipsize="end"
+                android:text="It's time for your reminder." />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Edge-to-edge call action buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <!-- Red decline on far left edge -->
+        <TextView
+            android:id="@+id/btn_decline"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_notification_decline"
+            android:gravity="center"
+            android:paddingStart="22dp"
+            android:paddingEnd="22dp"
+            android:text="✕  Decline"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <!-- Expander pushing Answer to the far right edge -->
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <!-- Green answer on far right edge -->
+        <TextView
+            android:id="@+id/btn_answer"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_notification_answer"
+            android:gravity="center"
+            android:paddingStart="22dp"
+            android:paddingEnd="22dp"
+            android:text="📞  Answer"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+</LinearLayout>

@@ -20,6 +20,18 @@ class FlutterReminderSpeechService implements ReminderSpeechService {
   static const double _speechRate = 0.48;
 
   bool? _available;
+  bool _configured = false;
+
+  Future<void> _configure() async {
+    if (_configured) return;
+    try {
+      await _engine.setSpeechRate(_speechRate);
+      await _engine.awaitSpeakCompletion(false);
+      _configured = true;
+    } on Object catch (error) {
+      debugPrint('Lujayn speech configuration failed: $error');
+    }
+  }
 
   @override
   Future<bool> isAvailable() async {
@@ -28,6 +40,9 @@ class FlutterReminderSpeechService implements ReminderSpeechService {
       final languages = await _engine.getLanguages;
       final available = languages is List && languages.isNotEmpty;
       _available = available;
+      if (available) {
+        await _configure();
+      }
       return available;
     } on Object catch (error) {
       // A missing plugin, a disabled engine, or a platform that refuses to
@@ -44,13 +59,8 @@ class FlutterReminderSpeechService implements ReminderSpeechService {
     if (trimmed.isEmpty) return;
     if (!await isAvailable()) return;
     try {
-      // Replace whatever is already speaking instead of queueing, so pressing
-      // Repeat twice reads the reminder once.
+      await _configure();
       await _engine.stop();
-      await _engine.setSpeechRate(_speechRate);
-      // Report completion so the screen can show an honest Stop/Read state
-      // instead of guessing when speech ended.
-      await _engine.awaitSpeakCompletion(true);
       await _engine.speak(trimmed, focus: true);
     } on Object catch (error) {
       debugPrint('Lujayn speech failed: $error');

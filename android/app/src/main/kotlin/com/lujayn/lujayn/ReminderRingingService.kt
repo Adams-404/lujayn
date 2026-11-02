@@ -40,15 +40,23 @@ class ReminderRingingService : Service() {
         const val EXTRA_ID = "reminder_id"
         const val EXTRA_TITLE = "reminder_title"
         const val EXTRA_DESCRIPTION = "reminder_description"
+        const val EXTRA_CALLER_NAME = "reminder_caller_name"
         const val TIMEOUT_MS = 60_000L
 
         /** Starts ringing, or does nothing if this reminder is already ringing. */
-        fun start(context: Context, id: String, title: String, description: String) {
+        fun start(
+            context: Context,
+            id: String,
+            title: String,
+            description: String,
+            callerName: String = "",
+        ) {
             val intent = Intent(context, ReminderRingingService::class.java).apply {
                 action = ACTION_START
                 putExtra(EXTRA_ID, id)
                 putExtra(EXTRA_TITLE, title)
                 putExtra(EXTRA_DESCRIPTION, description)
+                putExtra(EXTRA_CALLER_NAME, callerName)
             }
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -80,6 +88,7 @@ class ReminderRingingService : Service() {
     private var currentId: String? = null
     private var currentTitle: String = "Reminder"
     private var currentDescription: String = ""
+    private var currentCallerName: String = ""
     private val handler = Handler(Looper.getMainLooper())
     private val timeout = Runnable { onRingTimeout() }
 
@@ -99,6 +108,7 @@ class ReminderRingingService : Service() {
         }
         val title = intent.getStringExtra(EXTRA_TITLE) ?: "Reminder"
         val description = intent.getStringExtra(EXTRA_DESCRIPTION).orEmpty()
+        val callerName = intent.getStringExtra(EXTRA_CALLER_NAME).orEmpty()
 
         if (currentId == id && player?.isPlaying == true) {
             return START_NOT_STICKY
@@ -108,9 +118,10 @@ class ReminderRingingService : Service() {
         currentId = id
         currentTitle = title
         currentDescription = description
+        currentCallerName = callerName
         ReminderRingtoneStore.setRingingId(this, id)
 
-        val notification = ReminderNotifications.build(this, id, title, description)
+        val notification = ReminderNotifications.build(this, id, title, description, callerName)
         startAsForeground(id, notification)
         startRinging()
         handler.removeCallbacks(timeout)
@@ -244,6 +255,7 @@ class ReminderRingingService : Service() {
             id,
             currentTitle,
             currentDescription,
+            currentCallerName,
             missed = true,
         )
         stopSelf()

@@ -54,7 +54,11 @@ class _VoiceNotePlayerWidgetState extends ConsumerState<VoiceNotePlayerWidget> {
     });
 
     if (widget.autoPlay) {
-      await player.play(resolved);
+      try {
+        await player.play(resolved);
+      } on Object catch (error) {
+        debugPrint('Voice note autoplay failed: $error');
+      }
     }
   }
 
@@ -64,7 +68,11 @@ class _VoiceNotePlayerWidgetState extends ConsumerState<VoiceNotePlayerWidget> {
     if (!oldWidget.autoPlay && widget.autoPlay && !_state.isPlaying) {
       final path = _resolvedPath;
       if (path != null && _player != null) {
-        _player!.play(path);
+        try {
+          _player!.play(path);
+        } on Object catch (error) {
+          debugPrint('Voice note autoplay update failed: $error');
+        }
       }
     }
   }

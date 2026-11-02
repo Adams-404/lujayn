@@ -1,16 +1,22 @@
 /// A reminder that the platform wants shown as a focused, call-style alert.
 class ReminderCallRequest {
-  const ReminderCallRequest({required this.reminderId});
+  const ReminderCallRequest({
+    required this.reminderId,
+    this.autoAnswer = false,
+  });
 
   final String reminderId;
+  final bool autoAnswer;
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is ReminderCallRequest && other.reminderId == reminderId;
+      other is ReminderCallRequest &&
+          other.reminderId == reminderId &&
+          other.autoAnswer == autoAnswer;
 
   @override
-  int get hashCode => reminderId.hashCode;
+  int get hashCode => Object.hash(reminderId, autoAnswer);
 }
 
 /// Hands a due reminder from the platform layer to the presentation layer.

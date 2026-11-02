@@ -8,6 +8,7 @@ class ReminderSchedule {
     required this.reminderId,
     required this.title,
     this.description,
+    this.callerName,
     required this.recurrence,
     required this.scheduledAt,
   });
@@ -15,6 +16,7 @@ class ReminderSchedule {
   final String reminderId;
   final String title;
   final String? description;
+  final String? callerName;
   final RecurrenceRule recurrence;
   final DateTime scheduledAt;
 }
@@ -40,6 +42,7 @@ class ReminderSchedulePlanner {
       reminderId: reminder.id,
       title: reminder.title,
       description: reminder.description,
+      callerName: reminder.callerName,
       recurrence: reminder.recurrence,
       scheduledAt: nextOccurrence,
     );
