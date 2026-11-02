@@ -3,6 +3,9 @@ package com.lujayn.lujayn
 import android.Manifest
 import android.app.AlarmManager
 import android.app.NotificationManager
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -16,6 +19,7 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     private val alarmChannelName = "com.lujayn/reminder_alarms"
     private val callEventChannelName = "com.lujayn/reminder_call_events"
+    private val reminderAudioChannelName = "com.lujayn/reminder_audio"
 
     companion object {
         private const val NOTIFICATION_PERMISSION_REQUEST = 4301
@@ -24,6 +28,7 @@ class MainActivity : FlutterActivity() {
     private var notificationPermissionResult: MethodChannel.Result? = null
     private var callEventSink: EventChannel.EventSink? = null
     private var pendingReminderCall: Map<String, Any?>? = null
+    private var reminderAudioFocusRequest: AudioFocusRequest? = null
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,6 +49,7 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
+        resetReminderAudioRoute()
         notificationPermissionResult = null
         callEventSink = null
         super.onDestroy()
@@ -72,6 +78,58 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    /**
+     * Routes reminder speech like a call. On Android 12+, prefer the
+     * communication-device API; older versions use the legacy speaker switch.
+     */
+    private fun setReminderAudioRoute(useSpeaker: Boolean): Boolean {
+        val audioManager = getSystemService(AudioManager::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+            reminderAudioFocusRequest == null
+        ) {
+            val attributes = AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                .build()
+            val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                .setAudioAttributes(attributes)
+                .setOnAudioFocusChangeListener { }
+                .build()
+            audioManager.requestAudioFocus(request)
+            reminderAudioFocusRequest = request
+        }
+        audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val wantedType = if (useSpeaker) {
+                android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
+            } else {
+                android.media.AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
+            }
+            val device = audioManager.availableCommunicationDevices
+                .firstOrNull { it.type == wantedType } ?: return false
+            return audioManager.setCommunicationDevice(device)
+        }
+
+        @Suppress("DEPRECATION")
+        audioManager.isSpeakerphoneOn = useSpeaker
+        return true
+    }
+
+    private fun resetReminderAudioRoute() {
+        val audioManager = getSystemService(AudioManager::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            audioManager.clearCommunicationDevice()
+        }
+        @Suppress("DEPRECATION")
+        audioManager.isSpeakerphoneOn = false
+        audioManager.mode = AudioManager.MODE_NORMAL
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            reminderAudioFocusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
+            reminderAudioFocusRequest = null
+        }
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
@@ -91,6 +149,27 @@ class MainActivity : FlutterActivity() {
                 }
             },
         )
+
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            reminderAudioChannelName,
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "setSpeakerphone" -> {
+                    val enabled = call.argument<Boolean>("enabled")
+                    if (enabled == null) {
+                        result.error("INVALID_ARGUMENTS", "Missing speaker state.", null)
+                    } else {
+                        result.success(setReminderAudioRoute(enabled))
+                    }
+                }
+                "resetAudioRoute" -> {
+                    resetReminderAudioRoute()
+                    result.success(null)
+                }
+                else -> result.notImplemented()
+            }
+        }
 
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
