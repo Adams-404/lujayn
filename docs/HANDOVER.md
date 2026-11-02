@@ -446,3 +446,119 @@ connected live duration timer, auto voice note & speech readout, dialpad respons
 keys 1/2/3, red Hang Up button, on-device caller profile image support via app-private
 storage and image picker, and Drift schema v4 migration) are landed and verified across 142 passing tests.
 The next actions are physical-device verification for #5, the sherpa-onnx engine adapter for downloadable offline voice packs, encrypted backup (#16), and on-device natural language (#17).
+
+
+---
+
+## 13. Handover addendum — 2026-11-02 (supersedes older status above)
+
+**Read this section first.** Sections 1–12 are historical notes from 2026-11-01 and
+describe an earlier repository state. Do not assume their test counts, branch,
+or completion claims describe the current PR.
+
+### Current work in progress
+
+- Repository: `Adams-404/lujayn`
+- Active working branch: `fix/real-call-experience`
+- Active draft PR: [#24 — Start rebuilding Lujayn's reminder call experience](https://github.com/Adams-404/lujayn/pull/24)
+- PR is **not merged**. Do not merge until all CI checks pass and the implementation
+  has been reviewed.
+- Latest commit known to this handover: `af5ea4b25345eb2f597c0135828ba2c306fdc3f9`
+  (`style(reminders): simplify conditional rendering before CI format`).
+- The latest commit has **not been verified green**. A workflow lookup for that
+  commit returned no PR-triggered workflow runs. Do not invent a run URL or claim
+  that CI is passing. Open the PR's Checks tab or Actions page and identify the
+  run attached to the current head SHA.
+
+### Recent CI failures and what they mean
+
+- Run [41384325623](https://github.com/Adams-404/lujayn/actions/runs/41384325623)
+  failed in Flutter tests: 129 passed, 13 failed. The failures included stale
+  widget expectations after the incoming-call UI labels/actions changed, plus
+  large-text layout issues.
+- Run [41384973471](https://github.com/Adams-404/lujayn/actions/runs/41384973471)
+  failed at the formatting step for
+  `lib/features/reminders/presentation/screens/reminder_call_screen.dart`.
+  Dependency installation and Drift code generation completed; format failure
+  stopped the job before analyzer, tests, and APK build.
+- A follow-up commit `af5ea4b` simplified some conditional rendering in that
+  screen, but **was not run through the Dart formatter locally** and is not
+  confirmed to resolve formatting. The next agent must run the formatter, inspect
+  the diff, commit the formatter output, and verify a fresh CI run.
+- Do not batch more feature work on top of a red or unverified CI state. First
+  establish a green baseline.
+
+### Changes already made on PR #24 (verify each against branch before extending)
+
+- Android notification uses Android CallStyle where supported, with explicit
+  native Answer and Decline actions.
+- Answer action launches `MainActivity` with reminder ID/title/description;
+  decline cancels the notification.
+- Flutter reminder screen was changed toward a recognizable incoming-call
+  layout with Answer and Decline controls, and tests were partly updated to
+  match the new labels and interaction.
+- Large-text layout fixes were attempted for the reminder filters, loading
+  placeholder and next-reminder header. They require CI verification.
+- Android audio channel and AudioManager routing were started for speaker /
+  earpiece-style behavior, including audio focus and route reset. This is
+  **unverified on a physical device**. Confirm API-level behavior and ensure
+  audio mode/focus are restored on every exit/error path.
+- Voice-pack installer was changed to skip downloading when an existing
+  install marker identifies the requested pack. A regression test was added
+  to assert a second install does not invoke the downloader again. This needs
+  CI verification and a real APK-over-APK update test.
+
+### Issues to track
+
+- #25 Incoming-call UI:
+  https://github.com/Adams-404/lujayn/issues/25
+- #26 Dedicated in-call UI and controls:
+  https://github.com/Adams-404/lujayn/issues/26
+- #27 Natural voice preview and actual offline engine:
+  https://github.com/Adams-404/lujayn/issues/27
+- #28 In-app ringtone picker and ringing lifecycle:
+  https://github.com/Adams-404/lujayn/issues/28
+- #29 Android background/OEM reliability:
+  https://github.com/Adams-404/lujayn/issues/29
+- #30 CI regression coverage:
+  https://github.com/Adams-404/lujayn/issues/30
+- #31 Preserve downloaded voice packs across app updates:
+  https://github.com/Adams-404/lujayn/issues/31
+
+### Required next-agent sequence
+
+1. Read `AGENTS.md`, `docs/lujayn-project-brief.md`,
+   `docs/voice-packs.md`, `docs/caller-persona-and-call-simulation.md`,
+   `docs/android-device-test-matrix.md`, and the design skill before editing.
+2. Fetch PR #24's current head SHA and inspect its full diff. Do not assume this
+   handover's SHA is still current.
+3. Run `dart format lib test` (or the repository's documented formatter command),
+   inspect the diff, then run the quality gates sequentially:
+   `dart format --output=none --set-exit-if-changed lib test`,
+   `flutter analyze --fatal-infos`, `flutter test`. Do not run Flutter
+   commands concurrently. Use CI for the Android APK build if the local network
+   cannot fetch Flutter engine artifacts.
+4. Fix every actual failure, add/update regression tests, and rerun until green.
+   Do not merely change test expectations to hide broken behavior.
+5. Only after the baseline is green, continue the product priorities:
+   (a) genuine incoming-call presentation and ringing lifecycle;
+   (b) convincing in-call UI with working dialpad and truthful speaker/earpiece
+   routing; (c) real voice previews and playback from the selected downloaded
+   voice, not the generic Android TTS fallback; (d) ringtone selection and
+   playback/stop lifecycle; (e) reliable background delivery across Android/OEMs.
+6. For voice packs, preserve intact files across ordinary app updates. App version
+   changes must not trigger a voice-pack download. Validate marker plus actual
+   files/integrity, and only repair/re-download when missing or corrupt. Verify
+   with an update-over-existing-install test. App uninstall/clear-storage may
+   remove app-private files; document this honestly.
+7. Keep the privacy rules and product constraints in section 7. Do not claim
+   full-screen delivery, earpiece routing, natural voices, or physical-device
+   reliability works until tested on real supported hardware.
+
+### Critical working rule
+
+Do not make a string of speculative GitHub edits without running the project's
+formatter, analyzer and tests. Inspect the exact failing CI step and logs first.
+Make the smallest coherent fix, validate it, then proceed. Keep PR #24 unmerged
+until checks are green. Clearly report what was verified, what was not run, and
+what still needs a physical Android device.
