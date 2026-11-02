@@ -26,18 +26,38 @@ class ReminderAlarmReceiver : BroadcastReceiver() {
     }
 }
 
-/** Handles the system CallStyle notification's explicit decline action. */
+/** Routes CallStyle answer/decline actions into Lujayn's reminder flow. */
 class ReminderCallActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val id = intent.getStringExtra(ReminderAlarmReceiver.EXTRA_ID) ?: return
-        context.getSystemService(NotificationManager::class.java)
-            .cancel(id.hashCode())
+        val notifications = context.getSystemService(NotificationManager::class.java)
+        notifications.cancel(id.hashCode())
+
+        if (intent.action == ACTION_ANSWER) {
+            val openApp = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra(ReminderAlarmReceiver.EXTRA_ID, id)
+                putExtra(
+                    ReminderAlarmReceiver.EXTRA_TITLE,
+                    intent.getStringExtra(ReminderAlarmReceiver.EXTRA_TITLE),
+                )
+                putExtra(
+                    ReminderAlarmReceiver.EXTRA_DESCRIPTION,
+                    intent.getStringExtra(ReminderAlarmReceiver.EXTRA_DESCRIPTION),
+                )
+            }
+            context.startActivity(openApp)
+        }
+    }
+
+    companion object {
+        const val ACTION_ANSWER = "com.lujayn.REMINDER_CALL_ANSWER"
+        const val ACTION_DECLINE = "com.lujayn.REMINDER_CALL_DECLINE"
     }
 }
 
 internal object ReminderNotifications {
     private const val CHANNEL_ID = "reminders"
-    private const val ACTION_DECLINE = "com.lujayn.REMINDER_CALL_DECLINE"
 
     fun createChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -74,11 +94,22 @@ internal object ReminderNotifications {
             openApp,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+        val answerIntent = PendingIntent.getBroadcast(
+            context,
+            id.hashCode() + 1,
+            Intent(context, ReminderCallActionReceiver::class.java).apply {
+                action = ReminderCallActionReceiver.ACTION_ANSWER
+                putExtra(ReminderAlarmReceiver.EXTRA_ID, id)
+                putExtra(ReminderAlarmReceiver.EXTRA_TITLE, title)
+                putExtra(ReminderAlarmReceiver.EXTRA_DESCRIPTION, description)
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
         val declineIntent = PendingIntent.getBroadcast(
             context,
             id.hashCode(),
             Intent(context, ReminderCallActionReceiver::class.java).apply {
-                action = ACTION_DECLINE
+                action = ReminderCallActionReceiver.ACTION_DECLINE
                 putExtra(ReminderAlarmReceiver.EXTRA_ID, id)
             },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
@@ -109,8 +140,8 @@ internal object ReminderNotifications {
                 .build()
             val callStyle = Notification.CallStyle.forIncomingCall(
                 caller,
+                answerIntent,
                 declineIntent,
-                contentIntent,
             ).setIsVideo(false)
             notificationBuilder.setStyle(callStyle)
         }
