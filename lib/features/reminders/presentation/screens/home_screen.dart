@@ -493,34 +493,32 @@ class _ReminderFilters extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.surface),
         border: Border.all(color: colors.outlineVariant),
       ),
-      child: Row(
-        mainAxisSize: isLargeText ? MainAxisSize.min : MainAxisSize.max,
-        children: [
-          for (final option in options)
-            if (isLargeText)
-              _SegmentTab(
-                label: option.$2,
-                selected: selected == option.$1,
-                onTap: () => onSelected(option.$1),
-              )
-            else
-              Expanded(
-                child: _SegmentTab(
-                  label: option.$2,
-                  selected: selected == option.$1,
-                  onTap: () => onSelected(option.$1),
-                ),
-              ),
-        ],
-      ),
+      child: isLargeText
+          ? Wrap(
+              spacing: AppSpacing.xxs,
+              runSpacing: AppSpacing.xxs,
+              children: [
+                for (final option in options)
+                  _SegmentTab(
+                    label: option.$2,
+                    selected: selected == option.$1,
+                    onTap: () => onSelected(option.$1),
+                  ),
+              ],
+            )
+          : Row(
+              children: [
+                for (final option in options)
+                  Expanded(
+                    child: _SegmentTab(
+                      label: option.$2,
+                      selected: selected == option.$1,
+                      onTap: () => onSelected(option.$1),
+                    ),
+                  ),
+              ],
+            ),
     );
-
-    if (isLargeText) {
-      return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: segments,
-      );
-    }
 
     return segments;
   }
