@@ -250,6 +250,8 @@ class _CallBodyState extends ConsumerState<_CallBody> {
     final time = AppDateFormatters.formatTime(_reminder.scheduledDateTime);
     final autoSpeak =
         ref.watch(spokenRemindersEnabledProvider).asData?.value ?? false;
+    final callerNumber = _reminder.callerNumber;
+    final description = _reminder.description;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
@@ -292,11 +294,11 @@ class _CallBodyState extends ConsumerState<_CallBody> {
                         height: 1.2,
                       ),
                     ),
-                    if (_reminder.callerNumber case final num?
-                        when num.isNotEmpty) ...[
+                    if (callerNumber != null &&
+                        callerNumber.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
-                        num,
+                        callerNumber,
                         textAlign: TextAlign.center,
                         style: theme.textTheme.titleSmall?.copyWith(
                           color: colors.onSurfaceVariant,
@@ -341,11 +343,11 @@ class _CallBodyState extends ConsumerState<_CallBody> {
                       ),
                     ),
                   ],
-                  if (_reminder.description case final note?
-                      when note.isNotEmpty) ...[
+                  if (description != null &&
+                      description.isNotEmpty) ...[
                     const SizedBox(height: 14),
                     Text(
-                      note,
+                      description,
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: colors.onSurfaceVariant,
