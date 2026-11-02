@@ -156,8 +156,8 @@ class MainActivity : FlutterActivity() {
             "7" -> ToneGenerator.TONE_DTMF_7
             "8" -> ToneGenerator.TONE_DTMF_8
             "9" -> ToneGenerator.TONE_DTMF_9
-            "*" -> ToneGenerator.TONE_DTMF_STAR
-            "#" -> ToneGenerator.TONE_DTMF_POUND
+            "*" -> ToneGenerator.TONE_DTMF_S
+            "#" -> ToneGenerator.TONE_DTMF_P
             else -> return
         }
         try {
