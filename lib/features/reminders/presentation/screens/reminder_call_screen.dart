@@ -214,7 +214,7 @@ class _CallBodyState extends ConsumerState<_CallBody> {
           Text(
             _isAnswered
                 ? 'CONNECTED • $_formattedCallDuration'
-                : (_reminder.hasCallerPersona ? 'INCOMING CALL' : 'REMINDER'),
+                : 'INCOMING CALL',
             style: theme.textTheme.labelMedium?.copyWith(
               color: _isAnswered ? colors.primary : colors.onSurfaceVariant,
               letterSpacing: 1.6,
@@ -417,49 +417,40 @@ class _CallBodyState extends ConsumerState<_CallBody> {
               child: FilledButton.icon(
                 onPressed: _hangUp,
                 style: FilledButton.styleFrom(
-                  backgroundColor: colors.error,
-                  foregroundColor: colors.onError,
-                  minimumSize: const Size.fromHeight(56),
+                  backgroundColor: const Color(0xFFFF6B6B),
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(64),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
                 ),
                 icon: const Icon(Icons.call_end_rounded),
-                label: const Text('Hang Up'),
+                label: const Text('Hang up'),
               ),
             ),
           ] else ...[
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: _answerCall,
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(56),
-                ),
-                icon: const Icon(Icons.call_rounded),
-                label: const Text('Answer Call'),
-              ),
+            TextButton.icon(
+              onPressed: _snooze,
+              icon: const Icon(Icons.snooze_rounded),
+              label: const Text('Snooze for 10 minutes'),
             ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _dismiss,
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(56),
+            const SizedBox(height: 18),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _IncomingCallAction(
+                  icon: Icons.call_end_rounded,
+                  label: 'Decline',
+                  color: const Color(0xFFFF6B6B),
+                  onPressed: _dismiss,
                 ),
-                icon: const Icon(Icons.check_rounded),
-                label: const Text('Done'),
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _snooze,
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(56),
+                _IncomingCallAction(
+                  icon: Icons.call_rounded,
+                  label: 'Answer',
+                  color: const Color(0xFF43C879),
+                  onPressed: _answerCall,
                 ),
-                icon: const Icon(Icons.snooze_rounded),
-                label: const Text('Snooze 10 minutes'),
-              ),
+              ],
             ),
           ],
           const SizedBox(height: 14),
@@ -625,6 +616,45 @@ class _CallMessage extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _IncomingCallAction extends StatelessWidget {
+  const _IncomingCallAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 76,
+          height: 76,
+          child: FilledButton(
+            onPressed: onPressed,
+            style: FilledButton.styleFrom(
+              backgroundColor: color,
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.zero,
+              shape: const CircleBorder(),
+            ),
+            child: Icon(icon, size: 32),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(label, style: Theme.of(context).textTheme.labelLarge),
+      ],
     );
   }
 }
