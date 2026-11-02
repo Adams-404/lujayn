@@ -112,8 +112,9 @@ void main() {
 
     expect(find.text('Take evening medication'), findsOneWidget);
     expect(find.text('With a full glass of water'), findsOneWidget);
-    expect(find.text('Done'), findsOneWidget);
-    expect(find.text('Snooze 10 minutes'), findsOneWidget);
+    expect(find.text('Answer'), findsOneWidget);
+    expect(find.text('Decline'), findsOneWidget);
+    expect(find.text('Snooze for 10 minutes'), findsOneWidget);
   });
 
   testWidgets('snoozing schedules a separate alarm', (tester) async {
@@ -123,7 +124,7 @@ void main() {
     await tester.pumpWidget(wrap(ReminderCallScreen(reminderId: reminder.id)));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Snooze 10 minutes'));
+    await tester.tap(find.text('Snooze for 10 minutes'));
     await tester.pumpAndSettle();
 
     expect(scheduler.scheduled.single.reminderId, 'due::snooze');
@@ -138,6 +139,8 @@ void main() {
     await tester.pumpWidget(wrap(ReminderCallScreen(reminderId: reminder.id)));
     await tester.pumpAndSettle();
 
+    await tester.tap(find.text('Answer'));
+    await tester.pump();
     await tester.tap(find.text('Done'));
     await tester.pumpAndSettle();
 
@@ -179,7 +182,7 @@ void main() {
     expect(find.text('Mom ❤️'), findsOneWidget);
     expect(find.text('Mobile • (555) 019-2831'), findsOneWidget);
     expect(find.text('Pick up dry cleaning'), findsOneWidget);
-    expect(find.text('Answer Call'), findsOneWidget);
+    expect(find.text('Answer'), findsOneWidget);
   });
 
   testWidgets('renders incoming call simulation with caller profile photo', (
@@ -216,10 +219,10 @@ void main() {
     await tester.pumpWidget(wrap(ReminderCallScreen(reminderId: reminder.id)));
     await tester.pumpAndSettle();
 
-    expect(find.text('REMINDER'), findsOneWidget);
-    expect(find.text('Answer Call'), findsOneWidget);
+    expect(find.text('INCOMING CALL'), findsOneWidget);
+    expect(find.text('Answer'), findsOneWidget);
 
-    await tester.tap(find.text('Answer Call'));
+    await tester.tap(find.text('Answer'));
     await tester.pump();
 
     expect(find.textContaining('CONNECTED'), findsOneWidget);
@@ -238,7 +241,7 @@ void main() {
     await tester.pumpWidget(wrap(ReminderCallScreen(reminderId: reminder.id)));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Answer Call'));
+    await tester.tap(find.text('Answer'));
     await tester.pump();
 
     await tester.ensureVisible(find.text('1'));
@@ -259,7 +262,7 @@ void main() {
     await tester.pumpWidget(wrap(ReminderCallScreen(reminderId: reminder.id)));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Answer Call'));
+    await tester.tap(find.text('Answer'));
     await tester.pump();
 
     await tester.ensureVisible(find.text('2'));
@@ -276,7 +279,7 @@ void main() {
     await tester.pumpWidget(wrap(ReminderCallScreen(reminderId: reminder.id)));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Answer Call'));
+    await tester.tap(find.text('Answer'));
     await tester.pump();
 
     expect(find.text('Hang Up'), findsOneWidget);
@@ -293,7 +296,7 @@ void main() {
     await tester.pumpWidget(wrap(ReminderCallScreen(reminderId: reminder.id)));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Answer Call'));
+    await tester.tap(find.text('Answer'));
     await tester.pump();
 
     expect(speech.spoken, [
