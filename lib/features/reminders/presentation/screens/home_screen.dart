@@ -115,8 +115,10 @@ class HomeScreen extends ConsumerWidget {
               const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
               const SliverToBoxAdapter(child: _DeliveryNotice()),
               remindersAsync.when(
-                loading: () =>
-                    const SliverFillRemaining(child: _ReminderLoadingState()),
+                loading: () => const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _ReminderLoadingState(),
+                ),
                 error: (_, _) => SliverFillRemaining(
                   hasScrollBody: false,
                   child: EmptyStateView(
@@ -629,7 +631,10 @@ class _NextReminderPanel extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: AppSpacing.xs,
+                runSpacing: AppSpacing.xxs,
                 children: [
                   Text(
                     reminder.isPastDue ? 'NEEDS ATTENTION' : 'NEXT REMINDER',
@@ -639,7 +644,6 @@ class _NextReminderPanel extends StatelessWidget {
                       letterSpacing: 1.1,
                     ),
                   ),
-                  const Spacer(),
                   Icon(Icons.north_east_rounded, size: 17, color: accent),
                 ],
               ),
