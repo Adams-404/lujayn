@@ -111,6 +111,25 @@ void main() {
     expect(await staging.exists(), isFalse);
   });
 
+  test('installing an already installed pack skips its download', () async {
+    final bytes = buildArchive();
+    final downloader = _MemoryDownloader(bytes);
+    final installer = ArchiveVoicePackInstaller(
+      storage: storage,
+      downloader: downloader,
+    );
+    final pack = packFor(bytes);
+
+    await installer.install(pack).toList();
+    expect(downloader.downloadCalls, 1);
+
+    final secondInstall = await installer.install(pack).toList();
+
+    expect(secondInstall.last.stage, VoiceInstallStage.done);
+    expect(downloader.downloadCalls, 1);
+    expect(await installer.installedPackIds(), {'test-pack'});
+  });
+
   test('reports download progress against the expected size', () async {
     final bytes = buildArchive();
     final installer = installerFor(bytes);
@@ -211,9 +230,11 @@ class _MemoryDownloader implements VoicePackDownloader {
   _MemoryDownloader(this.bytes);
 
   final Uint8List bytes;
+  int downloadCalls = 0;
 
   @override
   Stream<int> download(String url, File destination) async* {
+    downloadCalls++;
     final sink = destination.openWrite();
     var received = 0;
     const chunkSize = 512;
