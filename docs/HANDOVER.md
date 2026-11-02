@@ -486,15 +486,15 @@ It is completely local: no account, no backend, no analytics, offline-first.
 
 ### Tracked GitHub issues
 
+- **#16 Encrypted local backup & restore:** Completed and verified (174 tests passing, AES-256-GCM + PBKDF2, zip archive with audio/photos, merge/replace modes, UI).
 - **#25 Incoming-call UI:** Implemented in PR #24. Ready for physical-device validation.
 - **#26 In-call UI & controls:** Implemented in PR #24 (speaker/earpiece, dialpad, DTMF, timer, hangup).
 - **#27 Natural offline voices:** Implemented in PR #24 (`sherpa-onnx`, Kitten/Kokoro, voice previews).
 - **#28 Ringtone picker & ringing lifecycle:** Implemented in PR #24 (`ReminderRingingService`, `RingtoneSettingsScreen`).
 - **#29 Android background & OEM reliability:** Addressed via foreground service and native decline reconciliation; hardware caveats documented in `docs/android-device-test-matrix.md`.
-- **#30 CI regression coverage:** 159 tests passing; formatting, analyzer, and widget regression suites clean.
+- **#30 CI regression coverage:** 174 tests passing; formatting, analyzer, and widget regression suites clean.
 - **#31 Preserve voice packs across app updates:** Implemented in PR #24 via app-support directory and integrity checks.
 - **#5 Android reminder delivery:** Unit tests pass; physical-device test matrix remains the hardware gate.
-- **#16 Encrypted local backup & restore:** Next major milestone after call experience stabilization.
 - **#17 On-device natural language:** Future milestone.
 
 ### Verified locally
@@ -502,10 +502,10 @@ It is completely local: no account, no backend, no analytics, offline-first.
 ```bash
 dart format --output=none --set-exit-if-changed lib test   # clean
 flutter analyze --fatal-infos                              # no issues
-flutter test                                               # 159 passing
+flutter test                                               # 174 passing
 ```
 
-New coverage: call lifecycle (ringing, answer, decline, snooze, hang up, missed call timeout, dialpad), voice selection/preview/repair, ringtone list/preview/selection, and pack repair after deleted model files.
+New coverage: encrypted backup creation, AES-256-GCM envelope encryption, PBKDF2 key derivation, file inspection, wrong-passphrase rejection, zip packing of reminders/recordings/photos, merge and replace restore modes, alarm rescheduling upon restore, and BackupRestoreScreen across all 5 themes and 200% text scale.
 
 ### Not verified — physical hardware required
 
@@ -518,9 +518,34 @@ New coverage: call lifecycle (ringing, answer, decline, snooze, hang up, missed 
 - **Never await audio cleanup before acting on a reminder.** In widget tests unmocked method channel responses can hang; fire and forget audio resets so the user's action (snooze/decline/hang up) is never blocked.
 - **The ringing badge must respect reduced motion.** Repeating animations keep `pumpAndSettle` from completing; tests set `disableAnimations` and use a tall viewport (the call surface exceeds 800×600).
 - Round call actions and in-call controls use a `GestureDetector` around the label as well as the button, so tapping the text works.
+- **PBKDF2 iteration count in tests vs production.** Production defaults to 100,000 iterations for robust security; tests pass a lower iteration count (e.g. 1,000) into `AesBackupVaultService` to ensure unit test suites run fast.
+
+---
+
+## 14. Milestone 2026-11-02: Encrypted Local Backup & Restore (#16)
+
+Implemented privacy-first, fully offline local backup and restore:
+- **AES-256-GCM Vault (`AesBackupVaultService`):**
+  - Uses `cryptography` package with PBKDF2-HMAC-SHA256 (100,000 iterations default) for key derivation.
+  - Generates unique salt and IV per backup file.
+  - Validates authenticated payload tag; throws `InvalidBackupPassphraseException` on wrong password or tampering.
+- **Self-contained backup package (`.lujaynbackup`):**
+  - Includes `manifest.json` with metadata and format versioning.
+  - Serializes all reminders with recurrence rules and caller persona fields (`reminders.json`).
+  - Bundles voice recordings (`recordings/`) and caller profile images (`caller_images/`).
+- **Inspection & Restore Modes:**
+  - `inspectBackup()` decrypts and reads manifest without touching persistence.
+  - `RestoreMode.merge`: Preserves existing reminders, assigns fresh UUID to colliding IDs, and schedules alarms.
+  - `RestoreMode.replace`: Safely cancels all existing scheduled alarms, clears repository, restores backup reminders, and re-plans alarms.
+- **UI & Settings:**
+  - `BackupRestoreScreen` accessible from Data & Privacy in `SettingsScreen`.
+  - Create backup with real-time reminder/audio/photo counts, passphrase confirmation, and copyable output path.
+  - Restore backup with file picker / path selection, passphrase input, preview of contents, mode selection (merge vs replace), and destructive replace confirmation dialog.
+- **Quality Gates & Tests:**
+  - `test/backup_vault_test.dart` and `test/backup_restore_screen_test.dart` added.
+  - 174 tests passing. Formatted and zero analyzer issues.
 
 ### Next steps
 
-1. Merge PR #24 once CI verifies the debug APK build and checks are green.
-2. Complete physical-device verification checklist (`docs/android-device-test-matrix.md`) on supported Android versions (13, 14, 15).
-3. Proceed to Issue #16 (Encrypted local backup and restore) and Issue #17 (On-device natural language reminder creation).
+1. Physical-device testing with built debug APK.
+2. Proceed to Issue #17 (On-device natural language reminder drafting).

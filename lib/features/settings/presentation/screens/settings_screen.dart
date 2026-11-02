@@ -6,6 +6,7 @@ import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_theme_choice.dart';
 import '../../../../core/widgets/lujayn_mark.dart';
 import '../../../../core/widgets/responsive_center.dart';
+import '../../../backup/presentation/screens/backup_restore_screen.dart';
 import '../../../reminders/presentation/controllers/reminder_providers.dart';
 import '../../../reminders/presentation/screens/ringtone_settings_screen.dart';
 import '../../../voice/presentation/screens/voice_settings_screen.dart';
@@ -136,21 +137,18 @@ class SettingsScreen extends ConsumerWidget {
                   ListTile(
                     minTileHeight: AppSpacing.minTouchTarget,
                     leading: const Icon(Icons.download_for_offline_outlined),
-                    title: const Text('Encrypted backup & export'),
+                    title: const Text('Encrypted backup & restore'),
                     subtitle: const Text(
-                      'Local encrypted backups (Planned for Phase 4)',
+                      'Export or restore reminders with a local passphrase',
                     ),
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text('Phase 4', style: theme.textTheme.labelSmall),
-                    ),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const BackupRestoreScreen(),
+                        ),
+                      );
+                    },
                   ),
                   Divider(height: 1, color: colors.outlineVariant),
                   ListTile(
