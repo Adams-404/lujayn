@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 
 class ReminderAlarmReceiver : BroadcastReceiver() {
@@ -25,8 +26,18 @@ class ReminderAlarmReceiver : BroadcastReceiver() {
     }
 }
 
+/** Handles the system CallStyle notification's explicit decline action. */
+class ReminderCallActionReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val id = intent.getStringExtra(ReminderAlarmReceiver.EXTRA_ID) ?: return
+        context.getSystemService(NotificationManager::class.java)
+            .cancel(id.hashCode())
+    }
+}
+
 internal object ReminderNotifications {
     private const val CHANNEL_ID = "reminders"
+    private const val ACTION_DECLINE = "com.lujayn.REMINDER_CALL_DECLINE"
 
     fun createChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -63,6 +74,15 @@ internal object ReminderNotifications {
             openApp,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+        val declineIntent = PendingIntent.getBroadcast(
+            context,
+            id.hashCode(),
+            Intent(context, ReminderCallActionReceiver::class.java).apply {
+                action = ACTION_DECLINE
+                putExtra(ReminderAlarmReceiver.EXTRA_ID, id)
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
         val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Notification.Builder(context, CHANNEL_ID)
         } else {
@@ -70,31 +90,44 @@ internal object ReminderNotifications {
             Notification.Builder(context)
         }
         val body = description.ifBlank { "It's time for your reminder." }
-        val notification = builder
+        val notificationBuilder = builder
             .setSmallIcon(R.drawable.ic_stat_lujayn)
             .setContentTitle(if (missed) "Missed: $title" else title)
             .setContentText(body)
             .setStyle(Notification.BigTextStyle().bigText(body))
-            .setCategory(Notification.CATEGORY_REMINDER)
-            .setPriority(Notification.PRIORITY_HIGH)
-            .setAutoCancel(true)
+            .setCategory(if (missed) Notification.CATEGORY_REMINDER else Notification.CATEGORY_CALL)
+            .setPriority(Notification.PRIORITY_MAX)
+            .setVisibility(Notification.VISIBILITY_PUBLIC)
+            .setOngoing(!missed)
+            .setAutoCancel(missed)
             .setContentIntent(contentIntent)
-            .apply {
-                // Android may refuse this. When it does, the notification is
-                // shown as a heads-up instead and tapping it opens the alert.
-                if (!missed && canUseFullScreenIntent(context)) {
-                    setFullScreenIntent(contentIntent, true)
-                }
-            }
-            .build()
+
+        if (!missed && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val caller = android.app.Person.Builder()
+                .setName(title)
+                .setImportant(true)
+                .build()
+            val callStyle = Notification.CallStyle.forIncomingCall(
+                caller,
+                declineIntent,
+                contentIntent,
+            ).setIsVideo(false)
+            notificationBuilder.setStyle(callStyle)
+        }
+
+        // Android may refuse full-screen presentation. In that case the
+        // incoming-call notification remains tappable and opens Lujayn.
+        if (!missed && canUseFullScreenIntent(context)) {
+            notificationBuilder.setFullScreenIntent(contentIntent, true)
+        }
 
         runCatching {
             context.getSystemService(NotificationManager::class.java)
-                .notify(id.hashCode(), notification)
+                .notify(id.hashCode(), notificationBuilder.build())
         }
     }
 
-    /// Full-screen intents need an explicit grant from Android 14 onwards.
+    /** Full-screen intents need an explicit grant from Android 14 onwards. */
     private fun canUseFullScreenIntent(context: Context): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             return true
