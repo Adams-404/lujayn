@@ -40,6 +40,15 @@ class ArchiveVoicePackInstaller implements VoicePackInstaller {
 
     try {
       await Directory(root).create(recursive: true);
+
+      // App updates should never make a user download a large voice pack again.
+      // The app-support directory survives ordinary APK updates; this marker
+      // makes install() idempotent if the UI or a migration requests it again.
+      if (await _isInstalledPack(target, pack.id)) {
+        yield const VoiceInstallProgress(stage: VoiceInstallStage.done);
+        return;
+      }
+
       await _deleteIfPresent(staging);
       await staging.create(recursive: true);
 
@@ -140,6 +149,16 @@ class ArchiveVoicePackInstaller implements VoicePackInstaller {
       }
     }
     return total;
+  }
+
+  Future<bool> _isInstalledPack(Directory target, String packId) async {
+    final marker = File(p.join(target.path, _markerFile));
+    if (!await marker.exists()) return false;
+    try {
+      return (await marker.readAsString()).trim() == packId;
+    } on FileSystemException {
+      return false;
+    }
   }
 
   /// Archives usually wrap their contents in one top-level folder. Both
