@@ -416,9 +416,9 @@ hole. That mistake was made and fixed once already.
 - PR #22 is merged, but the physical-device matrix is still empty. That is the
   outstanding honesty item, not a code problem.
 - Issue #5 can be closed once the matrix is filled in.
-- **The voices do not speak yet.** The catalog, download, verification, install
-  and selection are done and tested; the sherpa-onnx adapter and audio playback
-  are not written. Do not describe the downloadable voices as working.
+- **The downloadable voices now speak, but only on a device.** The sherpa-onnx
+  adapter, pack-aware speech service and previews are written and unit-tested;
+  no one has heard them on a phone yet. Do not describe them as verified.
 - `VoicePack.installedBytes` and the model file names are measured facts, not
   estimates. If a pack version is bumped, download and inspect the archive again
   before changing the catalog — both packs name their model file something other
@@ -426,8 +426,10 @@ hole. That mistake was made and fixed once already.
 - The Kokoro pack needs 151 MB of storage. On a device with little free space
   the install fails cleanly but there is no pre-flight free-space check yet.
   Worth adding before release.
-- `ReminderSpeechService` currently always resolves to the device engine. The
-  pack selection is stored and displayed but not yet consulted when speaking.
+- `ReminderSpeechService` resolves through `VoicePackSpeechService`: the selected
+  pack speaks when its files are healthy, and the device engine is used only when
+  it is genuinely selected. A broken pack throws instead of silently substituting
+  the robotic voice.
 
 ---
 
@@ -446,3 +448,81 @@ connected live duration timer, auto voice note & speech readout, dialpad respons
 keys 1/2/3, red Hang Up button, on-device caller profile image support via app-private
 storage and image picker, and Drift schema v4 migration) are landed and verified across 142 passing tests.
 The next actions are physical-device verification for #5, the sherpa-onnx engine adapter for downloadable offline voice packs, encrypted backup (#16), and on-device natural language (#17).
+
+---
+
+## 13. Addendum — 2026-11-02, the real call experience (PR #24)
+
+This branch turns a notification into something that behaves like a phone call.
+It is all local: no account, no backend, no analytics.
+
+### What is implemented
+
+- **Ringing** — `ReminderRingingService` (Android foreground service, type
+  `mediaPlayback`) loops the chosen ringtone, vibrates, takes transient audio
+  focus, holds a partial wake lock, and stops after 60 seconds, replacing the
+  call notification with an honest "Missed: …" reminder. The receiver starts it
+  so the phone rings with the app closed.
+- **Call surface** — incoming / connected / missed states, a live call timer,
+  answer and decline buttons, an in-call control row (Speaker/Earpiece, Keypad,
+  Read again), a full dialpad behind the Keypad toggle where 1/2/3 mean
+  Done/Snooze/Keep, DTMF tones, and a red Hang up button. Labels next to the
+  round buttons are tappable too.
+- **Ringtone choice** — `RingtoneSettingsScreen` lists the phone's ringtones via
+  `RingtoneManager`, previews them, and stores the choice in SharedPreferences so
+  the Kotlin service can read it while Flutter is asleep.
+- **Declines while closed** — the notification's Decline action records the
+  reminder id natively; `LujaynApp` reconciles it on launch and resume.
+- **Real voices** — `SherpaOfflineVoiceEngine` runs the downloaded packs through
+  sherpa-onnx `OfflineTts` (Kitten and Kokoro families). `VoicePackSpeechService`
+  speaks with the selected pack and speaker, previews voices in the picker, and
+  **throws rather than falling back to the device voice** when a pack is broken.
+- **Pack health** — `VoicePackInstaller.isReady(pack)` requires the marker plus a
+  non-empty model, voices, tokens and `espeak-ng-data` tree. Packs live in the
+  app-support directory, which survives ordinary APK updates, so a healthy pack
+  is reused; only a missing or corrupt one is downloaded again. The voice library
+  asks per catalog pack instead of trusting markers.
+
+### Verified locally
+
+```bash
+dart format --output=none --set-exit-if-changed lib test   # clean
+flutter analyze --fatal-infos                              # no issues
+flutter test                                               # 159 passing
+```
+
+New coverage: call lifecycle (ringing, answer, decline, snooze, hang up, missed
+call timeout, dialpad), voice selection/preview/repair, ringtone list/preview/
+selection, and pack repair after a deleted model file.
+
+### Not verified — say so plainly
+
+- No physical Android device was available. Ringing on a locked phone, the
+  foreground service under OEM battery restrictions, earpiece/speaker routing,
+  full-screen intents on Android 14+, and the downloaded voices have **not**
+  been heard on hardware. `docs/android-device-test-matrix.md` is still the
+  checklist.
+- The local APK build cannot fetch Flutter engine artefacts on this machine, so
+  the Kotlin compile gate is CI.
+
+### Traps worth knowing
+
+- **Pin sherpa-onnx to 1.13.8.** 2.x ignores `dataDir`, which both catalog packs
+  need for espeak-ng phonemes. Importing the package does not load native code;
+  `initBindings()` and `OfflineTts` do, lazily.
+- **Never await audio cleanup before acting on a reminder.** In widget tests an
+  unmocked `MethodChannel` reply can hang, so `_resetAudioRoute()` is fired and
+  forgotten after snooze/decline/hang up. The user's decision must not depend on
+  the audio stack.
+- **The ringing badge must respect reduced motion.** A repeating animation keeps
+  `pumpAndSettle` from settling; tests set `disableAnimations` and use a tall
+  window (the call surface is taller than the 800×600 default).
+- Round call actions and in-call controls use a `GestureDetector` around the
+  label as well as the button, so tapping the word works.
+
+### Still open
+
+- No pre-flight free-space check before a 151 MB Kokoro download.
+- `ReminderStatus.missed` is still never set by the app; Android only posts the
+  missed notification.
+- Physical-device matrix for #5, and the voice/ringing rows in it.

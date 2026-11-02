@@ -42,9 +42,9 @@ class ArchiveVoicePackInstaller implements VoicePackInstaller {
       await Directory(root).create(recursive: true);
 
       // App updates should never make a user download a large voice pack again.
-      // The app-support directory survives ordinary APK updates; this marker
-      // makes install() idempotent if the UI or a migration requests it again.
-      if (await _isInstalledPack(target, pack.id)) {
+      // The app-support directory survives ordinary APK updates, so a healthy
+      // pack is reused. Only a missing or corrupt pack is repaired.
+      if (await isReady(pack)) {
         yield const VoiceInstallProgress(stage: VoiceInstallStage.done);
         return;
       }
@@ -131,11 +131,42 @@ class ArchiveVoicePackInstaller implements VoicePackInstaller {
     await for (final entry in root.list()) {
       if (entry is! Directory) continue;
       final marker = File(p.join(entry.path, _markerFile));
-      if (await marker.exists()) {
-        ids.add(await marker.readAsString());
-      }
+      if (!await marker.exists()) continue;
+      final packId = (await marker.readAsString()).trim();
+      if (packId.isNotEmpty) ids.add(packId);
     }
     return ids;
+  }
+
+  @override
+  Future<bool> isReady(VoicePack pack) async {
+    final root = Directory(await storage.rootPath());
+    final target = Directory(p.join(root.path, pack.id));
+    final marker = File(p.join(target.path, _markerFile));
+    if (!await marker.exists()) return false;
+    try {
+      if ((await marker.readAsString()).trim() != pack.id) return false;
+    } on FileSystemException {
+      return false;
+    }
+    return _hasEveryPackFile(target, pack);
+  }
+
+  /// A marker without the files it describes is not an install.
+  ///
+  /// The marker is written before the atomic rename, so a power loss between
+  /// the two can leave a directory that looks installed but cannot speak.
+  bool _hasEveryPackFile(Directory root, VoicePack pack) {
+    bool hasContent(String path) {
+      final file = File(path);
+      return file.existsSync() && file.lengthSync() > 0;
+    }
+
+    if (!hasContent(p.join(root.path, pack.modelFileName))) return false;
+    if (!hasContent(p.join(root.path, pack.voicesFileName))) return false;
+    if (!hasContent(p.join(root.path, pack.tokensFileName))) return false;
+    final data = Directory(p.join(root.path, pack.dataDirName));
+    return data.existsSync() && data.listSync().isNotEmpty;
   }
 
   @override
@@ -149,16 +180,6 @@ class ArchiveVoicePackInstaller implements VoicePackInstaller {
       }
     }
     return total;
-  }
-
-  Future<bool> _isInstalledPack(Directory target, String packId) async {
-    final marker = File(p.join(target.path, _markerFile));
-    if (!await marker.exists()) return false;
-    try {
-      return (await marker.readAsString()).trim() == packId;
-    } on FileSystemException {
-      return false;
-    }
   }
 
   /// Archives usually wrap their contents in one top-level folder. Both

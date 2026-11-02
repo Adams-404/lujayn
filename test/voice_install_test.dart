@@ -29,7 +29,9 @@ void main() {
     String topLevel = 'test-pack',
     Map<String, String> files = const {
       'model.onnx': 'not really a model',
+      'voices.bin': 'voices',
       'tokens.txt': 'tokens',
+      'espeak-ng-data/en_dict': 'dictionary',
     },
   }) {
     final archive = Archive();
@@ -128,6 +130,29 @@ void main() {
     expect(secondInstall.last.stage, VoiceInstallStage.done);
     expect(downloader.downloadCalls, 1);
     expect(await installer.installedPackIds(), {'test-pack'});
+  });
+
+  test('repairs a pack whose model file disappeared', () async {
+    final bytes = buildArchive();
+    final downloader = _MemoryDownloader(bytes);
+    final installer = ArchiveVoicePackInstaller(
+      storage: storage,
+      downloader: downloader,
+    );
+    final pack = packFor(bytes);
+
+    await installer.install(pack).toList();
+    expect(downloader.downloadCalls, 1);
+
+    // A half-restored backup, or a user clearing files, must be repaired
+    // rather than handed to the engine.
+    await File(p.join(tempRoot.path, 'test-pack', 'model.onnx')).delete();
+    expect(await installer.isReady(pack), isFalse);
+
+    final repaired = await installer.install(pack).toList();
+    expect(repaired.last.stage, VoiceInstallStage.done);
+    expect(downloader.downloadCalls, 2);
+    expect(await installer.isReady(pack), isTrue);
   });
 
   test('reports download progress against the expected size', () async {

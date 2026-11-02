@@ -9,4 +9,7 @@ class NoopReminderCallBridge implements ReminderCallBridge {
 
   @override
   Stream<ReminderCallRequest> get requests => const Stream.empty();
+
+  @override
+  Future<List<String>> takeDeclinedReminderIds() async => const [];
 }

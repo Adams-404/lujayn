@@ -102,6 +102,16 @@ internal object ReminderAlarmScheduler {
         )
     }
 
+    /** Title and description stored for an alarm, for the ringing service. */
+    fun alarmInfo(context: Context, id: String): Pair<String, String>? {
+        val encoded = preferences(context).getString(id, null) ?: return null
+        val data = runCatching { JSONObject(encoded) }.getOrNull() ?: return null
+        return Pair(
+            data.optString("title", "Reminder"),
+            data.optString("description", ""),
+        )
+    }
+
     fun onAlarmDelivered(context: Context, id: String) {
         val prefs = preferences(context)
         val encoded = prefs.getString(id, null) ?: return

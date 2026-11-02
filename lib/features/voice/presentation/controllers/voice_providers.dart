@@ -1,22 +1,32 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../reminders/data/services/audioplayers_voice_playback_service.dart';
+import '../../../reminders/data/services/flutter_reminder_speech_service.dart';
+import '../../../reminders/data/services/noop_reminder_speech_service.dart';
+import '../../../reminders/domain/services/reminder_speech_service.dart';
+import '../../../reminders/domain/services/voice_playback_service.dart';
 import '../../domain/models/voice_install_progress.dart';
 import '../../domain/models/voice_pack.dart';
 import '../../domain/models/voice_selection.dart';
+import '../../domain/services/offline_voice_engine.dart';
 import '../../domain/services/voice_pack_installer.dart';
+import '../../domain/services/voice_preview_service.dart';
+import '../../domain/services/voice_selection_store.dart';
 import '../../data/services/app_support_voice_storage.dart';
 import '../../data/services/archive_voice_pack_installer.dart';
+import '../../data/services/sherpa_offline_voice_engine.dart';
+import '../../data/services/voice_pack_speech_service.dart';
 import '../../data/voice_catalog.dart';
 
-/// Where the chosen voice is remembered between launches.
-abstract interface class VoiceSelectionStore {
-  Future<String?> readSelection();
-  Future<void> writeSelection(String value);
-}
+// Keep the selection-store contract available to screens and tests that
+// already import this controller library.
+export '../../domain/services/voice_selection_store.dart';
 
+/// Where the chosen voice is remembered between launches.
 class SharedPreferencesVoiceSelectionStore implements VoiceSelectionStore {
   SharedPreferencesVoiceSelectionStore()
     : _preferences = SharedPreferencesAsync();
@@ -47,6 +57,59 @@ final voiceSelectionStoreProvider = Provider<VoiceSelectionStore>(
 final voiceCatalogProvider = Provider<List<VoicePack>>(
   (ref) => VoiceCatalog.packs,
 );
+
+/// The native offline engine. Created only on platforms that ship it, and
+/// disposed with the provider so a hot restart does not leak a loaded model.
+final offlineVoiceEngineProvider = Provider<OfflineVoiceEngine?>((ref) {
+  if (defaultTargetPlatform != TargetPlatform.android &&
+      defaultTargetPlatform != TargetPlatform.iOS) {
+    return null;
+  }
+  final engine = SherpaOfflineVoiceEngine(
+    storage: ref.watch(voiceStorageProvider),
+  );
+  ref.onDispose(engine.dispose);
+  return engine;
+});
+
+/// Playback for generated speech, separate from the voice-note player so a
+/// reminder's recording and its spoken reading never fight over one channel.
+final voiceSpeechPlaybackProvider = Provider<VoicePlaybackService>((ref) {
+  final service = AudioplayersVoicePlaybackService();
+  ref.onDispose(service.dispose);
+  return service;
+});
+
+/// Speaks with the selected voice and previews voices in the picker.
+final voicePackSpeechServiceProvider = Provider<VoicePackSpeechService?>((ref) {
+  final engine = ref.watch(offlineVoiceEngineProvider);
+  if (engine == null) return null;
+  final service = VoicePackSpeechService(
+    device: FlutterReminderSpeechService(),
+    engine: engine,
+    installer: ref.watch(voicePackInstallerProvider),
+    selectionStore: ref.watch(voiceSelectionStoreProvider),
+    playback: ref.watch(voiceSpeechPlaybackProvider),
+  );
+  ref.onDispose(service.dispose);
+  return service;
+});
+
+/// Preview control used by the voice picker.
+final voicePreviewServiceProvider = Provider<VoicePreviewService?>((ref) {
+  return ref.watch(voicePackSpeechServiceProvider);
+});
+
+/// The app-wide speech contract. Falls back to the device engine only when
+/// that is genuinely the selected voice, or when no offline engine exists.
+final reminderSpeechServiceProvider = Provider<ReminderSpeechService>((ref) {
+  final packAware = ref.watch(voicePackSpeechServiceProvider);
+  if (packAware != null) return packAware;
+  if (defaultTargetPlatform == TargetPlatform.android) {
+    return FlutterReminderSpeechService();
+  }
+  return const NoopReminderSpeechService();
+});
 
 /// Everything the voice screen needs to draw itself.
 class VoiceLibraryState {
@@ -106,7 +169,7 @@ class VoiceLibraryNotifier extends AsyncNotifier<VoiceLibraryState> {
       _subscriptions.clear();
     });
 
-    final installed = await _installer.installedPackIds();
+    final installed = await _installedPacks();
     final decoded = VoiceSelection.decode(
       await _store.readSelection(),
       catalog: catalog,
@@ -171,9 +234,19 @@ class VoiceLibraryNotifier extends AsyncNotifier<VoiceLibraryState> {
     _subscriptions[pack.id] = subscription;
   }
 
+  /// Only packs that are complete on disk count as installed.
+  Future<Set<String>> _installedPacks() async {
+    final catalog = ref.read(voiceCatalogProvider);
+    final installed = <String>{};
+    for (final pack in catalog) {
+      if (await _installer.isReady(pack)) installed.add(pack.id);
+    }
+    return installed;
+  }
+
   Future<void> _onInstalled(VoicePack pack) async {
     _subscriptions.remove(pack.id)?.cancel();
-    final installed = await _installer.installedPackIds();
+    final installed = await _installedPacks();
     final current = state.value;
     if (current == null) return;
     state = AsyncData(current.copyWith(installedPacks: installed));
@@ -186,7 +259,7 @@ class VoiceLibraryNotifier extends AsyncNotifier<VoiceLibraryState> {
     if (current == null) return;
 
     await _installer.remove(pack.id);
-    final installed = await _installer.installedPackIds();
+    final installed = await _installedPacks();
 
     var selection = state.value?.selection ?? current.selection;
     if (selection is PackVoice && selection.packId == pack.id) {

@@ -2,6 +2,13 @@
 /// inferred from audio, so a pack must declare it accurately.
 enum VoiceGender { female, male }
 
+/// Which sherpa-onnx model family a pack belongs to.
+///
+/// The families take different configuration objects, and using the wrong one
+/// fails at load time with no useful message. Each pack therefore states its
+/// family explicitly instead of the adapter guessing from the pack id.
+enum VoiceModelFamily { vits, kitten, kokoro }
+
 /// One selectable speaker inside a downloaded pack.
 ///
 /// [speakerId] is the model's own integer speaker id. It is not stable across
@@ -58,6 +65,7 @@ class VoicePack {
     required this.downloadBytes,
     required this.installedBytes,
     required this.voices,
+    this.family = VoiceModelFamily.vits,
     this.modelFileName = 'model.onnx',
     this.voicesFileName = 'voices.bin',
     this.tokensFileName = 'tokens.txt',
@@ -94,6 +102,9 @@ class VoicePack {
   final int installedBytes;
 
   final List<VoiceOption> voices;
+
+  /// The model family this pack's files belong to.
+  final VoiceModelFamily family;
 
   final String modelFileName;
   final String voicesFileName;

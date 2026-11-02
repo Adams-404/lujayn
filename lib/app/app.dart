@@ -22,7 +22,8 @@ class LujaynApp extends ConsumerStatefulWidget {
   ConsumerState<LujaynApp> createState() => _LujaynAppState();
 }
 
-class _LujaynAppState extends ConsumerState<LujaynApp> {
+class _LujaynAppState extends ConsumerState<LujaynApp>
+    with WidgetsBindingObserver {
   final _navigatorKey = GlobalKey<NavigatorState>();
   StreamSubscription<ReminderCallRequest>? _callSubscription;
   String? _visibleReminderId;
@@ -31,15 +32,43 @@ class _LujaynAppState extends ConsumerState<LujaynApp> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final bridge = ref.read(reminderCallBridgeProvider);
     _callSubscription = bridge.requests.listen(_presentReminderCall);
     unawaited(_presentLaunchReminderCall(bridge));
+    unawaited(_dismissDeclinedReminders(bridge));
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _callSubscription?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(
+        _dismissDeclinedReminders(ref.read(reminderCallBridgeProvider)),
+      );
+    }
+  }
+
+  /// A decline tapped on the call notification happens outside Flutter. The
+  /// native side records it, and the app applies it the next time it is alive
+  /// so a declined reminder is not still waiting in the list.
+  Future<void> _dismissDeclinedReminders(ReminderCallBridge bridge) async {
+    try {
+      final ids = await bridge.takeDeclinedReminderIds();
+      if (ids.isEmpty || !mounted) return;
+      final actions = ref.read(reminderActionControllerProvider);
+      for (final id in ids) {
+        await actions.dismissOccurrence(id);
+      }
+    } on Object {
+      // Reconcile is best-effort; it must never stop the app from opening.
+    }
   }
 
   Future<void> _presentLaunchReminderCall(ReminderCallBridge bridge) async {

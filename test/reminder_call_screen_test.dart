@@ -8,6 +8,7 @@ import 'package:lujayn/features/reminders/data/repositories/mock_reminder_reposi
 import 'package:lujayn/features/reminders/domain/models/reminder.dart';
 import 'package:lujayn/features/reminders/domain/models/reminder_status.dart';
 import 'package:lujayn/features/reminders/domain/services/reminder_alarm_scheduler.dart';
+import 'package:lujayn/features/reminders/domain/services/reminder_ringtone_service.dart';
 import 'package:lujayn/features/reminders/domain/services/reminder_schedule_planner.dart';
 import 'package:lujayn/features/reminders/domain/services/reminder_speech_service.dart';
 import 'package:lujayn/features/reminders/domain/services/voice_note_storage_service.dart';
@@ -38,17 +39,32 @@ void main() {
   late _RecordingAlarmScheduler scheduler;
   late _FakeSpeech speech;
   late _FakeSpeechPreferenceStore speechPreferenceStore;
+  late _FakeRingtone ringtone;
 
   setUp(() {
     repository = MockReminderRepository(preloadSampleData: false);
     scheduler = _RecordingAlarmScheduler();
     speech = _FakeSpeech();
     speechPreferenceStore = _FakeSpeechPreferenceStore();
+    ringtone = _FakeRingtone();
   });
 
   tearDown(() {
     repository.dispose();
   });
+
+  /// The call screen is a tall column. A 600 px test window would push the
+  /// answer and decline buttons out of reach, so every test uses a phone-sized
+  /// portrait window instead. Reduce-motion is on because the ringing badge
+  /// pulses forever, which would stop `pumpAndSettle` from ever settling.
+  void useCallScreenWindow(WidgetTester tester) {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.view.reset);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+  }
 
   Reminder dueReminder({String id = 'due'}) {
     final now = DateTime.now();
@@ -68,6 +84,7 @@ void main() {
         reminderRepositoryProvider.overrideWithValue(repository),
         reminderAlarmSchedulerProvider.overrideWithValue(scheduler),
         reminderSpeechServiceProvider.overrideWithValue(speech),
+        reminderRingtoneServiceProvider.overrideWithValue(ringtone),
         speechPreferenceStoreProvider.overrideWithValue(speechPreferenceStore),
         voiceNoteStorageServiceProvider.overrideWithValue(_FakeStorage()),
         voicePlaybackServiceProvider.overrideWithValue(
@@ -84,6 +101,7 @@ void main() {
   testWidgets('shows voice note player when reminder has voice note', (
     tester,
   ) async {
+    useCallScreenWindow(tester);
     final now = DateTime.now();
     final reminder = Reminder(
       id: 'voice-call-1',
@@ -104,12 +122,14 @@ void main() {
   });
 
   testWidgets('shows the due reminder with both actions', (tester) async {
+    useCallScreenWindow(tester);
     final reminder = dueReminder();
     await repository.saveReminder(reminder);
 
     await tester.pumpWidget(wrap(ReminderCallScreen(reminderId: reminder.id)));
     await tester.pumpAndSettle();
 
+    expect(find.text('INCOMING CALL'), findsOneWidget);
     expect(find.text('Take evening medication'), findsOneWidget);
     expect(find.text('With a full glass of water'), findsOneWidget);
     expect(find.text('Answer'), findsOneWidget);
@@ -117,7 +137,23 @@ void main() {
     expect(find.text('Snooze for 10 minutes'), findsOneWidget);
   });
 
-  testWidgets('snoozing schedules a separate alarm', (tester) async {
+  testWidgets('starts ringing as soon as the reminder is presented', (
+    tester,
+  ) async {
+    useCallScreenWindow(tester);
+    final reminder = dueReminder();
+    await repository.saveReminder(reminder);
+
+    await tester.pumpWidget(wrap(ReminderCallScreen(reminderId: reminder.id)));
+    await tester.pumpAndSettle();
+
+    expect(ringtone.started, ['due']);
+  });
+
+  testWidgets('snoozing schedules a separate alarm and stops ringing', (
+    tester,
+  ) async {
+    useCallScreenWindow(tester);
     final reminder = dueReminder();
     await repository.saveReminder(reminder);
 
@@ -128,11 +164,51 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(scheduler.scheduled.single.reminderId, 'due::snooze');
+    expect(ringtone.stopCalls, greaterThanOrEqualTo(1));
+  });
+
+  testWidgets('declining dismisses a one-time reminder and stops ringing', (
+    tester,
+  ) async {
+    useCallScreenWindow(tester);
+    final reminder = dueReminder();
+    await repository.saveReminder(reminder);
+
+    await tester.pumpWidget(wrap(ReminderCallScreen(reminderId: reminder.id)));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Decline'));
+    await tester.pumpAndSettle();
+
+    expect(
+      (await repository.getReminderById(reminder.id))!.status,
+      ReminderStatus.completed,
+    );
+    expect(ringtone.stopCalls, greaterThanOrEqualTo(1));
+  });
+
+  testWidgets('an unanswered call turns into an honest missed call', (
+    tester,
+  ) async {
+    useCallScreenWindow(tester);
+    final reminder = dueReminder();
+    await repository.saveReminder(reminder);
+
+    await tester.pumpWidget(wrap(ReminderCallScreen(reminderId: reminder.id)));
+    await tester.pumpAndSettle();
+
+    // The ring timeout is what stops a phone ringing in someone's pocket.
+    await tester.pump(const Duration(seconds: 61));
+
+    expect(find.text('MISSED CALL'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
+    expect(find.text('Answer'), findsNothing);
   });
 
   testWidgets('completing a one-time reminder cancels its alarm', (
     tester,
   ) async {
+    useCallScreenWindow(tester);
     final reminder = dueReminder();
     await repository.saveReminder(reminder);
 
@@ -141,7 +217,9 @@ void main() {
 
     await tester.tap(find.text('Answer'));
     await tester.pump();
-    await tester.tap(find.text('Done'));
+    await tester.tap(find.text('Keypad'));
+    await tester.pump();
+    await tester.tap(find.text('1'));
     await tester.pumpAndSettle();
 
     expect(
@@ -152,6 +230,7 @@ void main() {
   });
 
   testWidgets('explains a reminder that no longer exists', (tester) async {
+    useCallScreenWindow(tester);
     await tester.pumpWidget(wrap(const ReminderCallScreen(reminderId: 'gone')));
     await tester.pumpAndSettle();
 
@@ -162,6 +241,7 @@ void main() {
   testWidgets('renders incoming call simulation with caller persona', (
     tester,
   ) async {
+    useCallScreenWindow(tester);
     final now = DateTime.now();
     final reminder = Reminder(
       id: 'persona-call',
@@ -188,6 +268,7 @@ void main() {
   testWidgets('renders incoming call simulation with caller profile photo', (
     tester,
   ) async {
+    useCallScreenWindow(tester);
     final now = DateTime.now();
     final reminder = Reminder(
       id: 'photo-call',
@@ -210,31 +291,36 @@ void main() {
     expect(find.text('Water the plants'), findsOneWidget);
   });
 
-  testWidgets('answering a call connects and shows dialpad and hang up', (
+  testWidgets('answering connects, stops ringing and offers the keypad', (
     tester,
   ) async {
+    useCallScreenWindow(tester);
     final reminder = dueReminder();
     await repository.saveReminder(reminder);
 
     await tester.pumpWidget(wrap(ReminderCallScreen(reminderId: reminder.id)));
     await tester.pumpAndSettle();
-
-    expect(find.text('INCOMING CALL'), findsOneWidget);
-    expect(find.text('Answer'), findsOneWidget);
 
     await tester.tap(find.text('Answer'));
     await tester.pump();
 
     expect(find.textContaining('CONNECTED'), findsOneWidget);
     expect(find.text('In call'), findsOneWidget);
-    expect(find.text('Dialpad — press a key to respond:'), findsOneWidget);
+    expect(find.text('Keypad'), findsOneWidget);
+    expect(find.text('Hang up'), findsOneWidget);
+    expect(ringtone.stopCalls, greaterThanOrEqualTo(1));
+
+    await tester.tap(find.text('Keypad'));
+    await tester.pump();
+
     expect(find.text('1'), findsOneWidget);
     expect(find.text('2'), findsOneWidget);
     expect(find.text('3'), findsOneWidget);
-    expect(find.text('Hang Up'), findsOneWidget);
+    expect(find.textContaining('Done'), findsWidgets);
   });
 
   testWidgets('dialpad key 1 marks reminder completed', (tester) async {
+    useCallScreenWindow(tester);
     final reminder = dueReminder();
     await repository.saveReminder(reminder);
 
@@ -243,8 +329,9 @@ void main() {
 
     await tester.tap(find.text('Answer'));
     await tester.pump();
+    await tester.tap(find.text('Keypad'));
+    await tester.pump();
 
-    await tester.ensureVisible(find.text('1'));
     await tester.tap(find.text('1'));
     await tester.pumpAndSettle();
 
@@ -256,6 +343,7 @@ void main() {
   });
 
   testWidgets('dialpad key 2 snoozes the reminder', (tester) async {
+    useCallScreenWindow(tester);
     final reminder = dueReminder();
     await repository.saveReminder(reminder);
 
@@ -264,8 +352,9 @@ void main() {
 
     await tester.tap(find.text('Answer'));
     await tester.pump();
+    await tester.tap(find.text('Keypad'));
+    await tester.pump();
 
-    await tester.ensureVisible(find.text('2'));
     await tester.tap(find.text('2'));
     await tester.pumpAndSettle();
 
@@ -273,6 +362,7 @@ void main() {
   });
 
   testWidgets('hang up button ends the call', (tester) async {
+    useCallScreenWindow(tester);
     final reminder = dueReminder();
     await repository.saveReminder(reminder);
 
@@ -282,14 +372,19 @@ void main() {
     await tester.tap(find.text('Answer'));
     await tester.pump();
 
-    expect(find.text('Hang Up'), findsOneWidget);
-    await tester.tap(find.text('Hang Up'));
+    expect(find.text('Hang up'), findsOneWidget);
+    await tester.tap(find.text('Hang up'));
     await tester.pumpAndSettle();
+
+    // Hanging up keeps the reminder active but releases the ring and speech.
+    expect(ringtone.stopCalls, greaterThanOrEqualTo(1));
+    expect(speech.stops, greaterThanOrEqualTo(1));
   });
 
   testWidgets('answering call speaks message with dialpad instruction', (
     tester,
   ) async {
+    useCallScreenWindow(tester);
     final reminder = dueReminder();
     await repository.saveReminder(reminder);
 
@@ -297,6 +392,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Answer'));
+    await tester.pump();
     await tester.pump();
 
     expect(speech.spoken, [
@@ -305,6 +401,7 @@ void main() {
   });
 
   testWidgets('call screen renders across all five themes', (tester) async {
+    useCallScreenWindow(tester);
     final reminder = dueReminder();
     await repository.saveReminder(reminder);
 
@@ -314,11 +411,13 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byType(ReminderCallScreen), findsOneWidget);
+      expect(find.text('Answer'), findsOneWidget);
     }
   });
 
   group('reading a reminder aloud', () {
     testWidgets('speaks the title and its note when asked', (tester) async {
+      useCallScreenWindow(tester);
       final reminder = dueReminder();
       await repository.saveReminder(reminder);
 
@@ -337,6 +436,7 @@ void main() {
     });
 
     testWidgets('stays quiet until asked by default', (tester) async {
+      useCallScreenWindow(tester);
       final reminder = dueReminder();
       await repository.saveReminder(reminder);
 
@@ -349,6 +449,7 @@ void main() {
     });
 
     testWidgets('speaks automatically when the setting is on', (tester) async {
+      useCallScreenWindow(tester);
       speechPreferenceStore.enabled = true;
       final reminder = dueReminder();
       await repository.saveReminder(reminder);
@@ -366,6 +467,7 @@ void main() {
     testWidgets('hides the control when the device cannot speak', (
       tester,
     ) async {
+      useCallScreenWindow(tester);
       speech.available = false;
       final reminder = dueReminder();
       await repository.saveReminder(reminder);
@@ -383,6 +485,7 @@ void main() {
     testWidgets('explains when the setting is on but the device cannot speak', (
       tester,
     ) async {
+      useCallScreenWindow(tester);
       speech.available = false;
       speechPreferenceStore.enabled = true;
       final reminder = dueReminder();
@@ -397,6 +500,7 @@ void main() {
     });
 
     testWidgets('stops speaking when the alert is closed', (tester) async {
+      useCallScreenWindow(tester);
       final reminder = dueReminder();
       await repository.saveReminder(reminder);
 
@@ -442,6 +546,39 @@ class _FakeSpeechPreferenceStore implements SpeechPreferenceStore {
   Future<void> writeSpokenRemindersEnabled(bool value) async {
     enabled = value;
   }
+}
+
+class _FakeRingtone implements ReminderRingtoneService {
+  final List<String> started = [];
+  int stopCalls = 0;
+
+  @override
+  Future<bool> isAvailable() async => true;
+
+  @override
+  Future<void> startRinging(String reminderId) async {
+    started.add(reminderId);
+  }
+
+  @override
+  Future<void> stopRinging() async {
+    stopCalls++;
+  }
+
+  @override
+  Future<List<RingtoneOption>> availableRingtones() async => const [];
+
+  @override
+  Future<String?> selectedRingtoneId() async => null;
+
+  @override
+  Future<void> selectRingtone(String? id) async {}
+
+  @override
+  Future<void> previewRingtone(String? id) async {}
+
+  @override
+  Future<void> stopPreview() async {}
 }
 
 class _RecordingAlarmScheduler implements ReminderAlarmScheduler {

@@ -26,4 +26,8 @@ abstract interface class ReminderCallBridge {
 
   /// Requests raised while the app is already running.
   Stream<ReminderCallRequest> get requests;
+
+  /// Reminder ids the user declined from the call notification while the app
+  /// was closed. Reading clears them so each one is handled once.
+  Future<List<String>> takeDeclinedReminderIds();
 }

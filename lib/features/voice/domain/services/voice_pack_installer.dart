@@ -20,6 +20,13 @@ abstract interface class VoicePackInstaller {
   /// Which packs are completely installed and ready to speak.
   Future<Set<String>> installedPackIds();
 
+  /// Whether [pack] is complete on disk and safe to hand to the engine.
+  ///
+  /// A marker file alone is not enough: a partial restore or a corrupted
+  /// install could leave the marker without the model. Those packs are
+  /// repaired by installing again, not used.
+  Future<bool> isReady(VoicePack pack);
+
   /// Total bytes the installed packs occupy, for the settings summary.
   Future<int> installedBytes();
 }

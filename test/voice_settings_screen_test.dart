@@ -5,16 +5,19 @@ import 'package:lujayn/features/voice/data/voice_catalog.dart';
 import 'package:lujayn/features/voice/domain/models/voice_install_progress.dart';
 import 'package:lujayn/features/voice/domain/models/voice_pack.dart';
 import 'package:lujayn/features/voice/domain/services/voice_pack_installer.dart';
+import 'package:lujayn/features/voice/domain/services/voice_preview_service.dart';
 import 'package:lujayn/features/voice/presentation/controllers/voice_providers.dart';
 import 'package:lujayn/features/voice/presentation/screens/voice_settings_screen.dart';
 
 void main() {
   late _FakeInstaller installer;
   late _MemorySelectionStore store;
+  late _FakePreview preview;
 
   setUp(() {
     installer = _FakeInstaller();
     store = _MemorySelectionStore();
+    preview = _FakePreview();
   });
 
   /// The picker is a long list; a short test window would push most of it
@@ -30,6 +33,7 @@ void main() {
       overrides: [
         voicePackInstallerProvider.overrideWithValue(installer),
         voiceSelectionStoreProvider.overrideWithValue(store),
+        voicePreviewServiceProvider.overrideWithValue(preview),
       ],
       child: const MaterialApp(home: VoiceSettingsScreen()),
     );
@@ -95,6 +99,37 @@ void main() {
     expect(store.written, contains('kokoro-en#1'));
   });
 
+  testWidgets('a voice can be heard before it is chosen', (tester) async {
+    useTallScreen(tester);
+    installer.installed.add(VoiceCatalog.kokoro.id);
+    await tester.pumpWidget(wrap());
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.byTooltip('Preview Bella'));
+    await tester.tap(find.byTooltip('Preview Bella'));
+    await tester.pumpAndSettle();
+
+    expect(preview.previewed, ['kokoro-en#1']);
+    // Hearing a voice is not the same as choosing it.
+    expect(store.written, isEmpty);
+  });
+
+  testWidgets('choosing a voice plays it so the choice is not blind', (
+    tester,
+  ) async {
+    useTallScreen(tester);
+    installer.installed.add(VoiceCatalog.kokoro.id);
+    await tester.pumpWidget(wrap());
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Bella'));
+    await tester.tap(find.text('Bella'));
+    await tester.pumpAndSettle();
+
+    expect(store.written, contains('kokoro-en#1'));
+    expect(preview.previewed, ['kokoro-en#1']);
+  });
+
   testWidgets('a failed install explains itself and offers a retry', (
     tester,
   ) async {
@@ -134,6 +169,19 @@ void main() {
   });
 }
 
+class _FakePreview implements VoicePreviewService {
+  final List<String> previewed = [];
+
+  @override
+  Future<bool> isPreviewAvailable(VoiceOption voice) async => true;
+
+  @override
+  Future<void> preview(VoiceOption voice) async => previewed.add(voice.id);
+
+  @override
+  Future<void> stopPreview() async {}
+}
+
 class _FakeInstaller implements VoicePackInstaller {
   _FakeInstaller({Set<String>? installed}) : installed = installed ?? {};
 
@@ -166,6 +214,9 @@ class _FakeInstaller implements VoicePackInstaller {
 
   @override
   Future<Set<String>> installedPackIds() async => {...installed};
+
+  @override
+  Future<bool> isReady(VoicePack pack) async => installed.contains(pack.id);
 
   @override
   Future<int> installedBytes() async => installed.length * 1024;

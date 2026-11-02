@@ -6,10 +6,15 @@ import android.app.NotificationManager
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
+import android.media.MediaPlayer
+import android.media.ToneGenerator
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.os.PowerManager
 import android.provider.Settings
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -20,6 +25,7 @@ class MainActivity : FlutterActivity() {
     private val alarmChannelName = "com.lujayn/reminder_alarms"
     private val callEventChannelName = "com.lujayn/reminder_call_events"
     private val reminderAudioChannelName = "com.lujayn/reminder_audio"
+    private val reminderRingtoneChannelName = "com.lujayn/reminder_ringtone"
 
     companion object {
         private const val NOTIFICATION_PERMISSION_REQUEST = 4301
@@ -29,6 +35,10 @@ class MainActivity : FlutterActivity() {
     private var callEventSink: EventChannel.EventSink? = null
     private var pendingReminderCall: Map<String, Any?>? = null
     private var reminderAudioFocusRequest: AudioFocusRequest? = null
+    private var toneGenerator: ToneGenerator? = null
+    private var previewPlayer: MediaPlayer? = null
+    private val previewHandler = Handler(Looper.getMainLooper())
+    private var previewStop: Runnable? = null
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,6 +60,9 @@ class MainActivity : FlutterActivity() {
 
     override fun onDestroy() {
         resetReminderAudioRoute()
+        stopRingtonePreview()
+        toneGenerator?.release()
+        toneGenerator = null
         notificationPermissionResult = null
         callEventSink = null
         super.onDestroy()
@@ -130,6 +143,76 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    /** A short DTMF tone, so the in-call dialpad feels like a real one. */
+    private fun playDialTone(key: String) {
+        val tone = when (key) {
+            "0" -> ToneGenerator.TONE_DTMF_0
+            "1" -> ToneGenerator.TONE_DTMF_1
+            "2" -> ToneGenerator.TONE_DTMF_2
+            "3" -> ToneGenerator.TONE_DTMF_3
+            "4" -> ToneGenerator.TONE_DTMF_4
+            "5" -> ToneGenerator.TONE_DTMF_5
+            "6" -> ToneGenerator.TONE_DTMF_6
+            "7" -> ToneGenerator.TONE_DTMF_7
+            "8" -> ToneGenerator.TONE_DTMF_8
+            "9" -> ToneGenerator.TONE_DTMF_9
+            "*" -> ToneGenerator.TONE_DTMF_STAR
+            "#" -> ToneGenerator.TONE_DTMF_POUND
+            else -> return
+        }
+        try {
+            val generator = toneGenerator ?: ToneGenerator(AudioManager.STREAM_DTMF, 60)
+                .also { toneGenerator = it }
+            generator.startTone(tone, 120)
+        } catch (_: Exception) {
+            // A missing tone never blocks a key press.
+        }
+    }
+
+    private fun previewRingtone(id: String?) {
+        stopRingtonePreview()
+        val uri = if (id.isNullOrEmpty() || id == "default") {
+            ReminderRingtoneStore.defaultRingtoneUri(this)
+        } else {
+            Uri.parse(id)
+        } ?: return
+        try {
+            val player = MediaPlayer()
+            player.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build(),
+            )
+            player.setDataSource(this, uri)
+            player.prepare()
+            player.start()
+            previewPlayer = player
+            val stop = Runnable { stopRingtonePreview() }
+            previewStop = stop
+            previewHandler.postDelayed(stop, 8_000)
+        } catch (error: Exception) {
+            stopRingtonePreview()
+        }
+    }
+
+    private fun stopRingtonePreview() {
+        previewStop?.let { previewHandler.removeCallbacks(it) }
+        previewStop = null
+        try {
+            previewPlayer?.stop()
+        } catch (_: Exception) {
+        }
+        previewPlayer?.release()
+        previewPlayer = null
+    }
+
+    private fun isIgnoringBatteryOptimizations(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true
+        val power = getSystemService(PowerManager::class.java)
+        return power.isIgnoringBatteryOptimizations(packageName)
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
@@ -167,6 +250,62 @@ class MainActivity : FlutterActivity() {
                     resetReminderAudioRoute()
                     result.success(null)
                 }
+                "playDialTone" -> {
+                    playDialTone(call.argument<String>("key") ?: "")
+                    result.success(null)
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            reminderRingtoneChannelName,
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "isAvailable" -> result.success(true)
+                "startRinging" -> {
+                    val id = call.argument<String>("reminderId")
+                    if (id.isNullOrEmpty()) {
+                        result.error("INVALID_ARGUMENTS", "Missing reminder ID.", null)
+                    } else {
+                        // The receiver has already started the service in the
+                        // normal path. Starting again would restart the tone.
+                        if (ReminderRingtoneStore.ringingId(this) == null) {
+                            val info = ReminderAlarmScheduler.alarmInfo(this, id)
+                            ReminderRingingService.start(
+                                this,
+                                id,
+                                info?.first ?: "Reminder",
+                                info?.second ?: "",
+                            )
+                        }
+                        result.success(null)
+                    }
+                }
+                "stopRinging" -> {
+                    val ringingId = ReminderRingtoneStore.ringingId(this)
+                    ReminderRingingService.stop(this)
+                    if (ringingId != null) {
+                        getSystemService(NotificationManager::class.java)
+                            .cancel(ringingId.hashCode())
+                    }
+                    result.success(null)
+                }
+                "listRingtones" -> result.success(ReminderRingtoneStore.list(this))
+                "getSelectedRingtone" -> result.success(ReminderRingtoneStore.selectedId(this))
+                "setSelectedRingtone" -> {
+                    ReminderRingtoneStore.setSelected(this, call.argument<String>("id"))
+                    result.success(null)
+                }
+                "previewRingtone" -> {
+                    previewRingtone(call.argument<String>("id"))
+                    result.success(null)
+                }
+                "stopPreview" -> {
+                    stopRingtonePreview()
+                    result.success(null)
+                }
                 else -> result.notImplemented()
             }
         }
@@ -180,6 +319,22 @@ class MainActivity : FlutterActivity() {
                     val pending = pendingReminderCall
                     pendingReminderCall = null
                     result.success(pending)
+                }
+                "takeDeclinedReminderIds" -> {
+                    result.success(ReminderRingtoneStore.takeDeclined(this))
+                }
+                "isIgnoringBatteryOptimizations" -> {
+                    result.success(isIgnoringBatteryOptimizations())
+                }
+                "openBatteryOptimizationSettings" -> {
+                    try {
+                        startActivity(
+                            Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS),
+                        )
+                        result.success(true)
+                    } catch (_: Exception) {
+                        result.success(false)
+                    }
                 }
                 "canScheduleExactAlarms" -> {
                     result.success(ReminderAlarmScheduler.canScheduleExactAlarms(this))
