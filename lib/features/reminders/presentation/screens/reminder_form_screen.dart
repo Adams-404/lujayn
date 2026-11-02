@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../../app/theme/app_spacing.dart';
+
 import '../../../../core/utilities/date_formatters.dart';
 import '../../../../core/widgets/honest_notice_card.dart';
 import '../../../../core/widgets/responsive_center.dart';
@@ -12,6 +14,7 @@ import '../../domain/models/reminder.dart';
 import '../../domain/models/reminder_status.dart';
 import '../controllers/reminder_providers.dart';
 import '../widgets/caller_persona_selector.dart';
+import '../widgets/natural_language_draft_sheet.dart';
 import '../widgets/recurrence_chip_selector.dart';
 import '../widgets/voice_note_recorder_control.dart';
 
@@ -315,7 +318,44 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
                   height: 1.45,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    HapticFeedback.lightImpact();
+                    final draft = await NaturalLanguageDraftSheet.show(context);
+                    if (draft != null && mounted) {
+                      setState(() {
+                        _titleController.text = draft.title;
+                        if (draft.scheduledDateTime != null) {
+                          _selectedDate = DateTime(
+                            draft.scheduledDateTime!.year,
+                            draft.scheduledDateTime!.month,
+                            draft.scheduledDateTime!.day,
+                          );
+                          _selectedTime = TimeOfDay(
+                            hour: draft.scheduledDateTime!.hour,
+                            minute: draft.scheduledDateTime!.minute,
+                          );
+                        }
+                        _selectedRecurrence = draft.recurrence;
+                        if (draft.hasCallerPersona) {
+                          _callerName = draft.callerName;
+                          _callerNumber = draft.callerNumber;
+                          _callerIcon = draft.callerIcon;
+                        }
+                      });
+                    }
+                  },
+                  icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+                  label: const Text('Draft with plain language'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, AppSpacing.minTouchTarget),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
               _FormSectionLabel(label: 'Reminder'),
               const SizedBox(height: 9),
               TextFormField(

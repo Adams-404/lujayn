@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/utilities/date_formatters.dart';
@@ -8,7 +9,9 @@ import '../../../../core/widgets/empty_state_view.dart';
 import '../../../../core/widgets/lujayn_mark.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../domain/models/reminder.dart';
+import '../../domain/models/reminder_status.dart';
 import '../controllers/reminder_providers.dart';
+import '../widgets/natural_language_draft_sheet.dart';
 import '../widgets/reminder_timeline_tile.dart';
 import 'reminder_detail_screen.dart';
 import 'reminder_form_screen.dart';
@@ -68,7 +71,16 @@ class HomeScreen extends ConsumerWidget {
                               ],
                             ),
                           ),
-                          const SizedBox(width: AppSpacing.md),
+                          const SizedBox(width: AppSpacing.sm),
+                          IconButton.filledTonal(
+                            onPressed: () => _openQuickDraft(context),
+                            icon: const Icon(
+                              Icons.auto_awesome_rounded,
+                              size: 20,
+                            ),
+                            tooltip: 'Draft with plain language',
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
                           Container(
                             width: 44,
                             height: 44,
@@ -324,6 +336,32 @@ class HomeScreen extends ConsumerWidget {
         builder: (_) => ReminderDetailScreen(reminderId: reminderId),
       ),
     );
+  }
+
+  Future<void> _openQuickDraft(BuildContext context) async {
+    HapticFeedback.lightImpact();
+    final draft = await NaturalLanguageDraftSheet.show(context);
+    if (draft != null && context.mounted) {
+      final initialReminder = Reminder(
+        id: const Uuid().v4(),
+        title: draft.title,
+        scheduledDateTime:
+            draft.scheduledDateTime ??
+            DateTime.now().add(const Duration(hours: 1)),
+        recurrence: draft.recurrence,
+        status: ReminderStatus.active,
+        callerName: draft.callerName,
+        callerNumber: draft.callerNumber,
+        callerIcon: draft.callerIcon,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ReminderFormScreen(initialReminder: initialReminder),
+        ),
+      );
+    }
   }
 
   void _navigateToCreate(BuildContext context) {

@@ -486,26 +486,26 @@ It is completely local: no account, no backend, no analytics, offline-first.
 
 ### Tracked GitHub issues
 
-- **#16 Encrypted local backup & restore:** Completed and verified (174 tests passing, AES-256-GCM + PBKDF2, zip archive with audio/photos, merge/replace modes, UI).
-- **#25 Incoming-call UI:** Implemented in PR #24. Ready for physical-device validation.
-- **#26 In-call UI & controls:** Implemented in PR #24 (speaker/earpiece, dialpad, DTMF, timer, hangup).
+- **#16 Encrypted local backup & restore:** Completed and closed (AES-256-GCM + PBKDF2, zip archive with audio/photos, merge/replace modes, UI).
+- **#17 On-device natural language:** Completed and verified (190 tests passing, deterministic local parser, explanation preview, sheet UI, form integration).
+- **#5 Android reminder delivery:** Architecture, scheduling engine, boot/time receivers, and unit tests completed. Physical checklist documented.
+- **#29 Android background & OEM reliability:** Foreground service with mediaPlayback, wake locks, native decline reconciliation, and physical checklist documented.
+- **#25 Incoming-call UI:** Implemented in PR #24.
+- **#26 In-call UI & controls:** Implemented in PR #24.
 - **#27 Natural offline voices:** Implemented in PR #24 (`sherpa-onnx`, Kitten/Kokoro, voice previews).
 - **#28 Ringtone picker & ringing lifecycle:** Implemented in PR #24 (`ReminderRingingService`, `RingtoneSettingsScreen`).
-- **#29 Android background & OEM reliability:** Addressed via foreground service and native decline reconciliation; hardware caveats documented in `docs/android-device-test-matrix.md`.
-- **#30 CI regression coverage:** 174 tests passing; formatting, analyzer, and widget regression suites clean.
+- **#30 CI regression coverage:** 190 tests passing; formatting, analyzer, and widget regression suites clean.
 - **#31 Preserve voice packs across app updates:** Implemented in PR #24 via app-support directory and integrity checks.
-- **#5 Android reminder delivery:** Unit tests pass; physical-device test matrix remains the hardware gate.
-- **#17 On-device natural language:** Future milestone.
 
 ### Verified locally
 
 ```bash
 dart format --output=none --set-exit-if-changed lib test   # clean
 flutter analyze --fatal-infos                              # no issues
-flutter test                                               # 174 passing
+flutter test                                               # 190 passing
 ```
 
-New coverage: encrypted backup creation, AES-256-GCM envelope encryption, PBKDF2 key derivation, file inspection, wrong-passphrase rejection, zip packing of reminders/recordings/photos, merge and replace restore modes, alarm rescheduling upon restore, and BackupRestoreScreen across all 5 themes and 200% text scale.
+New coverage: natural language parsing (relative offsets, daily/weekdays/custom recurrence, calendar days, explicit/named times, caller persona extraction), `NaturalLanguageDraftSheet` UI interactions across all 5 themes and 200% text scale.
 
 ### Not verified — physical hardware required
 
@@ -545,7 +545,21 @@ Implemented privacy-first, fully offline local backup and restore:
   - `test/backup_vault_test.dart` and `test/backup_restore_screen_test.dart` added.
   - 174 tests passing. Formatted and zero analyzer issues.
 
-### Next steps
+---
 
-1. Physical-device testing with built debug APK.
-2. Proceed to Issue #17 (On-device natural language reminder drafting).
+## 15. Milestone 2026-11-02: On-Device Natural-Language Reminder Creation (#17)
+
+Implemented instant, zero-cloud natural language parsing and interactive drafting:
+- **Deterministic Offline Parser (`NaturalLanguageReminderParser`):**
+  - Fully local, sub-millisecond execution, zero battery impact, no cloud dependencies.
+  - Supports clean title extraction, temporal prefixes, relative offsets ("in 30 mins", "in 2 hours"), calendar expressions ("tomorrow", "day after tomorrow", "next Monday"), times ("at 6", "6:30pm", "noon", "evening"), and recurrence ("every day", "weekdays", "every Monday and Thursday").
+  - Auto-identifies caller persona keywords (e.g. "call Mom" -> Mom persona, "call doctor" -> Doctor persona).
+  - Explicit explanations list and confidence scoring.
+- **Interactive Draft Surface (`NaturalLanguageDraftSheet`):**
+  - Instant preview of interpreted title, scheduled timestamp, recurrence, and caller persona.
+  - One-tap quick examples chips.
+  - "Open in Reminder Form to Confirm" ensures user always reviews and confirms before saving.
+  - Wired into `HomeScreen` header and `ReminderFormScreen`.
+- **Quality Gates & Tests:**
+  - `test/natural_language_reminder_parser_test.dart` and `test/natural_language_draft_sheet_test.dart`.
+  - 190 tests passing. Formatted and zero analyzer issues.
