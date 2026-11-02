@@ -77,8 +77,11 @@ class _CallBody extends ConsumerStatefulWidget {
 }
 
 class _CallBodyState extends ConsumerState<_CallBody> {
+  static const _audioChannel = MethodChannel('com.lujayn/reminder_audio');
+
   ReminderSpeechService? _speech;
   bool _speechAvailable = false;
+  bool _speakerEnabled = false;
   bool _speaking = false;
   bool _isAnswered = false;
   int _callSeconds = 0;
@@ -99,6 +102,7 @@ class _CallBodyState extends ConsumerState<_CallBody> {
     // Leaving the screen must never leave a voice talking to an empty room.
     _callTimer?.cancel();
     _speech?.stop();
+    _resetAudioRoute();
     super.dispose();
   }
 
@@ -116,6 +120,7 @@ class _CallBodyState extends ConsumerState<_CallBody> {
       }
     });
 
+    _setSpeakerphone(false);
     if (_speechAvailable) {
       if (_speaking) {
         _speech?.stop();
@@ -125,10 +130,49 @@ class _CallBodyState extends ConsumerState<_CallBody> {
     }
   }
 
+  Future<bool> _setSpeakerphone(bool enabled) async {
+    try {
+      final routed = await _audioChannel.invokeMethod<bool>(
+        'setSpeakerphone',
+        {'enabled': enabled},
+      );
+      return routed ?? false;
+    } on PlatformException {
+      return false;
+    } on MissingPluginException {
+      // Widget tests and non-Android builds have no native audio route.
+      return false;
+    }
+  }
+
+  Future<void> _toggleSpeakerphone() async {
+    final next = !_speakerEnabled;
+    final routed = await _setSpeakerphone(next);
+    if (!mounted) return;
+    if (routed) {
+      setState(() => _speakerEnabled = next);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('That audio route is not available.')),
+      );
+    }
+  }
+
+  Future<void> _resetAudioRoute() async {
+    try {
+      await _audioChannel.invokeMethod<void>('resetAudioRoute');
+    } on PlatformException {
+      // The call UI can still close if Android audio routing is unavailable.
+    } on MissingPluginException {
+      // Expected in widget tests and non-Android builds.
+    }
+  }
+
   void _hangUp() {
     HapticFeedback.mediumImpact();
     _callTimer?.cancel();
     _speech?.stop();
+    _resetAudioRoute();
     if (mounted) Navigator.of(context).maybePop();
   }
 
@@ -333,6 +377,18 @@ class _CallBodyState extends ConsumerState<_CallBody> {
                               style: theme.textTheme.labelMedium?.copyWith(
                                 color: colors.onSurfaceVariant,
                                 fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            OutlinedButton.icon(
+                              onPressed: _toggleSpeakerphone,
+                              icon: Icon(
+                                _speakerEnabled
+                                    ? Icons.volume_up_rounded
+                                    : Icons.hearing_rounded,
+                              ),
+                              label: Text(
+                                _speakerEnabled ? 'Speaker' : 'Earpiece',
                               ),
                             ),
                             const SizedBox(height: AppSpacing.sm),
