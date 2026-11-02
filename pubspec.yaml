@@ -49,6 +49,7 @@ dependencies:
   record: ^7.1.2
   image_picker: ^1.1.2
   sherpa_onnx: 1.13.8
+  cryptography: ^2.9.0
 
 dev_dependencies:
   flutter_test:
