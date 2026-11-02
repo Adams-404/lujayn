@@ -4,14 +4,14 @@ import '../../../../core/database/app_database.dart';
 import '../../data/repositories/drift_reminder_repository.dart';
 import '../../data/services/android_reminder_alarm_scheduler.dart';
 import '../../data/services/android_reminder_call_bridge.dart';
+import '../../data/services/android_reminder_ringtone_service.dart';
 import '../../data/services/app_support_caller_image_service.dart';
 import '../../data/services/app_support_voice_note_storage.dart';
 import '../../data/services/audioplayers_voice_playback_service.dart';
-import '../../data/services/flutter_reminder_speech_service.dart';
 import '../../data/services/noop_caller_image_service.dart';
 import '../../data/services/noop_reminder_alarm_scheduler.dart';
 import '../../data/services/noop_reminder_call_bridge.dart';
-import '../../data/services/noop_reminder_speech_service.dart';
+import '../../data/services/noop_reminder_ringtone_service.dart';
 import '../../data/services/noop_voice_note_storage_service.dart';
 import '../../data/services/noop_voice_playback_service.dart';
 import '../../data/services/noop_voice_recording_service.dart';
@@ -24,11 +24,17 @@ import '../../domain/repositories/reminder_repository.dart';
 import '../../domain/services/caller_image_service.dart';
 import '../../domain/services/reminder_alarm_scheduler.dart';
 import '../../domain/services/reminder_call_bridge.dart';
+import '../../domain/services/reminder_ringtone_service.dart';
 import '../../domain/services/reminder_schedule_planner.dart';
-import '../../domain/services/reminder_speech_service.dart';
 import '../../domain/services/voice_note_storage_service.dart';
 import '../../domain/services/voice_playback_service.dart';
 import '../../domain/services/voice_recording_service.dart';
+
+// The speech provider lives with the voice feature because it chooses between
+// the device engine and a downloaded pack. Re-exported here so reminder screens
+// have one import for their state.
+export '../../../voice/presentation/controllers/voice_providers.dart'
+    show reminderSpeechServiceProvider;
 
 /// Filter selection for reminder list.
 enum ReminderFilter { upcoming, completed, all }
@@ -94,17 +100,6 @@ final voicePlaybackServiceProvider = Provider.autoDispose<VoicePlaybackService>(
   },
 );
 
-/// On-device speech for reading a reminder aloud.
-///
-/// Speech is optional and never required to receive a reminder, so targets
-/// without an engine fall back to a no-op instead of failing.
-final reminderSpeechServiceProvider = Provider<ReminderSpeechService>((ref) {
-  if (defaultTargetPlatform == TargetPlatform.android) {
-    return FlutterReminderSpeechService();
-  }
-  return const NoopReminderSpeechService();
-});
-
 /// Storage and image picking for caller profile photos.
 final callerImageServiceProvider = Provider<CallerImageService>((ref) {
   if (defaultTargetPlatform == TargetPlatform.android ||
@@ -165,6 +160,16 @@ final reminderCallBridgeProvider = Provider<ReminderCallBridge>((ref) {
     return AndroidReminderCallBridge();
   }
   return const NoopReminderCallBridge();
+});
+
+/// Ringing and ringtone choice for reminder calls.
+final reminderRingtoneServiceProvider = Provider<ReminderRingtoneService>((
+  ref,
+) {
+  if (defaultTargetPlatform == TargetPlatform.android) {
+    return AndroidReminderRingtoneService();
+  }
+  return const NoopReminderRingtoneService();
 });
 
 /// Reactive stream of reminders from the repository.

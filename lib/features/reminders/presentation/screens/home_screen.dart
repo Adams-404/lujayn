@@ -115,8 +115,10 @@ class HomeScreen extends ConsumerWidget {
               const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
               const SliverToBoxAdapter(child: _DeliveryNotice()),
               remindersAsync.when(
-                loading: () =>
-                    const SliverFillRemaining(child: _ReminderLoadingState()),
+                loading: () => const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _ReminderLoadingState(),
+                ),
                 error: (_, _) => SliverFillRemaining(
                   hasScrollBody: false,
                   child: EmptyStateView(
@@ -493,34 +495,32 @@ class _ReminderFilters extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.surface),
         border: Border.all(color: colors.outlineVariant),
       ),
-      child: Row(
-        mainAxisSize: isLargeText ? MainAxisSize.min : MainAxisSize.max,
-        children: [
-          for (final option in options)
-            if (isLargeText)
-              _SegmentTab(
-                label: option.$2,
-                selected: selected == option.$1,
-                onTap: () => onSelected(option.$1),
-              )
-            else
-              Expanded(
-                child: _SegmentTab(
-                  label: option.$2,
-                  selected: selected == option.$1,
-                  onTap: () => onSelected(option.$1),
-                ),
-              ),
-        ],
-      ),
+      child: isLargeText
+          ? Wrap(
+              spacing: AppSpacing.xxs,
+              runSpacing: AppSpacing.xxs,
+              children: [
+                for (final option in options)
+                  _SegmentTab(
+                    label: option.$2,
+                    selected: selected == option.$1,
+                    onTap: () => onSelected(option.$1),
+                  ),
+              ],
+            )
+          : Row(
+              children: [
+                for (final option in options)
+                  Expanded(
+                    child: _SegmentTab(
+                      label: option.$2,
+                      selected: selected == option.$1,
+                      onTap: () => onSelected(option.$1),
+                    ),
+                  ),
+              ],
+            ),
     );
-
-    if (isLargeText) {
-      return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: segments,
-      );
-    }
 
     return segments;
   }
@@ -631,7 +631,10 @@ class _NextReminderPanel extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: AppSpacing.xs,
+                runSpacing: AppSpacing.xxs,
                 children: [
                   Text(
                     reminder.isPastDue ? 'NEEDS ATTENTION' : 'NEXT REMINDER',
@@ -641,7 +644,6 @@ class _NextReminderPanel extends StatelessWidget {
                       letterSpacing: 1.1,
                     ),
                   ),
-                  const Spacer(),
                   Icon(Icons.north_east_rounded, size: 17, color: accent),
                 ],
               ),

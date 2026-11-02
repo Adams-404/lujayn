@@ -29,7 +29,9 @@ void main() {
     String topLevel = 'test-pack',
     Map<String, String> files = const {
       'model.onnx': 'not really a model',
+      'voices.bin': 'voices',
       'tokens.txt': 'tokens',
+      'espeak-ng-data/en_dict': 'dictionary',
     },
   }) {
     final archive = Archive();
@@ -109,6 +111,48 @@ void main() {
     expect(leftovers, isEmpty);
     final staging = Directory(p.join(tempRoot.path, '.test-pack.staging'));
     expect(await staging.exists(), isFalse);
+  });
+
+  test('installing an already installed pack skips its download', () async {
+    final bytes = buildArchive();
+    final downloader = _MemoryDownloader(bytes);
+    final installer = ArchiveVoicePackInstaller(
+      storage: storage,
+      downloader: downloader,
+    );
+    final pack = packFor(bytes);
+
+    await installer.install(pack).toList();
+    expect(downloader.downloadCalls, 1);
+
+    final secondInstall = await installer.install(pack).toList();
+
+    expect(secondInstall.last.stage, VoiceInstallStage.done);
+    expect(downloader.downloadCalls, 1);
+    expect(await installer.installedPackIds(), {'test-pack'});
+  });
+
+  test('repairs a pack whose model file disappeared', () async {
+    final bytes = buildArchive();
+    final downloader = _MemoryDownloader(bytes);
+    final installer = ArchiveVoicePackInstaller(
+      storage: storage,
+      downloader: downloader,
+    );
+    final pack = packFor(bytes);
+
+    await installer.install(pack).toList();
+    expect(downloader.downloadCalls, 1);
+
+    // A half-restored backup, or a user clearing files, must be repaired
+    // rather than handed to the engine.
+    await File(p.join(tempRoot.path, 'test-pack', 'model.onnx')).delete();
+    expect(await installer.isReady(pack), isFalse);
+
+    final repaired = await installer.install(pack).toList();
+    expect(repaired.last.stage, VoiceInstallStage.done);
+    expect(downloader.downloadCalls, 2);
+    expect(await installer.isReady(pack), isTrue);
   });
 
   test('reports download progress against the expected size', () async {
@@ -211,9 +255,11 @@ class _MemoryDownloader implements VoicePackDownloader {
   _MemoryDownloader(this.bytes);
 
   final Uint8List bytes;
+  int downloadCalls = 0;
 
   @override
   Stream<int> download(String url, File destination) async* {
+    downloadCalls++;
     final sink = destination.openWrite();
     var received = 0;
     const chunkSize = 512;

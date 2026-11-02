@@ -1,21 +1,118 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/widgets/empty_state_view.dart';
+import '../../../reminders/data/services/flutter_reminder_speech_service.dart';
+import '../../../reminders/domain/services/reminder_speech_service.dart';
 import '../../domain/models/voice_install_progress.dart';
 import '../../domain/models/voice_pack.dart';
 import '../../domain/models/voice_selection.dart';
+import '../../domain/services/voice_preview_service.dart';
 import '../controllers/voice_providers.dart';
 
 /// Lets the user choose how Lujayn speaks, including downloading a better
 /// voice once and using it forever without a connection.
-class VoiceSettingsScreen extends ConsumerWidget {
+class VoiceSettingsScreen extends ConsumerStatefulWidget {
   const VoiceSettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<VoiceSettingsScreen> createState() =>
+      _VoiceSettingsScreenState();
+}
+
+class _VoiceSettingsScreenState extends ConsumerState<VoiceSettingsScreen> {
+  VoicePreviewService? _preview;
+  ReminderSpeechService? _deviceVoice;
+  String? _previewingId;
+  Timer? _previewTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _preview = ref.read(voicePreviewServiceProvider);
+    _deviceVoice = FlutterReminderSpeechService();
+  }
+
+  @override
+  void dispose() {
+    _previewTimer?.cancel();
+    _preview?.stopPreview();
+    _deviceVoice?.stop();
+    super.dispose();
+  }
+
+  Future<void> _previewVoice(VoiceOption voice) async {
+    final preview = _preview;
+    if (preview == null) {
+      _say('Voice previews are not available on this device.');
+      return;
+    }
+    if (_previewingId == voice.id) {
+      await _stopPreview();
+      return;
+    }
+    _previewTimer?.cancel();
+    try {
+      await preview.preview(voice);
+      if (!mounted) return;
+      setState(() => _previewingId = voice.id);
+      // Generation can take a few seconds for a large model. The timer only
+      // clears the button state; the native player stops on its own.
+      _previewTimer = Timer(const Duration(seconds: 30), () {
+        if (mounted && _previewingId == voice.id) {
+          setState(() => _previewingId = null);
+        }
+      });
+    } on Object catch (error) {
+      if (!mounted) return;
+      _say(
+        error is StateError
+            ? error.message
+            : 'That voice could not be played on this device.',
+      );
+    }
+  }
+
+  Future<void> _previewDeviceVoice() async {
+    final device = _deviceVoice;
+    if (device == null) return;
+    _previewTimer?.cancel();
+    try {
+      await _preview?.stopPreview();
+      await device.stop();
+      await device.speak(voicePreviewText);
+      if (!mounted) return;
+      setState(() => _previewingId = 'device');
+      _previewTimer = Timer(const Duration(seconds: 30), () {
+        if (mounted && _previewingId == 'device') {
+          setState(() => _previewingId = null);
+        }
+      });
+    } on Object {
+      if (!mounted) return;
+      _say('This device’s speech engine could not play the sample.');
+    }
+  }
+
+  Future<void> _stopPreview() async {
+    _previewTimer?.cancel();
+    await _preview?.stopPreview();
+    await _deviceVoice?.stop();
+    if (mounted) setState(() => _previewingId = null);
+  }
+
+  void _say(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final libraryAsync = ref.watch(voiceLibraryProvider);
 
@@ -43,8 +140,9 @@ class VoiceSettingsScreen extends ConsumerWidget {
           children: [
             Text(
               'Lujayn can speak with your phone’s own voice, or with a more '
-              'natural voice you download once. Downloads stay on this device '
-              'and keep working with no connection.',
+              'natural voice you download once. Tap any voice to hear it before '
+              'choosing. Downloads stay on this device and keep working with no '
+              'connection.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
                 height: 1.5,
@@ -60,15 +158,31 @@ class VoiceSettingsScreen extends ConsumerWidget {
                     'Android’s built-in text-to-speech. No download and no '
                     'extra storage.',
                 selected: library.selection is DeviceVoice,
-                onTap: () => ref
-                    .read(voiceLibraryProvider.notifier)
-                    .select(VoiceSelection.device),
+                previewing: _previewingId == 'device',
+                onPreview: _previewDeviceVoice,
+                onTap: () {
+                  ref
+                      .read(voiceLibraryProvider.notifier)
+                      .select(VoiceSelection.device);
+                  _previewDeviceVoice();
+                },
               ),
             ),
             for (final pack in ref.watch(voiceCatalogProvider)) ...[
               const SizedBox(height: AppSpacing.xl),
               _SectionTitle(pack.name),
-              _PackCard(pack: pack, library: library),
+              _PackCard(
+                pack: pack,
+                library: library,
+                previewingId: _previewingId,
+                onPreview: _previewVoice,
+                onSelect: (voice) {
+                  ref
+                      .read(voiceLibraryProvider.notifier)
+                      .select(PackVoice(voice));
+                  _previewVoice(voice);
+                },
+              ),
             ],
           ],
         ),
@@ -78,10 +192,19 @@ class VoiceSettingsScreen extends ConsumerWidget {
 }
 
 class _PackCard extends ConsumerWidget {
-  const _PackCard({required this.pack, required this.library});
+  const _PackCard({
+    required this.pack,
+    required this.library,
+    required this.previewingId,
+    required this.onPreview,
+    required this.onSelect,
+  });
 
   final VoicePack pack;
   final VoiceLibraryState library;
+  final String? previewingId;
+  final ValueChanged<VoiceOption> onPreview;
+  final ValueChanged<VoiceOption> onSelect;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -281,8 +404,9 @@ class _PackCard extends ConsumerWidget {
           // every name is noise. Only an accent is worth the second line.
           subtitle: voice.accent,
           selected: selectedId == voice.id,
-          onTap: () =>
-              ref.read(voiceLibraryProvider.notifier).select(PackVoice(voice)),
+          previewing: previewingId == voice.id,
+          onPreview: () => onPreview(voice),
+          onTap: () => onSelect(voice),
         ),
     ];
   }
@@ -294,12 +418,16 @@ class _VoiceTile extends StatelessWidget {
     required this.subtitle,
     required this.selected,
     required this.onTap,
+    this.previewing = false,
+    this.onPreview,
   });
 
   final String title;
   final String? subtitle;
   final bool selected;
   final VoidCallback onTap;
+  final bool previewing;
+  final VoidCallback? onPreview;
 
   @override
   Widget build(BuildContext context) {
@@ -321,12 +449,27 @@ class _VoiceTile extends StatelessWidget {
       ),
       title: Text(title),
       subtitle: subtitle == null ? null : Text(subtitle!),
-      trailing: selected
-          ? Semantics(
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (selected)
+            Semantics(
               label: 'In use',
               child: Icon(Icons.graphic_eq_rounded, color: colors.primary),
-            )
-          : null,
+            ),
+          if (onPreview != null)
+            IconButton(
+              onPressed: onPreview,
+              tooltip: previewing ? 'Stop preview' : 'Preview $title',
+              icon: Icon(
+                previewing
+                    ? Icons.stop_circle_outlined
+                    : Icons.play_circle_outline,
+                color: colors.primary,
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

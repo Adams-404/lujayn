@@ -7,6 +7,7 @@ import '../../../../app/theme/app_theme_choice.dart';
 import '../../../../core/widgets/lujayn_mark.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../../reminders/presentation/controllers/reminder_providers.dart';
+import '../../../reminders/presentation/screens/ringtone_settings_screen.dart';
 import '../../../voice/presentation/screens/voice_settings_screen.dart';
 import '../controllers/settings_providers.dart';
 import '../widgets/principles_dialog.dart';
@@ -214,6 +215,21 @@ class SettingsScreen extends ConsumerWidget {
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => const VoiceSettingsScreen(),
+                      ),
+                    ),
+                  ),
+                  Divider(height: 1, color: colors.outlineVariant),
+                  ListTile(
+                    minTileHeight: AppSpacing.minTouchTarget,
+                    leading: const Icon(Icons.ring_volume_outlined),
+                    title: const Text('Reminder ringtone'),
+                    subtitle: const Text(
+                      'Choose the sound a reminder call makes, and hear it first.',
+                    ),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const RingtoneSettingsScreen(),
                       ),
                     ),
                   ),

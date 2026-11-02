@@ -32,6 +32,16 @@ class AndroidReminderCallBridge implements ReminderCallBridge {
       .where((request) => request != null)
       .cast<ReminderCallRequest>();
 
+  @override
+  Future<List<String>> takeDeclinedReminderIds() async {
+    final ids = await _methods.invokeListMethod<String>(
+      'takeDeclinedReminderIds',
+    );
+    return [
+      for (final id in ids ?? const <String>[]) reminderIdFromAlarmId(id),
+    ];
+  }
+
   ReminderCallRequest? _parse(Map<Object?, Object?>? payload) {
     final id = payload?['id'];
     if (id is! String || id.isEmpty) return null;

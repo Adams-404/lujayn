@@ -30,6 +30,7 @@ abstract final class VoiceCatalog {
     // Measured from the published archive, not estimated.
     downloadBytes: 26855312,
     installedBytes: 41861647,
+    family: VoiceModelFamily.kitten,
     // This pack ships a fp16 model under its own name. Getting this wrong is
     // silent: the engine simply refuses to load and the voice never speaks.
     modelFileName: 'model.fp16.onnx',
@@ -105,6 +106,7 @@ abstract final class VoiceCatalog {
     // Measured from the published archive, not estimated.
     downloadBytes: 103248205,
     installedBytes: 157947103,
+    family: VoiceModelFamily.kokoro,
     // The int8 build ships under its own file name. A wrong name here fails
     // silently at load time, which is why both packs were inspected directly.
     modelFileName: 'model.int8.onnx',
