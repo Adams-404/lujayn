@@ -57,8 +57,9 @@ void main() {
     await tester.pumpWidget(app(bridge: bridge));
     await tester.pumpAndSettle();
 
-    expect(find.text('Snooze 10 minutes'), findsOneWidget);
-    expect(find.text('Done'), findsOneWidget);
+    expect(find.text('Snooze for 10 minutes'), findsOneWidget);
+    expect(find.text('Answer'), findsOneWidget);
+    expect(find.text('Decline'), findsOneWidget);
   });
 
   testWidgets('a request raised while running opens the call surface', (
@@ -69,13 +70,14 @@ void main() {
 
     await tester.pumpWidget(app(bridge: bridge));
     await tester.pumpAndSettle();
-    expect(find.text('Snooze 10 minutes'), findsNothing);
+    expect(find.text('Snooze for 10 minutes'), findsNothing);
 
     bridge.emit(const ReminderCallRequest(reminderId: 'live'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Snooze 10 minutes'), findsOneWidget);
-    expect(find.text('Done'), findsOneWidget);
+    expect(find.text('Snooze for 10 minutes'), findsOneWidget);
+    expect(find.text('Answer'), findsOneWidget);
+    expect(find.text('Decline'), findsOneWidget);
   });
 
   testWidgets('the same reminder is never stacked twice', (tester) async {
@@ -88,7 +90,7 @@ void main() {
     bridge.emit(const ReminderCallRequest(reminderId: 'once'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Done'), findsOneWidget);
+    expect(find.text('Answer'), findsOneWidget);
   });
 }
 
