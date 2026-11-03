@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   release:
-    name: Build & Release APK
+    name: Build universal and ARM64 APKs
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, 'release') || contains(github.event.head_commit.message, 'Release')
     runs-on: ubuntu-latest
     steps:
@@ -29,7 +29,7 @@ jobs:
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '17'
 
       - name: Set up Flutter
@@ -44,36 +44,46 @@ jobs:
       - name: Generate Drift code
         run: dart run build_runner build --delete-conflicting-outputs
 
-      - name: Verify Quality Gate
+      - name: Verify quality gate
         run: |
           dart format --output=none --set-exit-if-changed lib test
           flutter analyze --fatal-infos
           flutter test
 
-      - name: Build Android debug APK
-        run: flutter build apk --debug
-
-      - name: Determine tag name
-        id: tag
+      - name: Build universal release APK
         run: |
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            echo "tag_name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag_name=v1.0.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
-          fi
+          flutter build apk --release
+          mkdir -p release-assets
+          cp build/app/outputs/flutter-apk/app-release.apk release-assets/Lujayn-universal.apk
 
-      - name: Create GitHub Release
+      - name: Build split APKs
+        run: flutter build apk --release --split-per-abi
+
+      - name: Keep ARM64 release APK
+        run: |
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk release-assets/Lujayn-arm64-v8a.apk
+          ls -lh release-assets/
+
+      - name: Determine release tag
+        id: tag
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            TAG_NAME="${GITHUB_REF#refs/tags/}"
+          else
+            VERSION="$(sed -n 's/^version: \([^+]*\).*/\1/p' pubspec.yaml)"
+            TAG_NAME="v${VERSION}"
+          fi
+          echo "tag_name=${TAG_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag_name }}
-          name: "Lujayn Release ${{ steps.tag.outputs.tag_name }}"
+          name: "Lujayn ${{ steps.tag.outputs.tag_name }}"
           generate_release_notes: true
-          files: build/app/outputs/flutter-apk/app-debug.apk
+          files: |
+            release-assets/Lujayn-universal.apk
+            release-assets/Lujayn-arm64-v8a.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: lujayn-debug-apk-${{ steps.tag.outputs.tag_name }}
-          path: build/app/outputs/flutter-apk/app-debug.apk

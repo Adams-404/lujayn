@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: flutter-ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   quality:
@@ -30,9 +30,8 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # Generate the database source before formatting and tests.
       - name: Generate Drift code
-        run: dart run build_runner build
+        run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Check formatting
         run: dart format --output=none --set-exit-if-changed lib test
@@ -42,12 +41,3 @@ jobs:
 
       - name: Run tests
         run: flutter test
-
-      - name: Build Android debug APK
-        run: flutter build apk --debug
-
-      - name: Upload debug APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: lujayn-debug-apk-ci
-          path: build/app/outputs/flutter-apk/app-debug.apk

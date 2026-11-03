@@ -34,8 +34,8 @@ class VoicePackSpeechService
   final VoicePlaybackService playback;
   final List<VoicePack> catalog;
 
-  /// The most recent failure, for a screen that wants to explain silence.
   String? lastFailure;
+  int _previewRequest = 0;
 
   @override
   Future<bool> isAvailable() async {
@@ -47,6 +47,7 @@ class VoicePackSpeechService
   Future<void> speak(String text) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return;
+    _previewRequest++;
     lastFailure = null;
 
     final selection = await _readSelection();
@@ -69,6 +70,7 @@ class VoicePackSpeechService
 
   @override
   Future<void> stop() async {
+    _previewRequest++;
     await _stopPlayback();
     await device.stop();
   }
@@ -82,6 +84,7 @@ class VoicePackSpeechService
 
   @override
   Future<void> preview(VoiceOption voice) async {
+    final request = ++_previewRequest;
     lastFailure = null;
     final pack = VoiceCatalog.byId(voice.packId);
     if (pack == null) {
@@ -92,20 +95,37 @@ class VoicePackSpeechService
         'The ${pack.name} voice files are missing. Download the voice again.',
       );
     }
+    if (request != _previewRequest) return;
     await device.stop();
-    await _play(pack, voice.speakerId, voicePreviewText);
+    await _play(
+      pack,
+      voice.speakerId,
+      voicePreviewText,
+      previewRequest: request,
+    );
   }
 
   @override
-  Future<void> stopPreview() => _stopPlayback();
+  Future<void> stopPreview() {
+    _previewRequest++;
+    return _stopPlayback();
+  }
 
-  Future<void> _play(VoicePack pack, int speakerId, String text) async {
+  Future<void> _play(
+    VoicePack pack,
+    int speakerId,
+    String text, {
+    int? previewRequest,
+  }) async {
     try {
       final synthesis = await engine.synthesize(
         pack: pack,
         speakerId: speakerId,
         text: text,
       );
+      // A user can leave the picker or choose another voice while native
+      // inference is running. Never start stale audio after that cancellation.
+      if (previewRequest != null && previewRequest != _previewRequest) return;
       await playback.play(synthesis.filePath);
     } on Object catch (error) {
       lastFailure = error is StateError ? error.message : error.toString();
