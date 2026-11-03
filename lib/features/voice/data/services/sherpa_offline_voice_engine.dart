@@ -310,8 +310,8 @@ void _sherpaVoiceWorker(SendPort mainPort) {
         throw StateError('The generated speech could not be saved.');
       }
 
-      final durationMs =
-          (audio.samples.length * 1000 / audio.sampleRate).round();
+      final durationMs = (audio.samples.length * 1000 / audio.sampleRate)
+          .round();
       mainPort.send({
         'requestId': requestId,
         'ok': true,
