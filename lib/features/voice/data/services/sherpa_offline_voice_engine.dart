@@ -285,9 +285,7 @@ void _sherpaVoiceWorker(SendPort mainPort) {
           _ => throw StateError('Unsupported voice model family: $family'),
         };
 
-        engine = sherpa.OfflineTts(
-          sherpa.OfflineTtsConfig(model: modelConfig),
-        );
+        engine = sherpa.OfflineTts(sherpa.OfflineTtsConfig(model: modelConfig));
         engines[packId] = engine;
       }
 
