@@ -197,10 +197,7 @@ class SherpaOfflineVoiceEngine implements OfflineVoiceEngine {
     _pending.clear();
   }
 
-  Future<void> _requestAfterDispose(
-    SendPort commands,
-    String operation,
-  ) async {
+  Future<void> _requestAfterDispose(SendPort commands, String operation) async {
     final id = ++_nextRequestId;
     final completer = Completer<Map<Object?, Object?>>();
     _pending[id] = completer;
