@@ -8,7 +8,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.Icon
 import android.os.Build
-import android.widget.RemoteViews
 
 class ReminderAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -190,42 +189,24 @@ internal object ReminderNotifications {
             .setContentIntent(contentIntent)
 
         if (!missed) {
-            // Use custom call-style layout with red Decline on far left and green Answer on far right
-            try {
-                val callerInitial = displayCaller.take(1).uppercase()
-                val headsUpView = RemoteViews(context.packageName, R.layout.notification_call_heads_up).apply {
-                    setTextViewText(R.id.caller_initial, callerInitial)
-                    setTextViewText(R.id.caller_name, displayCaller)
-                    val reminderSubtext = if (description.isNotBlank()) "$title • $description" else title
-                    setTextViewText(R.id.reminder_task, reminderSubtext)
-                    setOnClickPendingIntent(R.id.btn_decline, declineIntent)
-                    setOnClickPendingIntent(R.id.btn_answer, answerIntent)
-                }
-                builder.setCustomContentView(headsUpView)
-                builder.setCustomBigContentView(headsUpView)
-                builder.setCustomHeadsUpContentView(headsUpView)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    builder.setStyle(Notification.DecoratedCustomViewStyle())
-                }
-            } catch (_: Exception) {
-                // Fallback to standard actions if custom RemoteViews fails
-                @Suppress("DEPRECATION")
-                builder
-                    .addAction(
-                        Notification.Action.Builder(
-                            Icon.createWithResource(context, R.drawable.ic_stat_lujayn),
-                            "Decline",
-                            declineIntent,
-                        ).build(),
-                    )
-                    .addAction(
-                        Notification.Action.Builder(
-                            Icon.createWithResource(context, R.drawable.ic_stat_lujayn),
-                            "Answer",
-                            answerIntent,
-                        ).build(),
-                    )
-            }
+            // Native notification actions are RemoteViews-safe on Android 14/15.
+            // Custom RemoteViews layouts can crash the entire app during system
+            // inflation (outside this builder's try/catch), so keep this path native.
+            builder
+                .addAction(
+                    Notification.Action.Builder(
+                        Icon.createWithResource(context, R.drawable.ic_stat_lujayn),
+                        "Decline",
+                        declineIntent,
+                    ).build(),
+                )
+                .addAction(
+                    Notification.Action.Builder(
+                        Icon.createWithResource(context, R.drawable.ic_stat_lujayn),
+                        "Answer",
+                        answerIntent,
+                    ).build(),
+                )
         }
 
         // Android may refuse full-screen presentation. In that case the
