@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lujayn/features/reminders/domain/services/reminder_speech_service.dart';
 import 'package:lujayn/features/reminders/domain/services/voice_playback_service.dart';
@@ -88,6 +90,24 @@ void main() {
     expect(playback.played, ['/tmp/generated.wav']);
   });
 
+  test('stopping a preview during synthesis prevents stale playback', () async {
+    final pending = Completer<VoiceSynthesis>();
+    engine.pending = pending;
+
+    final preview = service.preview(voice);
+    await Future<void>.delayed(Duration.zero);
+    await service.stopPreview();
+    pending.complete(
+      const VoiceSynthesis(
+        filePath: '/tmp/generated.wav',
+        duration: Duration(seconds: 3),
+      ),
+    );
+    await preview;
+
+    expect(playback.played, isEmpty);
+  });
+
   test('refuses to preview a voice whose pack is not installed', () async {
     installer.ready.clear();
 
@@ -124,6 +144,7 @@ class _SynthesisRequest {
 
 class _FakeEngine implements OfflineVoiceEngine {
   final List<_SynthesisRequest> requests = [];
+  Completer<VoiceSynthesis>? pending;
 
   @override
   Future<bool> isPackReady(VoicePack pack) async => true;
@@ -137,10 +158,11 @@ class _FakeEngine implements OfflineVoiceEngine {
     requests.add(
       _SynthesisRequest(pack: pack, speakerId: speakerId, text: text),
     );
-    return const VoiceSynthesis(
-      filePath: '/tmp/generated.wav',
-      duration: Duration(seconds: 3),
-    );
+    return pending?.future ??
+        const VoiceSynthesis(
+          filePath: '/tmp/generated.wav',
+          duration: Duration(seconds: 3),
+        );
   }
 
   @override
