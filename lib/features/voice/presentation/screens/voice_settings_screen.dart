@@ -55,13 +55,16 @@ class _VoiceSettingsScreenState extends ConsumerState<VoiceSettingsScreen> {
       await _stopPreview();
       return;
     }
-    _previewTimer?.cancel();
+
+    await _stopPreview();
+    if (!mounted) return;
+    setState(() => _previewingId = voice.id);
+
     try {
       await preview.preview(voice);
-      if (!mounted) return;
-      setState(() => _previewingId = voice.id);
-      // Generation can take a few seconds for a large model. The timer only
-      // clears the button state; the native player stops on its own.
+      if (!mounted || _previewingId != voice.id) return;
+      // Inference runs away from Flutter's UI isolate. The stop control stays
+      // active while a model loads or generates its sample.
       _previewTimer = Timer(const Duration(seconds: 30), () {
         if (mounted && _previewingId == voice.id) {
           setState(() => _previewingId = null);
@@ -69,6 +72,9 @@ class _VoiceSettingsScreenState extends ConsumerState<VoiceSettingsScreen> {
       });
     } on Object catch (error) {
       if (!mounted) return;
+      if (_previewingId == voice.id) {
+        setState(() => _previewingId = null);
+      }
       _say(
         error is StateError
             ? error.message
@@ -80,13 +86,12 @@ class _VoiceSettingsScreenState extends ConsumerState<VoiceSettingsScreen> {
   Future<void> _previewDeviceVoice() async {
     final device = _deviceVoice;
     if (device == null) return;
-    _previewTimer?.cancel();
+    await _stopPreview();
+    if (!mounted) return;
+    setState(() => _previewingId = 'device');
     try {
-      await _preview?.stopPreview();
-      await device.stop();
       await device.speak(voicePreviewText);
-      if (!mounted) return;
-      setState(() => _previewingId = 'device');
+      if (!mounted || _previewingId != 'device') return;
       _previewTimer = Timer(const Duration(seconds: 30), () {
         if (mounted && _previewingId == 'device') {
           setState(() => _previewingId = null);
@@ -94,6 +99,7 @@ class _VoiceSettingsScreenState extends ConsumerState<VoiceSettingsScreen> {
       });
     } on Object {
       if (!mounted) return;
+      setState(() => _previewingId = null);
       _say('This device’s speech engine could not play the sample.');
     }
   }
@@ -361,8 +367,6 @@ class _PackCard extends ConsumerWidget {
     }
   }
 
-  /// Female voices first, then male. Grouping keeps a long list scannable
-  /// without adding a filter control nobody asked for.
   List<(String, List<VoiceOption>)> _groups(VoicePack pack) {
     return [
       ('Female', pack.femaleVoices.toList()),
@@ -400,8 +404,6 @@ class _PackCard extends ConsumerWidget {
       for (final voice in voices)
         _VoiceTile(
           title: voice.name,
-          // The group header already says Female or Male, so repeating it under
-          // every name is noise. Only an accent is worth the second line.
           subtitle: voice.accent,
           selected: selectedId == voice.id,
           previewing: previewingId == voice.id,
