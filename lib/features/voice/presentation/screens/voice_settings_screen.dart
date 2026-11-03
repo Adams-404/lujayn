@@ -106,8 +106,12 @@ class _VoiceSettingsScreenState extends ConsumerState<VoiceSettingsScreen> {
 
   Future<void> _stopPreview() async {
     _previewTimer?.cancel();
-    await _preview?.stopPreview();
-    await _deviceVoice?.stop();
+    final activePreview = _previewingId;
+    if (activePreview == 'device') {
+      await _deviceVoice?.stop();
+    } else if (activePreview != null) {
+      await _preview?.stopPreview();
+    }
     if (mounted) setState(() => _previewingId = null);
   }
 
